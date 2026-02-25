@@ -1,26 +1,54 @@
 #!/bin/bash
-# build.sh - Build Inferix with parallel builds using CMake
-
 set -e
 
-cd "$PWD"
+BUILD_DIR_LINUX="./build_linux"
+BUILD_DIR_WIN="./build_win"
+BUILD_FOR_WINDOWS=0
+BUILD_ALL=0
+CLEAN_BUILD=0
 
-build_dir="build"
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --clean|-c)
+      CLEAN_BUILD=1
+      ;;
+    --windows|-w)
+      BUILD_FOR_WINDOWS=1
+      ;;
+    --all|-a)
+      BUILD_ALL=1
+      ;;
+    --help)
+      echo "Usage: build.sh [--clean|-c] [--windows|-w] [--all|-a] [--help]"
+exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      exit 1
+      ;;
+  esac
+  shift
+done
 
-# Create build directory if it doesn't exist
-if [ ! -d "$build_dir" ]; then
-  echo "Creating build directory: $build_dir"
-  mkdir -p "$build_dir"
+# Handle clean build
+if [[ $CLEAN_BUILD -eq 1 ]]; then
+  echo "Deleting Build Directories"
+  rm -rf "$BUILD_DIR_LINUX" "$BUILD_DIR_WIN"
 fi
 
-echo "Configuring build with CMake"
+# Build for Windows
+if [[ $BUILD_FOR_WINDOWS -eq 1 || $BUILD_ALL -eq 1 ]]; then
+  echo "Configuring Windows build..."
+  cmake -B"$BUILD_DIR_WIN" -H. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_SYSTEM_NAME=Windows \
+    -DCMAKE_C_COMPILER="x86_64-w64-mingw32-gcc-posix" \
+    -DCMAKE_CXX_COMPILER="x86_64-w64-mingw32-g++-posix"
+  make -C"$BUILD_DIR_WIN" -j6
+fi
 
-cmake -B$build_dir -H. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_CXX_COMPILER=g++ \
-  -DCMAKE_CXX_STANDARD=20
-
-cd "$build_dir"
-
-echo "Building with 6 parallel jobs"
-make -j6
+# Build for Linux
+echo "Configuring Linux build..."
+cmake -B"$BUILD_DIR_LINUX" -H. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+make -C"$BUILD_DIR_LINUX" -j6
