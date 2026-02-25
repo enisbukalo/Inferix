@@ -1,0 +1,16 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    clang-15 \
+    lld-15 \
+    llvm-15 \
+    ninja-build && rm -rf /var/lib/apt/lists/*
+
+ENV CXXFLAGS="-std=c++20 -Wall -Wextra -g -O3" \
+    CMAKE_CXX_STANDARD=20
+
+EXPOSE 8080
+
+CMD ["bash"]
