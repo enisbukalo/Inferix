@@ -3,6 +3,7 @@
 /build_win
 compile_commands.json
 .clangd
+.cache
 
 # Claude
 /.claude
