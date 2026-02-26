@@ -49,6 +49,8 @@ if [[ $BUILD_FOR_WINDOWS -eq 1 || $BUILD_ALL -eq 1 ]]; then
 fi
 
 # Build for Linux
-echo "Configuring Linux build..."
-cmake -B"$BUILD_DIR_LINUX" -H. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
-make -C"$BUILD_DIR_LINUX" -j6
+if [[ $BUILD_FOR_WINDOWS -eq 0 || $BUILD_ALL -eq 1 ]]; then
+  echo "Configuring Linux build..."
+  cmake -B"$BUILD_DIR_LINUX" -H. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+  make -C"$BUILD_DIR_LINUX" -j6
+fi

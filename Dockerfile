@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y \
     clang-15 \
     lld-15 \
     llvm-15 \
-    ninja-build && rm -rf /var/lib/apt/lists/*
+    ninja-build \
+    git && rm -rf /var/lib/apt/lists/*
 
 ENV CXXFLAGS="-std=c++20 -Wall -Wextra -g -O3" \
     CMAKE_CXX_STANDARD=20

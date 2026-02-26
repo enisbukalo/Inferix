@@ -2,6 +2,9 @@
 /build_linux
 /build_win
 
+# Claude
+/.claude
+
 # Prerequisites
 *.d
 
