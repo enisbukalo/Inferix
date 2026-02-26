@@ -19,12 +19,18 @@ target_include_directories(httplib INTERFACE ${CMAKE_SOURCE_DIR}/include)
 
 # Executable
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  add_executable(Inferix src/main.cpp)
+  add_executable(Inferix
+    src/main.cpp
+    src/ram_windows.cpp
+  )
   target_link_libraries(Inferix PRIVATE httplib ftxui::component ftxui::dom ftxui::screen ws2_32 wsock32 -static)
   target_compile_options(Inferix PRIVATE -Wall -Wextra -g -O3)
   set_target_properties(Inferix PROPERTIES OUTPUT_NAME "Inferix")
 else()
-  add_executable(Inferix src/main.cpp)
+  add_executable(Inferix
+    src/main.cpp
+    src/ram_linux.cpp
+  )
   target_link_libraries(Inferix PRIVATE httplib ftxui::component ftxui::dom ftxui::screen)
   target_compile_options(Inferix PRIVATE -Wall -Wextra -g -O3)
 endif()
