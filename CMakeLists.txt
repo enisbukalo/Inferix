@@ -21,10 +21,8 @@ add_library(httplib INTERFACE)
 target_include_directories(httplib INTERFACE ${INCLUDE_SUBDIRS})
 
 # Collect all sources using glob
-file(GLOB ALL_SOURCES
-    "${CMAKE_SOURCE_DIR}/src/main.cpp"
-    "${CMAKE_SOURCE_DIR}/src/app.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/*.cpp"
+file(GLOB_RECURSE ALL_SOURCES
+    "${CMAKE_SOURCE_DIR}/src/*.cpp"
 )
 
 # Remove platform-specific RAM files

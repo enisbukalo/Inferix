@@ -1,4 +1,4 @@
-#include "ram_monitor.hpp"
+#include "ram_monitor.h"
 #include <windows.h>
 
 void MemoryMonitor::update_windows() {
