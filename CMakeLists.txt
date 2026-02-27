@@ -13,24 +13,40 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
+# Collect all subdirectories under include/ as include paths
+file(GLOB INCLUDE_SUBDIRS LIST_DIRECTORIES true ${CMAKE_SOURCE_DIR}/include/*)
+
 # httplib header-only interface library
 add_library(httplib INTERFACE)
-target_include_directories(httplib INTERFACE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(httplib INTERFACE ${INCLUDE_SUBDIRS})
 
-# Executable
+# Collect all sources using glob
+file(GLOB ALL_SOURCES
+    "${CMAKE_SOURCE_DIR}/src/main.cpp"
+    "${CMAKE_SOURCE_DIR}/src/app.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/*.cpp"
+)
+
+# Remove platform-specific RAM files
+list(REMOVE_ITEM ALL_SOURCES
+    "${CMAKE_SOURCE_DIR}/src/system/ram_linux.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/ram_windows.cpp"
+)
+
+# Add back only the RAM file for the current platform
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  add_executable(Inferix
-    src/main.cpp
-    src/ram_windows.cpp
-  )
-  target_link_libraries(Inferix PRIVATE httplib ftxui::component ftxui::dom ftxui::screen ws2_32 wsock32 -static)
-  target_compile_options(Inferix PRIVATE -Wall -Wextra -g -O3)
-  set_target_properties(Inferix PROPERTIES OUTPUT_NAME "Inferix")
+  list(APPEND ALL_SOURCES "${CMAKE_SOURCE_DIR}/src/system/ram_windows.cpp")
 else()
-  add_executable(Inferix
-    src/main.cpp
-    src/ram_linux.cpp
-  )
-  target_link_libraries(Inferix PRIVATE httplib ftxui::component ftxui::dom ftxui::screen)
-  target_compile_options(Inferix PRIVATE -Wall -Wextra -g -O3)
+  list(APPEND ALL_SOURCES "${CMAKE_SOURCE_DIR}/src/system/ram_linux.cpp")
 endif()
+
+add_executable(Inferix ${ALL_SOURCES})
+
+# Target settings
+target_link_libraries(Inferix PRIVATE httplib ftxui::component ftxui::dom ftxui::screen)
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  target_link_libraries(Inferix PRIVATE ws2_32)
+  target_link_options(Inferix PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+target_compile_options(Inferix PRIVATE -Wall -Wextra -g -O3)
+set_target_properties(Inferix PROPERTIES OUTPUT_NAME "Inferix")
