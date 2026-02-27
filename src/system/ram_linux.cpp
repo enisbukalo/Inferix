@@ -1,6 +1,7 @@
 #include "ram_monitor.h"
 #include <fstream>
 #include <sstream>
+#include <cmath>
 
 void MemoryMonitor::update_linux() {
     std::ifstream file("/proc/meminfo");
@@ -14,16 +15,16 @@ void MemoryMonitor::update_linux() {
         iss >> key >> value >> unit;
 
         if (key == "MemTotal:") {
-            total = std::stoull(value) * 1024;
+            total = std::round(std::stoull(value) / 1024.0);
         } else if (key == "MemAvailable:") {
-            available = std::stoull(value) * 1024;
+            available = std::round(std::stoull(value) / 1024.0);
         }
     }
 
-    stats_.total_bytes = total;
-    stats_.available_bytes = available;
-    stats_.used_bytes = total - available;
-    stats_.usage_percentage = total > 0 ? (stats_.used_bytes * 100.0 / total) : 0.0;
+    stats_.total_mb = total;
+    stats_.available_mb = available;
+    stats_.used_mb = total - available;
+    stats_.usage_percentage = total > 0 ? (stats_.used_mb * 100.0 / total) : 0.0;
 }
 
 void MemoryMonitor::update() {

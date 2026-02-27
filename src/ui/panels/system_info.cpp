@@ -15,7 +15,6 @@ Element SystemInfo::Render() {
     table.SelectColumn(0).Decorate(color(Color::Cyan));
     table.SelectColumn(1).Decorate(color(Color::LightGreen));
     table.SelectColumn(0).Border(ftxui::DASHED);
-    table.SelectAll().Border(ftxui::DOUBLE);
 
     return table.Render();
 }

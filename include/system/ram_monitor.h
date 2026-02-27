@@ -2,16 +2,12 @@
 #include <cstdint>
 #include <string>
 #include <optional>
-#include <iomanip>
-#include <sstream>
 
 struct RAMStats {
-    uint64_t total_bytes = 0;
-    uint64_t used_bytes = 0;
-    uint64_t available_bytes = 0;
+    uint64_t total_mb = 0;
+    uint64_t used_mb = 0;
+    uint64_t available_mb = 0;
     double usage_percentage = 0.0;
-
-    std::string to_string() const;
 };
 
 class MemoryMonitor {

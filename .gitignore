@@ -4,6 +4,7 @@
 compile_commands.json
 .clangd
 .cache
+/logs
 
 # Claude
 /.claude
