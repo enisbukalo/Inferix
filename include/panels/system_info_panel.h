@@ -2,7 +2,7 @@
 
 #include <ftxui/dom/elements.hpp>
 
-class SystemInfo {
+class SystemInfoPanel {
 public:
     static ftxui::Element Render();
 private:

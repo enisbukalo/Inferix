@@ -2,7 +2,7 @@
 
 #include <ftxui/dom/elements.hpp>
 
-class SystemResources {
+class SystemResourcesPanel {
 public:
     static ftxui::Element Render();
 private:

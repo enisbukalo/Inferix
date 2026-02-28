@@ -1,5 +1,5 @@
 #include "ram_monitor.h"
-#include "system_resources.h"
+#include "system_resources_panel.h"
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/dom/table.hpp>
@@ -7,7 +7,7 @@
 
 using namespace ftxui;
 
-Element SystemResources::Render() {
+Element SystemResourcesPanel::Render() {
 	MemoryMonitor::instance().update();
 	auto ram_stats = MemoryMonitor::instance().get_stats();
 

@@ -2,8 +2,8 @@
 
 #include "httplib.h"
 #include "json.hpp"
-#include "system_info.h"
-#include "system_resources.h"
+#include "system_info_panel.h"
+#include "system_resources_panel.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_base.hpp>
@@ -28,10 +28,10 @@ int main(){
 	auto top = Renderer([&]() {
 
 			return hbox({
-					SystemInfo::Render(),
+					SystemInfoPanel::Render(),
 					filler(),
-					SystemResources::Render(),
-					}) | frame | border;
+					SystemResourcesPanel::Render(),
+					});
 			});
 	auto bottom = Renderer([&]() { return text("Bottom: " + std::to_string(bottom_size)) | center;});
 

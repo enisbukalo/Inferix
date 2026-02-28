@@ -25,17 +25,25 @@ file(GLOB_RECURSE ALL_SOURCES
     "${CMAKE_SOURCE_DIR}/src/*.cpp"
 )
 
-# Remove platform-specific RAM files
+# Remove platform-specific files
 list(REMOVE_ITEM ALL_SOURCES
     "${CMAKE_SOURCE_DIR}/src/system/ram_linux.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/ram_windows.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/system_info_linux.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/system_info_windows.cpp"
 )
 
-# Add back only the RAM file for the current platform
+# Add back only the files for the current platform
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  list(APPEND ALL_SOURCES "${CMAKE_SOURCE_DIR}/src/system/ram_windows.cpp")
+  list(APPEND ALL_SOURCES
+      "${CMAKE_SOURCE_DIR}/src/system/ram_windows.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/system_info_windows.cpp"
+  )
 else()
-  list(APPEND ALL_SOURCES "${CMAKE_SOURCE_DIR}/src/system/ram_linux.cpp")
+  list(APPEND ALL_SOURCES
+      "${CMAKE_SOURCE_DIR}/src/system/ram_linux.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/system_info_linux.cpp"
+  )
 endif()
 
 add_executable(Inferix ${ALL_SOURCES})
