@@ -13,15 +13,15 @@ Element SystemInfoPanel::Render() {
 	auto gpus = SystemInfo::instance().get_gpus();
 
 	auto padding = [](Element e) {
-		return hbox({text(" "), e, text(" ")});
+		return hbox({e, text(" ")});
 	};
 
 	std::vector<std::vector<std::string>> data = {
-		{"CPU", cpu.make + " " + cpu.model},
+		{"CPU", cpu.make, cpu.model},
 	};
 
 	for (size_t i = 0; i < gpus.size(); i++) {
-		data.push_back({"GPU " + std::to_string(i), gpus[i].make + " " + gpus[i].model});
+		data.push_back({"GPU " + std::to_string(i), gpus[i].make, gpus[i].model});
 	}
 
 	Table table({data});
@@ -30,10 +30,11 @@ Element SystemInfoPanel::Render() {
 		table.SelectRows(1, data.size() - 1).DecorateCells(bgcolor(Color::GreenLight));
 		table.SelectRows(1, data.size() - 1).DecorateCells(color(Color::Black));
 	}
-	return vbox({
+	return hbox({
+		vbox({
 			text("System Information") | bold | hcenter,
 			separator(),
 			table.Render(),
-
-			}) | border;
+		}) | border,
+	});
 }
