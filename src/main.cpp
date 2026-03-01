@@ -21,7 +21,7 @@ int main(){
 			hbox({
 				SystemInfoPanel::Render(),
 				filler(),
-				text("Server Status") | hcenter | vcenter,
+				text("Server Status") | hcenter | vcenter | xflex,
 				filler(),
 				SystemResourcesPanel::Render(),
 			}),
