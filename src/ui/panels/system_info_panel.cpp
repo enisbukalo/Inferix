@@ -1,5 +1,5 @@
-#include "system_info.h"
 #include "system_info_panel.h"
+#include "system_info.h"
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/dom/table.hpp>
@@ -35,6 +35,6 @@ Element SystemInfoPanel::Render() {
 			text("System Information") | bold | hcenter,
 			separator(),
 			table.Render(),
-		}) | border,
+		}) | borderRounded,
 	});
 }

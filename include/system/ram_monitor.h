@@ -1,26 +1,26 @@
 #pragma once
 #include "memory_stats.h"
-#include <optional>
 #include <mutex>
+#include <optional>
 
 class MemoryMonitor {
-public:
-    static MemoryMonitor& instance() {
-        static MemoryMonitor monitor;
-        return monitor;
-    }
+  public:
+	static MemoryMonitor &instance() {
+		static MemoryMonitor monitor;
+		return monitor;
+	}
 
-    void update();
-    MemoryStats get_stats() const;
-    std::optional<MemoryStats> try_update();
+	void update();
+	MemoryStats get_stats() const;
+	std::optional<MemoryStats> try_update();
 
-private:
-    MemoryMonitor() = default;
+  private:
+	MemoryMonitor() = default;
 
-    MemoryStats stats_;
-    mutable std::mutex stats_mutex_;
+	MemoryStats stats_;
+	mutable std::mutex stats_mutex_;
 
-    void update_linux();
-    void update_windows();
-    void update_unknown();
+	void update_linux();
+	void update_windows();
+	void update_unknown();
 };

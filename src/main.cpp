@@ -1,5 +1,5 @@
-#include "ram_monitor.h"
 #include "gpu_monitor.h"
+#include "ram_monitor.h"
 #include "system_info_panel.h"
 #include "system_monitor_runner.h"
 #include "system_resources_panel.h"
@@ -10,7 +10,7 @@
 
 using namespace ftxui;
 
-int main(){
+int main() {
 	auto screen = ScreenInteractive::Fullscreen();
 
 	MemoryMonitor::instance().update();

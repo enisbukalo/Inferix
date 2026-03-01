@@ -6,6 +6,8 @@ RUN apt-get update && apt-get install -y \
     mingw-w64-x86-64-dev \
     g++-mingw-w64-x86-64-posix \
     clang-15 \
+    clang-format \
+    clang-format-15 \
     lld-15 \
     llvm-15 \
     ninja-build \

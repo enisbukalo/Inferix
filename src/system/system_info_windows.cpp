@@ -1,20 +1,20 @@
 #include "system_info.h"
 #include "system_info_utils.h"
-#include <windows.h>
 #include <string>
+#include <windows.h>
 
 Hardware SystemInfo::get_cpu_info() {
 	std::string model_name;
 
 	HKEY key;
 	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
-		"HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
-		0, KEY_READ, &key) == ERROR_SUCCESS) {
+					  "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
+					  0, KEY_READ, &key) == ERROR_SUCCESS) {
 
 		char buffer[256];
 		DWORD size = sizeof(buffer);
 		if (RegQueryValueExA(key, "ProcessorNameString", nullptr, nullptr,
-			reinterpret_cast<LPBYTE>(buffer), &size) == ERROR_SUCCESS) {
+							 reinterpret_cast<LPBYTE>(buffer), &size) == ERROR_SUCCESS) {
 			model_name = buffer;
 		}
 		RegCloseKey(key);
@@ -28,7 +28,7 @@ Hardware SystemInfo::get_cpu_info() {
 		model = (space != std::string::npos) ? model_name.substr(space + 1) : "";
 	}
 
-	return { HardwareType::CPU, make, model };
+	return {HardwareType::CPU, make, model};
 }
 
 void SystemInfo::update_windows() {

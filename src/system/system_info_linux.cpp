@@ -8,15 +8,16 @@ Hardware SystemInfo::get_cpu_info() {
 
 	std::string model_name;
 
-	auto trim = [](const std::string& s) {
+	auto trim = [](const std::string &s) {
 		auto start = s.find_first_not_of(" \t");
 		auto end = s.find_last_not_of(" \t");
 		return (start == std::string::npos) ? "" : s.substr(start, end - start + 1);
 	};
 
-	for (std::string line; std::getline(file, line); ) {
+	for (std::string line; std::getline(file, line);) {
 		auto colon = line.find(':');
-		if (colon == std::string::npos) continue;
+		if (colon == std::string::npos)
+			continue;
 
 		std::string key = trim(line.substr(0, colon));
 		std::string value = trim(line.substr(colon + 1));
@@ -35,7 +36,7 @@ Hardware SystemInfo::get_cpu_info() {
 		model = (space != std::string::npos) ? model_name.substr(space + 1) : "";
 	}
 
-	return { HardwareType::CPU, make, model };
+	return {HardwareType::CPU, make, model};
 }
 
 void SystemInfo::update_linux() {

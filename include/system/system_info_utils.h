@@ -3,5 +3,5 @@
 #include <vector>
 
 namespace SystemInfoUtils {
-    std::vector<Hardware> get_gpu_info();
+std::vector<Hardware> get_gpu_info();
 }

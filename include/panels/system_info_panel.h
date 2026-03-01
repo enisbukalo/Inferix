@@ -3,7 +3,8 @@
 #include <ftxui/dom/elements.hpp>
 
 class SystemInfoPanel {
-public:
-    static ftxui::Element Render();
-private:
+  public:
+	static ftxui::Element Render();
+
+  private:
 };
