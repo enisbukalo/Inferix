@@ -29,6 +29,8 @@ file(GLOB_RECURSE ALL_SOURCES
 list(REMOVE_ITEM ALL_SOURCES
     "${CMAKE_SOURCE_DIR}/src/system/ram_linux.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/ram_windows.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/cpu_linux.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/cpu_windows.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/system_info_linux.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/system_info_windows.cpp"
 )
@@ -37,11 +39,13 @@ list(REMOVE_ITEM ALL_SOURCES
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   list(APPEND ALL_SOURCES
       "${CMAKE_SOURCE_DIR}/src/system/ram_windows.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/cpu_windows.cpp"
       "${CMAKE_SOURCE_DIR}/src/system/system_info_windows.cpp"
   )
 else()
   list(APPEND ALL_SOURCES
       "${CMAKE_SOURCE_DIR}/src/system/ram_linux.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/cpu_linux.cpp"
       "${CMAKE_SOURCE_DIR}/src/system/system_info_linux.cpp"
   )
 endif()
