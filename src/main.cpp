@@ -1,4 +1,5 @@
 #include "ram_monitor.h"
+#include "gpu_monitor.h"
 #include "system_info_panel.h"
 #include "system_monitor_runner.h"
 #include "system_resources_panel.h"
@@ -13,6 +14,7 @@ int main(){
 	auto screen = ScreenInteractive::Fullscreen();
 
 	MemoryMonitor::instance().update();
+	GpuMonitor::instance().update();
 
 	SystemMonitorRunner runner(screen);
 

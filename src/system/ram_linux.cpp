@@ -21,7 +21,7 @@ void MemoryMonitor::update_linux() {
         }
     }
 
-    RAMStats new_stats;
+    MemoryStats new_stats;
     new_stats.total_mb = total;
     new_stats.available_mb = available;
     new_stats.used_mb = total - available;

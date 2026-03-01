@@ -7,7 +7,7 @@ void MemoryMonitor::update_windows() {
     statex.dwLength = sizeof(statex);
 
     if (GlobalMemoryStatusEx(&statex)) {
-        RAMStats new_stats;
+        MemoryStats new_stats;
         new_stats.total_mb = std::round(statex.ullTotalPhys / 1048576.0);
         new_stats.used_mb = std::round((statex.ullTotalPhys - statex.ullAvailPhys) / 1048576.0);
         new_stats.available_mb = std::round(statex.ullAvailPhys / 1048576.0);

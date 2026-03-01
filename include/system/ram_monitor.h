@@ -1,5 +1,5 @@
 #pragma once
-#include "ram_stats.h"
+#include "memory_stats.h"
 #include <optional>
 #include <mutex>
 
@@ -11,13 +11,13 @@ public:
     }
 
     void update();
-    RAMStats get_stats() const;
-    std::optional<RAMStats> try_update();
+    MemoryStats get_stats() const;
+    std::optional<MemoryStats> try_update();
 
 private:
     MemoryMonitor() = default;
 
-    RAMStats stats_;
+    MemoryStats stats_;
     mutable std::mutex stats_mutex_;
 
     void update_linux();
