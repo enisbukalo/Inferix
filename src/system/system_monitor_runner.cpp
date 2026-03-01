@@ -1,4 +1,5 @@
 #include "system_monitor_runner.h"
+#include "cpu_monitor.h"
 #include "gpu_monitor.h"
 #include "ram_monitor.h"
 #include <ftxui/component/event.hpp>
@@ -26,6 +27,7 @@ void SystemMonitorRunner::run() {
 		if (stop_flag_.load())
 			break;
 		MemoryMonitor::instance().update();
+		CpuMonitor::instance().update();
 		GpuMonitor::instance().update();
 		screen_.PostEvent(ftxui::Event::Custom);
 	}
