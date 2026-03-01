@@ -1,14 +1,7 @@
 #pragma once
-#include <cstdint>
-#include <string>
+#include "ram_stats.h"
 #include <optional>
-
-struct RAMStats {
-    uint64_t total_mb = 0;
-    uint64_t used_mb = 0;
-    uint64_t available_mb = 0;
-    double usage_percentage = 0.0;
-};
+#include <mutex>
 
 class MemoryMonitor {
 public:
@@ -18,13 +11,14 @@ public:
     }
 
     void update();
-    RAMStats get_stats() const { return stats_; }
+    RAMStats get_stats() const;
     std::optional<RAMStats> try_update();
 
 private:
     MemoryMonitor() = default;
 
     RAMStats stats_;
+    mutable std::mutex stats_mutex_;
 
     void update_linux();
     void update_windows();

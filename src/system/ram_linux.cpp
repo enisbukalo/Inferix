@@ -21,10 +21,14 @@ void MemoryMonitor::update_linux() {
         }
     }
 
-    stats_.total_mb = total;
-    stats_.available_mb = available;
-    stats_.used_mb = total - available;
-    stats_.usage_percentage = total > 0 ? (stats_.used_mb * 100.0 / total) : 0.0;
+    RAMStats new_stats;
+    new_stats.total_mb = total;
+    new_stats.available_mb = available;
+    new_stats.used_mb = total - available;
+    new_stats.usage_percentage = total > 0 ? (new_stats.used_mb * 100.0 / total) : 0.0;
+
+    std::lock_guard<std::mutex> lock(stats_mutex_);
+    stats_ = new_stats;
 }
 
 void MemoryMonitor::update() {

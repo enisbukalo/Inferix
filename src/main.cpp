@@ -1,4 +1,6 @@
+#include "ram_monitor.h"
 #include "system_info_panel.h"
+#include "system_monitor_runner.h"
 #include "system_resources_panel.h"
 
 #include <ftxui/component/component.hpp>
@@ -9,6 +11,10 @@ using namespace ftxui;
 
 int main(){
 	auto screen = ScreenInteractive::Fullscreen();
+
+	MemoryMonitor::instance().update();
+
+	SystemMonitorRunner runner(screen);
 
 	auto container = Renderer([] {
 		return vbox({
