@@ -12,16 +12,18 @@
 #endif
 
 void GpuMonitor::update() {
-	FILE *pipe = POPEN("nvidia-smi --query-gpu=memory.total,memory.used,memory.free --format=csv,noheader,nounits", "r");
+	FILE *pipe = POPEN("nvidia-smi --query-gpu=index,memory.total,memory.used,memory.free --format=csv,noheader,nounits", "r");
 	if (!pipe)
 		return;
 
 	std::vector<MemoryStats> new_stats;
 	char buffer[256];
 	while (std::fgets(buffer, sizeof(buffer), pipe)) {
+		int index;
 		uint64_t total, used, free;
-		if (std::sscanf(buffer, "%" SCNu64 ", %" SCNu64 ", %" SCNu64, &total, &used, &free) == 3) {
+		if (std::sscanf(buffer, "%d, %" SCNu64 ", %" SCNu64 ", %" SCNu64, &index, &total, &used, &free) == 4) {
 			MemoryStats s;
+			s.id = index;
 			s.total_mb = total;
 			s.used_mb = used;
 			s.available_mb = free;

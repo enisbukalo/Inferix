@@ -11,5 +11,6 @@ class SystemResourcesPanel {
   private:
 	static std::vector<std::vector<ftxui::Element>> BuildRamRows(const MemoryStats &);
 	static std::vector<std::vector<ftxui::Element>> BuildGpuRows(const std::vector<MemoryStats> &);
-	static std::vector<ftxui::Element> BuildUnitsRows();
+	static std::vector<ftxui::Element> BuildHeaderRow(const std::vector<MemoryStats> &);
+	static std::vector<ftxui::Element> BuildUnitsColumn();
 };

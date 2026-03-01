@@ -21,10 +21,10 @@ std::vector<std::vector<Element>> SystemResourcesPanel::BuildRamRows(const Memor
 	Element gauge = gaugeRight(ram_stats.usage_percentage / 100.0f) | color(LinearGradient(0, Color::LightGreen, Color::DarkMagenta));
 
 	std::vector<std::vector<Element>> rows = {
-		{text("Total"), text(oss_total.str())},
-		{text("Used"), text(oss_used.str())},
-		{text("Avail"), text(oss_avail.str())},
-		{text("Usage"), text(oss_pct.str())},
+		{text("Total") | bold, text(oss_total.str())},
+		{text("Used") | bold, text(oss_used.str())},
+		{text("Avail") | bold, text(oss_avail.str())},
+		{text("Usage") | bold, text(oss_pct.str())},
 		{text(""), gauge},
 	};
 
@@ -52,13 +52,24 @@ std::vector<std::vector<Element>> SystemResourcesPanel::BuildGpuRows(const std::
 	return rows;
 }
 
-std::vector<Element> SystemResourcesPanel::BuildUnitsRows() {
+std::vector<Element> SystemResourcesPanel::BuildHeaderRow(const std::vector<MemoryStats> &gpu_stats) {
+	std::vector<Element> header;
+	header.push_back(text("")); // Empty for label column
+	header.push_back(text("RAM") | bold);
+	for (const auto &gpu : gpu_stats) {
+		header.push_back(text("GPU " + std::to_string(gpu.id)) | bold);
+	}
+	return header;
+}
+
+std::vector<Element> SystemResourcesPanel::BuildUnitsColumn() {
 	return {
-		text("GB"), // Total
-		text("GB"), // Used
-		text("GB"), // Avail
-		text("%"),	// Usage
-		text(""),	// gauge (empty)
+		text(""),		   // Empty for label
+		text("GB") | bold, // Total
+		text("GB") | bold, // Used
+		text("GB") | bold, // Avail
+		text("%") | bold,  // Usage
+		text(""),		   // gauge (empty)
 	};
 }
 
@@ -68,18 +79,22 @@ Element SystemResourcesPanel::Render() {
 
 	auto ram_rows = BuildRamRows(ramStats);
 	auto gpu_rows = BuildGpuRows(gpuStats);
-	auto units_rows = BuildUnitsRows();
+	auto header_row = BuildHeaderRow(gpuStats);
+	auto units_column = BuildUnitsColumn();
+
+	// Insert header row at the beginning
+	ram_rows.insert(ram_rows.begin(), header_row);
 
 	// Append GPU columns to RAM rows
-	for (size_t i = 0; i < ram_rows.size() && i < gpu_rows.size(); ++i) {
-		for (auto &el : gpu_rows[i]) {
+	for (size_t i = 1; i < ram_rows.size() && i < gpu_rows.size() + 1; ++i) {
+		for (auto &el : gpu_rows[i - 1]) {
 			ram_rows[i].push_back(std::move(el));
 		}
 	}
 
 	// Add units column after RAM and GPU columns
 	for (size_t i = 0; i < ram_rows.size(); ++i) {
-		ram_rows[i].push_back(units_rows[i]);
+		ram_rows[i].push_back(units_column[i]);
 	}
 
 	auto padding = [](Element e) {
@@ -90,6 +105,11 @@ Element SystemResourcesPanel::Render() {
 	table.SelectAll().DecorateCells(padding);
 	auto all_cells = table.SelectAll();
 	all_cells.SeparatorVertical(DASHED);
+
+	// Apply alternating CyanLight and MagentaLight to data rows (excluding header)
+	auto data_rows = table.SelectRows(1, -1); // Select rows 1 to end (skip header)
+	data_rows.DecorateCellsAlternateRow(color(Color::CyanLight), 2, 1);
+	data_rows.DecorateCellsAlternateRow(color(Color::MagentaLight), 2, 0);
 
 	return hbox({
 		vbox({
