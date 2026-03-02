@@ -30,11 +30,20 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+format_code() {
+  echo "Formatting source files..."
+  find src/ include/models include/panels include/system \
+    \( -name "*.cpp" -o -name "*.h" \) \
+    | xargs clang-format -i
+}
+
 # Handle clean build
 if [[ $CLEAN_BUILD -eq 1 ]]; then
   echo "Deleting Build Directories"
   rm -rf "$BUILD_DIR_LINUX" "$BUILD_DIR_WIN"
 fi
+
+format_code
 
 if [[ $BUILD_ALL -eq 1 ]]; then
   # Parallel build: both targets run concurrently, each logs to ./logs/
@@ -45,17 +54,18 @@ if [[ $BUILD_ALL -eq 1 ]]; then
 
   (
     cmake -B"$BUILD_DIR_WIN" -H. \
+      --log-level=VERBOSE \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_SYSTEM_NAME=Windows \
       -DCMAKE_C_COMPILER="x86_64-w64-mingw32-gcc-posix" \
       -DCMAKE_CXX_COMPILER="x86_64-w64-mingw32-g++-posix"
-    make -C"$BUILD_DIR_WIN" -j6
+    make -C"$BUILD_DIR_WIN" -j6 VERBOSE=1
   ) > "$LOG_DIR/build_win.log" 2>&1 &
   WIN_PID=$!
 
   (
-    cmake -B"$BUILD_DIR_LINUX" -H. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
-    make -C"$BUILD_DIR_LINUX" -j6
+    cmake -B"$BUILD_DIR_LINUX" -H. --log-level=VERBOSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+    make -C"$BUILD_DIR_LINUX" -j6 VERBOSE=1
   ) > "$LOG_DIR/build_linux.log" 2>&1 &
   LIN_PID=$!
 
@@ -74,15 +84,16 @@ else
   if [[ $BUILD_FOR_WINDOWS -eq 1 ]]; then
     echo "Configuring Windows build..."
     cmake -B"$BUILD_DIR_WIN" -H. \
+      --log-level=VERBOSE \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_SYSTEM_NAME=Windows \
       -DCMAKE_C_COMPILER="x86_64-w64-mingw32-gcc-posix" \
       -DCMAKE_CXX_COMPILER="x86_64-w64-mingw32-g++-posix"
-    make -C"$BUILD_DIR_WIN" -j6
+    make -C"$BUILD_DIR_WIN" -j6 VERBOSE=1
   else
     # Default: Linux only
     echo "Configuring Linux build..."
-    cmake -B"$BUILD_DIR_LINUX" -H. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
-    make -C"$BUILD_DIR_LINUX" -j6
+    cmake -B"$BUILD_DIR_LINUX" -H. --log-level=VERBOSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+    make -C"$BUILD_DIR_LINUX" -j6 VERBOSE=1
   fi
 fi
