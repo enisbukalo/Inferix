@@ -87,6 +87,44 @@ ftxui::Element SystemResourcesPanel::BuildGpuGauges(const std::vector<ProcessorS
 	return hbox(std::move(gauges));
 }
 
+std::vector<ftxui::Element> SystemResourcesPanel::BuildTotalMemoryColumn(
+	const std::vector<MemoryStats> &gpu_stats, const MemoryStats &ram_stats) {
+	// Calculate totals
+	uint64_t total_mb = ram_stats.total_mb;
+	uint64_t used_mb = ram_stats.used_mb;
+	uint64_t available_mb = ram_stats.available_mb;
+
+	for (const auto &gpu : gpu_stats) {
+		total_mb += gpu.total_mb;
+		used_mb += gpu.used_mb;
+		available_mb += gpu.available_mb;
+	}
+
+	// Calculate usage percentage
+	double usage_percentage = 0.0;
+	if (total_mb > 0) {
+		usage_percentage = (static_cast<double>(used_mb) / static_cast<double>(total_mb)) * 100.0;
+	}
+
+	// Format values
+	std::ostringstream oss_total, oss_used, oss_avail, oss_pct;
+	oss_total << std::fixed << std::setprecision(2) << (total_mb / 1024.0);
+	oss_used << std::fixed << std::setprecision(2) << (used_mb / 1024.0);
+	oss_avail << std::fixed << std::setprecision(2) << (available_mb / 1024.0);
+	oss_pct << std::fixed << std::setprecision(2) << usage_percentage;
+
+	// Build gauge
+	Element gauge = gaugeRight(usage_percentage / 100.0f) | color(kMemoryGradient);
+
+	// Return column as transposed (5 rows, 1 column each)
+	return {
+		text(oss_total.str()),
+		text(oss_used.str()),
+		text(oss_avail.str()),
+		text(oss_pct.str()),
+		gauge};
+}
+
 std::vector<Element> SystemResourcesPanel::BuildHeaderRow(const std::vector<MemoryStats> &gpu_stats) {
 	std::vector<Element> header;
 	header.push_back(text("")); // Empty for label column
@@ -94,6 +132,7 @@ std::vector<Element> SystemResourcesPanel::BuildHeaderRow(const std::vector<Memo
 	for (const auto &gpu : gpu_stats) {
 		header.push_back(text("GPU " + std::to_string(gpu.id)) | bold);
 	}
+	header.push_back(text("TOTAL") | bold);
 	return header;
 }
 
@@ -120,6 +159,7 @@ Element SystemResourcesPanel::Render() {
 	auto units_column = BuildUnitsColumn();
 	auto cpu_load_gauge = BuildCpuGauge(processorStats);
 	auto gpu_load_gauges = BuildGpuGauges(gpuLoadStats);
+	auto total_memory_column = BuildTotalMemoryColumn(gpuStats, ramStats);
 
 	// Insert header row at the beginning
 	ram_rows.insert(ram_rows.begin(), header_row);
@@ -131,7 +171,12 @@ Element SystemResourcesPanel::Render() {
 		}
 	}
 
-	// Add units column after RAM and GPU columns
+	// Add total memory column after GPU columns (skip header row at index 0)
+	for (size_t i = 1; i < ram_rows.size(); ++i) {
+		ram_rows[i].push_back(total_memory_column[i - 1]);
+	}
+
+	// Add units column after RAM, GPU, and total columns
 	for (size_t i = 0; i < ram_rows.size(); ++i) {
 		ram_rows[i].push_back(units_column[i]);
 	}
@@ -151,17 +196,26 @@ Element SystemResourcesPanel::Render() {
 	data_rows.DecorateCellsAlternateRow(color(Color::CyanLight), 2, 1);
 	data_rows.DecorateCellsAlternateRow(color(Color::MagentaLight), 2, 0);
 
-	return hbox({
-		vbox({
-			text("System Resources") | bold | hcenter,
-			separator(),
-			hbox({
-				table.Render(),
-				separatorHeavy(),
-				cpu_load_gauge,
-				separatorLight(),
-				gpu_load_gauges,
-			}),
-		}) | borderRounded,
-	});
+	return vbox({
+			   text("System Resources") | bold | hcenter,
+			   separator(),
+			   hbox({
+				   vbox({
+					   text("Memory") | bold | hcenter,
+					   separatorLight(),
+					   table.Render(),
+				   }),
+				   separatorHeavy(),
+				   vbox({
+					   text("Load") | hcenter | bold,
+					   separatorLight(),
+					   hbox({
+						   cpu_load_gauge,
+						   separatorLight(),
+						   gpu_load_gauges,
+					   }),
+				   }),
+			   }),
+		   }) |
+		   borderRounded;
 }

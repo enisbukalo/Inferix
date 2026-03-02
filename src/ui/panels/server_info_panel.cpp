@@ -11,13 +11,13 @@ Element ServerInfoPanel::Render() {
 
 	bool connected = (frame / 4) % 2 == 0;
 	Color pulse_color = connected ? (frame % 2 == 0 ? Color::Green : Color::GreenLight) : (frame % 2 == 0 ? Color::Red : Color::RedLight);
-	Color status_color = connected ? Color::Green : Color::Red;
 
-	return vbox({
-			   text("Server Status") | bold | hcenter,
-			   separator(),
-			   text("  ●  ") | borderRounded | hcenter | color(pulse_color),
-			   text(connected ? "CONNECTED" : "DISCONNECTED") | bold | hcenter | color(status_color),
-		   }) |
+	return vbox({text("Server Status") | bold | hcenter,
+				 separator(),
+				 hbox({
+					 text("Server Status") | bold,
+					 separatorEmpty(),
+					 text("◉") | hcenter | color(pulse_color),
+				 })}) |
 		   borderRounded;
 }
