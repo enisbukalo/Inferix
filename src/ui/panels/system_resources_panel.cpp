@@ -76,7 +76,7 @@ ftxui::Element SystemResourcesPanel::BuildGpuGauges(const std::vector<ProcessorS
 		auto gradient = LinearGradient().Angle(0).Stop(Color::Red1).Stop(Color::Yellow1).Stop(Color::Green1);
 		gauges.push_back(
 			hbox({
-				vtext("GPU " + std::to_string(i)) | vcenter | hcenter,
+				vtext("GPU" + std::to_string(i)) | vcenter | hcenter,
 				separatorLight(),
 				gaugeUp(gpu_load_stats[i].usage_percentage / 100.0) | ftxui::color(gradient),
 			}) |
