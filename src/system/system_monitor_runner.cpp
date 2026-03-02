@@ -21,7 +21,7 @@ void SystemMonitorRunner::run() {
 	while (true) {
 		{
 			std::unique_lock<std::mutex> lock(cv_mutex_);
-			cv_.wait_for(lock, std::chrono::milliseconds(500),
+			cv_.wait_for(lock, std::chrono::milliseconds(kThreadWaitTimeMs),
 						 [this] { return stop_flag_.load(); });
 		}
 		if (stop_flag_.load())

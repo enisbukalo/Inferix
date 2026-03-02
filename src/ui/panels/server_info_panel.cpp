@@ -16,7 +16,7 @@ Element ServerInfoPanel::Render() {
 	return vbox({
 			   text("Server Status") | bold | hcenter,
 			   separator(),
-			   text("  ●  ") | hcenter | color(pulse_color),
+			   text("  ●  ") | borderRounded | hcenter | color(pulse_color),
 			   text(connected ? "CONNECTED" : "DISCONNECTED") | bold | hcenter | color(status_color),
 		   }) |
 		   borderRounded;

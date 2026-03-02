@@ -14,6 +14,11 @@
 
 using namespace ftxui;
 
+namespace {
+const ftxui::LinearGradient kGaugeGradient = ftxui::LinearGradient().Angle(90).Stop(Color::Red1).Stop(Color::Yellow1).Stop(Color::Green1);
+const ftxui::LinearGradient kMemoryGradient = ftxui::LinearGradient().Angle(0).Stop(Color::Green1).Stop(Color::Yellow1).Stop(Color::Red1);
+} // namespace
+
 std::vector<std::vector<Element>> SystemResourcesPanel::BuildRamRows(const MemoryStats &ram_stats) {
 	std::ostringstream oss_total, oss_used, oss_avail, oss_pct;
 	oss_total << std::fixed << std::setprecision(2) << (ram_stats.total_mb / 1024.0);
@@ -21,7 +26,7 @@ std::vector<std::vector<Element>> SystemResourcesPanel::BuildRamRows(const Memor
 	oss_avail << std::fixed << std::setprecision(2) << (ram_stats.available_mb / 1024.0);
 	oss_pct << std::fixed << std::setprecision(2) << ram_stats.usage_percentage;
 
-	Element gauge = gaugeRight(ram_stats.usage_percentage / 100.0f) | color(LinearGradient(0, Color::LightGreen, Color::Yellow1));
+	Element gauge = gaugeRight(ram_stats.usage_percentage / 100.0f) | color(kMemoryGradient);
 
 	std::vector<std::vector<Element>> rows = {
 		{text("Total") | bold, text(oss_total.str())},
@@ -44,7 +49,7 @@ std::vector<std::vector<Element>> SystemResourcesPanel::BuildGpuRows(const std::
 		oss_avail << std::fixed << std::setprecision(2) << (stats.available_mb / 1024.0);
 		oss_pct << std::fixed << std::setprecision(2) << stats.usage_percentage;
 
-		Element gauge = gaugeRight(stats.usage_percentage / 100.0f) | color(LinearGradient(0, Color::LightGreen, Color::Yellow1));
+		Element gauge = gaugeRight(stats.usage_percentage / 100.0f) | color(kMemoryGradient);
 
 		rows[0].push_back(text(oss_total.str()));
 		rows[1].push_back(text(oss_used.str()));
@@ -56,14 +61,12 @@ std::vector<std::vector<Element>> SystemResourcesPanel::BuildGpuRows(const std::
 }
 
 Element SystemResourcesPanel::BuildCpuGauge(const ProcessorStats &processor_stats) {
-	auto gradient = LinearGradient().Angle(0).Stop(Color::Red1).Stop(Color::Yellow1).Stop(Color::Green1);
 	auto toReturn = hbox({
-						vtext("CPU") | vcenter | hcenter,
+						vtext("CPU") | vcenter | hcenter | bgcolor(Color::NavyBlue),
 						separatorLight(),
-						gaugeUp(processor_stats.usage_percentage / 100.0) | ftxui::color(gradient),
+						gaugeUp(processor_stats.usage_percentage / 100.0) | ftxui::color(kGaugeGradient),
 					}) |
 					borderRounded;
-	// return borderRounded(gaugeUp(processor_stats.usage_percentage / 100.0) | ftxui::color(gradient));
 	return toReturn;
 }
 
@@ -73,12 +76,11 @@ ftxui::Element SystemResourcesPanel::BuildGpuGauges(const std::vector<ProcessorS
 
 	Elements gauges;
 	for (size_t i = 0; i < gpu_load_stats.size(); ++i) {
-		auto gradient = LinearGradient().Angle(0).Stop(Color::Red1).Stop(Color::Yellow1).Stop(Color::Green1);
 		gauges.push_back(
 			hbox({
-				vtext("GPU" + std::to_string(i)) | vcenter | hcenter,
+				vtext("GPU" + std::to_string(i)) | vcenter | hcenter | bgcolor(Color::NavyBlue),
 				separatorLight(),
-				gaugeUp(gpu_load_stats[i].usage_percentage / 100.0) | ftxui::color(gradient),
+				gaugeUp(gpu_load_stats[i].usage_percentage / 100.0) | ftxui::color(kGaugeGradient),
 			}) |
 			borderRounded);
 	}
@@ -134,8 +136,9 @@ Element SystemResourcesPanel::Render() {
 		ram_rows[i].push_back(units_column[i]);
 	}
 
+	// This is here in case we want to add padding
 	auto padding = [](Element e) {
-		return hbox({e, text(" ")});
+		return hbox({text(" "), e, text(" ")});
 	};
 
 	Table table(ram_rows);
@@ -156,7 +159,7 @@ Element SystemResourcesPanel::Render() {
 				table.Render(),
 				separatorHeavy(),
 				cpu_load_gauge,
-				separatorHeavy(),
+				separatorLight(),
 				gpu_load_gauges,
 			}),
 		}) | borderRounded,
