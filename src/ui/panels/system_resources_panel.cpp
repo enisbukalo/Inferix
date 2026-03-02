@@ -67,6 +67,24 @@ Element SystemResourcesPanel::BuildCpuGauge(const ProcessorStats &processor_stat
 	return toReturn;
 }
 
+ftxui::Element SystemResourcesPanel::BuildGpuGauges(const std::vector<ProcessorStats> &gpu_load_stats) {
+	if (gpu_load_stats.empty())
+		return ftxui::text("No GPU");
+
+	Elements gauges;
+	for (size_t i = 0; i < gpu_load_stats.size(); ++i) {
+		auto gradient = LinearGradient().Angle(0).Stop(Color::Red1).Stop(Color::Yellow1).Stop(Color::Green1);
+		gauges.push_back(
+			hbox({
+				vtext("GPU " + std::to_string(i)) | vcenter | hcenter,
+				separatorLight(),
+				gaugeUp(gpu_load_stats[i].usage_percentage / 100.0) | ftxui::color(gradient),
+			}) |
+			borderRounded);
+	}
+	return hbox(std::move(gauges));
+}
+
 std::vector<Element> SystemResourcesPanel::BuildHeaderRow(const std::vector<MemoryStats> &gpu_stats) {
 	std::vector<Element> header;
 	header.push_back(text("")); // Empty for label column
@@ -92,12 +110,14 @@ Element SystemResourcesPanel::Render() {
 	auto ramStats = MemoryMonitor::instance().get_stats();
 	auto gpuStats = GpuMonitor::instance().get_stats();
 	auto processorStats = CpuMonitor::instance().get_stats();
+	auto gpuLoadStats = GpuMonitor::instance().get_load_stats();
 
 	auto ram_rows = BuildRamRows(ramStats);
 	auto gpu_rows = BuildGpuRows(gpuStats);
 	auto header_row = BuildHeaderRow(gpuStats);
 	auto units_column = BuildUnitsColumn();
 	auto cpu_load_gauge = BuildCpuGauge(processorStats);
+	auto gpu_load_gauges = BuildGpuGauges(gpuLoadStats);
 
 	// Insert header row at the beginning
 	ram_rows.insert(ram_rows.begin(), header_row);
@@ -136,7 +156,8 @@ Element SystemResourcesPanel::Render() {
 				table.Render(),
 				separatorHeavy(),
 				cpu_load_gauge,
-
+				separatorHeavy(),
+				gpu_load_gauges,
 			}),
 		}) | borderRounded,
 	});
