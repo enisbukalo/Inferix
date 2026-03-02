@@ -1,5 +1,6 @@
 #include "gpu_monitor.h"
 #include "ram_monitor.h"
+#include "server_info_panel.h"
 #include "system_info_panel.h"
 #include "system_monitor_runner.h"
 #include "system_resources_panel.h"
@@ -23,7 +24,7 @@ int main() {
 			hbox({
 				SystemInfoPanel::Render(),
 				filler(),
-				text("Server Status") | hcenter | vcenter | xflex,
+				ServerInfoPanel::Render() | hcenter | vcenter | xflex,
 				filler(),
 				SystemResourcesPanel::Render(),
 			}),
