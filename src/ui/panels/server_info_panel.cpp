@@ -9,15 +9,11 @@ Element ServerInfoPanel::Render() {
 	static int frame = 0;
 	frame++;
 
-	bool connected = (frame / 4) % 2 == 0;
-	Color pulse_color = connected ? (frame % 2 == 0 ? Color::Green : Color::GreenLight) : (frame % 2 == 0 ? Color::Red : Color::RedLight);
+	Color pulse_color = frame < 8 ? Color::Red : Color::GreenLight; // 8 frames at 4fps = 2 seconds
 
-	return vbox({text("Server Status") | bold | hcenter,
-				 separator(),
-				 hbox({
-					 text("Server Status") | bold,
-					 separatorEmpty(),
-					 text("◉") | hcenter | color(pulse_color),
-				 })}) |
-		   borderRounded;
+	return hbox({
+		text("Server Status") | bold,
+		separatorEmpty(),
+		text("◉") | hcenter | color(pulse_color),
+	});
 }

@@ -2,4 +2,10 @@ BasedOnStyle: LLVM
 UseTab: Always
 IndentWidth: 4
 TabWidth: 4
-ColumnLimit: 0
+ColumnLimit: 161
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AllowShortFunctionsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false

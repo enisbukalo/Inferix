@@ -1,5 +1,6 @@
 #include "gpu_monitor.h"
 #include "ram_monitor.h"
+#include "server_info_panel.h"
 #include "system_monitor_runner.h"
 #include "system_resources_panel.h"
 
@@ -18,11 +19,8 @@ int main() {
 	SystemMonitorRunner runner(screen);
 
 	auto container = Renderer([] {
-		return vbox({
-			hbox({
-				SystemResourcesPanel::Render(),
-			}),
-		});
+		return vbox({hbox({SystemResourcesPanel::Render()}), window(text("Filler"), vbox({filler()})),
+					 hbox({text("Some Status Text"), filler(), ServerInfoPanel::Render()}) | borderRounded});
 	});
 
 	screen.Loop(container);

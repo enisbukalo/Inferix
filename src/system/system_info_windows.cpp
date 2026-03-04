@@ -7,14 +7,11 @@ Hardware SystemInfo::get_cpu_info() {
 	std::string model_name;
 
 	HKEY key;
-	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
-					  "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
-					  0, KEY_READ, &key) == ERROR_SUCCESS) {
+	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &key) == ERROR_SUCCESS) {
 
 		char buffer[256];
 		DWORD size = sizeof(buffer);
-		if (RegQueryValueExA(key, "ProcessorNameString", nullptr, nullptr,
-							 reinterpret_cast<LPBYTE>(buffer), &size) == ERROR_SUCCESS) {
+		if (RegQueryValueExA(key, "ProcessorNameString", nullptr, nullptr, reinterpret_cast<LPBYTE>(buffer), &size) == ERROR_SUCCESS) {
 			model_name = buffer;
 		}
 		RegCloseKey(key);

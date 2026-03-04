@@ -76,19 +76,17 @@ ftxui::Element SystemResourcesPanel::BuildGpuGauges(const std::vector<ProcessorS
 
 	Elements gauges;
 	for (size_t i = 0; i < gpu_load_stats.size(); ++i) {
-		gauges.push_back(
-			hbox({
-				vtext("GPU" + std::to_string(i)) | vcenter | hcenter | bgcolor(Color::NavyBlue),
-				separatorLight(),
-				gaugeUp(gpu_load_stats[i].usage_percentage / 100.0) | ftxui::color(kGaugeGradient),
-			}) |
-			borderRounded);
+		gauges.push_back(hbox({
+							 vtext("GPU" + std::to_string(i)) | vcenter | hcenter | bgcolor(Color::NavyBlue),
+							 separatorLight(),
+							 gaugeUp(gpu_load_stats[i].usage_percentage / 100.0) | ftxui::color(kGaugeGradient),
+						 }) |
+						 borderRounded);
 	}
 	return hbox(std::move(gauges));
 }
 
-std::vector<ftxui::Element> SystemResourcesPanel::BuildTotalMemoryColumn(
-	const std::vector<MemoryStats> &gpu_stats, const MemoryStats &ram_stats) {
+std::vector<ftxui::Element> SystemResourcesPanel::BuildTotalMemoryColumn(const std::vector<MemoryStats> &gpu_stats, const MemoryStats &ram_stats) {
 	// Calculate totals
 	uint64_t total_mb = ram_stats.total_mb;
 	uint64_t used_mb = ram_stats.used_mb;
@@ -117,12 +115,7 @@ std::vector<ftxui::Element> SystemResourcesPanel::BuildTotalMemoryColumn(
 	Element gauge = gaugeRight(usage_percentage / 100.0f) | color(kMemoryGradient);
 
 	// Return column as transposed (5 rows, 1 column each)
-	return {
-		text(oss_total.str()),
-		text(oss_used.str()),
-		text(oss_avail.str()),
-		text(oss_pct.str()),
-		gauge};
+	return {text(oss_total.str()), text(oss_used.str()), text(oss_avail.str()), text(oss_pct.str()), gauge};
 }
 
 std::vector<Element> SystemResourcesPanel::BuildHeaderRow(const std::vector<MemoryStats> &gpu_stats) {
@@ -182,9 +175,7 @@ Element SystemResourcesPanel::Render() {
 	}
 
 	// This is here in case we want to add padding
-	auto padding = [](Element e) {
-		return hbox({text(" "), e, text(" ")});
-	};
+	auto padding = [](Element e) { return hbox({text(" "), e, text(" ")}); };
 
 	Table table(ram_rows);
 	table.SelectAll().DecorateCells(padding);
@@ -196,23 +187,21 @@ Element SystemResourcesPanel::Render() {
 	data_rows.DecorateCellsAlternateRow(color(Color::CyanLight), 2, 1);
 	data_rows.DecorateCellsAlternateRow(color(Color::MagentaLight), 2, 0);
 
-	return window(
-		text("System Resources") | bold,
-		hbox({
-			vbox({
-				text("Memory") | bold | hcenter,
-				separatorLight(),
-				table.Render(),
-			}),
-			separatorHeavy(),
-			vbox({
-				text("Load") | hcenter | bold,
-				separatorLight(),
-				hbox({
-					cpu_load_gauge,
-					separatorLight(),
-					gpu_load_gauges,
-				}),
-			}),
-		}));
+	return window(text("System Resources") | bold, hbox({
+													   vbox({
+														   text("Memory") | bold | hcenter,
+														   separatorLight(),
+														   table.Render(),
+													   }),
+													   separatorHeavy(),
+													   vbox({
+														   text("Load") | hcenter | bold,
+														   separatorLight(),
+														   hbox({
+															   cpu_load_gauge,
+															   separatorLight(),
+															   gpu_load_gauges,
+														   }),
+													   }),
+												   }));
 }

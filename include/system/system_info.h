@@ -53,7 +53,9 @@ class SystemInfo {
 	 *
 	 * @return A @c Hardware value whose @c type is @c HardwareType::CPU.
 	 */
-	Hardware get_cpu() const { return cpu_; }
+	Hardware get_cpu() const {
+		return cpu_;
+	}
 
 	/**
 	 * @brief Returns all detected GPU descriptors.
@@ -61,7 +63,9 @@ class SystemInfo {
 	 * @return A vector of @c Hardware values whose @c type is @c HardwareType::GPU.
 	 *         Empty if no GPUs were detected.
 	 */
-	std::vector<Hardware> get_gpus() const { return gpus_; }
+	std::vector<Hardware> get_gpus() const {
+		return gpus_;
+	}
 
 	/**
 	 * @brief Attempts a hardware detection update.

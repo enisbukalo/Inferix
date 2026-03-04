@@ -11,9 +11,7 @@ void MemoryMonitor::update_windows() {
 		new_stats.total_mb = std::round(statex.ullTotalPhys / 1048576.0);
 		new_stats.used_mb = std::round((statex.ullTotalPhys - statex.ullAvailPhys) / 1048576.0);
 		new_stats.available_mb = std::round(statex.ullAvailPhys / 1048576.0);
-		new_stats.usage_percentage = (new_stats.total_mb > 0)
-										 ? (new_stats.used_mb * 100.0 / new_stats.total_mb)
-										 : 0.0;
+		new_stats.usage_percentage = (new_stats.total_mb > 0) ? (new_stats.used_mb * 100.0 / new_stats.total_mb) : 0.0;
 
 		std::lock_guard<std::mutex> lock(stats_mutex_);
 		stats_ = new_stats;
