@@ -187,21 +187,22 @@ Element SystemResourcesPanel::Render() {
 	data_rows.DecorateCellsAlternateRow(color(Color::CyanLight), 2, 1);
 	data_rows.DecorateCellsAlternateRow(color(Color::MagentaLight), 2, 0);
 
-	return window(text("System Resources") | bold, hbox({
-													   vbox({
-														   text("Memory") | bold | hcenter,
-														   separatorLight(),
-														   table.Render(),
-													   }),
-													   separatorHeavy(),
-													   vbox({
-														   text("Load") | hcenter | bold,
-														   separatorLight(),
-														   hbox({
-															   cpu_load_gauge,
-															   separatorLight(),
-															   gpu_load_gauges,
-														   }),
-													   }),
-												   }));
+	return window(text("System Resources") | bold,
+				  hbox({
+					  vbox({
+						  text("Memory") | bold | hcenter,
+						  separatorLight(),
+						  table.Render(),
+					  }),
+					  separatorHeavy(),
+					  vbox({
+						  text("Load") | hcenter | bold,
+						  separatorLight(),
+						  hbox({
+							  cpu_load_gauge,
+							  separatorLight(),
+							  gpu_load_gauges,
+						  }),
+					  }),
+				  }));
 }

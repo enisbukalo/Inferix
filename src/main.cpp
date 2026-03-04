@@ -19,7 +19,8 @@ int main() {
 	SystemMonitorRunner runner(screen);
 
 	auto container = Renderer([] {
-		return vbox({hbox({SystemResourcesPanel::Render()}), window(text("Filler"), vbox({filler()})),
+		return vbox({hbox({SystemResourcesPanel::Render()}),
+					 window(text("Filler") | bold, vbox({filler()})),
 					 hbox({text("Some Status Text"), filler(), ServerInfoPanel::Render()}) | borderRounded});
 	});
 

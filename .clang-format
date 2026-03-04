@@ -9,3 +9,16 @@ AlignConsecutiveDeclarations: false
 AllowShortFunctionsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
+BreakBeforeBraces: Attach
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: true
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+BinPackArguments: false
+BinPackParameters: false
+SpaceBeforeCpp11BracedList: false
+SpacesInParentheses: false
