@@ -19,9 +19,13 @@ int main() {
 	SystemMonitorRunner runner(screen);
 
 	auto container = Renderer([] {
-		return vbox({hbox({SystemResourcesPanel::Render()}),
-					 window(text("Filler") | bold, vbox({filler()})),
-					 hbox({text("Some Status Text"), filler(), ServerInfoPanel::Render()}) | borderRounded});
+		return vbox(
+			{hbox({SystemResourcesPanel::Render()}),
+			 hbox({vbox({window(text("Models") | bold, vbox({}) | flex), window(text("Model Presets") | bold, vbox({}) | flex)}) | flex,
+				   window(text("Load Settings") | bold, vbox({}) | flex),
+				   window(text("Inference Settings") | bold, vbox({}) | flex)}) |
+				 flex,
+			 (hbox({text("Some status text, can be long, can post various stuff here for updates") | flex, ServerInfoPanel::Render()}) | borderRounded)});
 	});
 
 	screen.Loop(container);
