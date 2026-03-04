@@ -196,26 +196,23 @@ Element SystemResourcesPanel::Render() {
 	data_rows.DecorateCellsAlternateRow(color(Color::CyanLight), 2, 1);
 	data_rows.DecorateCellsAlternateRow(color(Color::MagentaLight), 2, 0);
 
-	return vbox({
-			   text("System Resources") | bold | hcenter,
-			   separator(),
-			   hbox({
-				   vbox({
-					   text("Memory") | bold | hcenter,
-					   separatorLight(),
-					   table.Render(),
-				   }),
-				   separatorHeavy(),
-				   vbox({
-					   text("Load") | hcenter | bold,
-					   separatorLight(),
-					   hbox({
-						   cpu_load_gauge,
-						   separatorLight(),
-						   gpu_load_gauges,
-					   }),
-				   }),
-			   }),
-		   }) |
-		   borderRounded;
+	return window(
+		text("System Resources") | bold,
+		hbox({
+			vbox({
+				text("Memory") | bold | hcenter,
+				separatorLight(),
+				table.Render(),
+			}),
+			separatorHeavy(),
+			vbox({
+				text("Load") | hcenter | bold,
+				separatorLight(),
+				hbox({
+					cpu_load_gauge,
+					separatorLight(),
+					gpu_load_gauges,
+				}),
+			}),
+		}));
 }
