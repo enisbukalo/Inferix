@@ -1,6 +1,6 @@
 #include "gpu_monitor.h"
 #include "ram_monitor.h"
-#include "system_info_panel.h"
+#include "server_info_panel.h"
 #include "system_monitor_runner.h"
 #include "system_resources_panel.h"
 
@@ -19,15 +19,11 @@ int main() {
 	SystemMonitorRunner runner(screen);
 
 	auto container = Renderer([] {
-		return vbox({
-			hbox({
-				SystemInfoPanel::Render(),
-				filler(),
-				text("Server Status") | hcenter | vcenter | xflex,
-				filler(),
-				SystemResourcesPanel::Render(),
-			}),
-		});
+		return vbox({hbox({SystemResourcesPanel::Render()}),
+					 hbox({vbox({window(text("Models") | bold, vbox({}) | flex), window(text("Model Presets") | bold, vbox({}) | flex)}) | flex,
+						   window(text("Model Chat"), vbox({}) | flex),
+						   vbox({window(text("Load Settings") | bold, vbox({}) | flex), window(text("Inference Settings") | bold, vbox({}) | flex)}) | flex}) |
+						 flex});
 	});
 
 	screen.Loop(container);

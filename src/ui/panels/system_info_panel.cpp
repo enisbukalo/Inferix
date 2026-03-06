@@ -12,9 +12,7 @@ Element SystemInfoPanel::Render() {
 	auto cpu = SystemInfo::instance().get_cpu();
 	auto gpus = SystemInfo::instance().get_gpus();
 
-	auto padding = [](Element e) {
-		return hbox({e, text(" ")});
-	};
+	auto padding = [](Element e) { return hbox({e, text(" ")}); };
 
 	std::vector<std::vector<std::string>> data = {
 		{"CPU", cpu.make, cpu.model},

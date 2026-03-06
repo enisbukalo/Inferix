@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <mutex>
 #include <thread>
 
@@ -54,6 +55,8 @@ class SystemMonitorRunner {
 
   private:
 	void run();
+
+	const uint8_t kThreadWaitTimeMs = 250;
 
 	ftxui::ScreenInteractive &screen_;
 	std::atomic<bool> stop_flag_{false};

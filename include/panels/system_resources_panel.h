@@ -75,4 +75,16 @@ class SystemResourcesPanel {
 	 * @return A vector of @c ftxui::Element unit-label cells.
 	 */
 	static std::vector<ftxui::Element> BuildUnitsColumn();
+
+	/**
+	 * @brief Builds the total memory column (RAM + all GPUs aggregated).
+	 *
+	 * Aggregates system RAM and all GPU memory into a single column showing
+	 * combined totals, usage, and available memory.
+	 *
+	 * @param gpu_stats A vector of GPU MemoryStats snapshots.
+	 * @param ram_stats The current MemoryStats snapshot for system RAM.
+	 * @return A 2-D vector of ftxui::Element rows (5 rows: Total, Used, Avail, Usage, Gauge).
+	 */
+	static std::vector<ftxui::Element> BuildTotalMemoryColumn(const std::vector<MemoryStats> &gpu_stats, const MemoryStats &ram_stats);
 };
