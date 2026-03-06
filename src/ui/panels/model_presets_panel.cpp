@@ -53,8 +53,6 @@ Element ModelPresetsPanel::Render()
 
 	return window(text("Model Presets") | bold,
 				  vbox({
-					  separatorLight(),
 					  table.Render(),
-					  separatorLight(),
 				  }));
 }

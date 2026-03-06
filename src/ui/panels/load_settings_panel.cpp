@@ -53,8 +53,6 @@ Element LoadSettingsPanel::Render()
 
 	return window(text("Load Settings") | bold,
 				  vbox({
-					  separatorLight(),
 					  table.Render(),
-					  separatorLight(),
 				  }));
 }

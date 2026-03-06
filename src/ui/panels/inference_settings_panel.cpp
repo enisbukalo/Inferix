@@ -25,8 +25,6 @@ Element InferenceSettingsPanel::Render()
 		gaugeRight(0.7f) | color(Color::GreenLight),
 	}));
 
-	settings.push_back(separatorLight());
-
 	// Top_p setting (0.0 - 1.0)
 	settings.push_back(hbox({
 		text("Top P") | bold,
@@ -36,16 +34,12 @@ Element InferenceSettingsPanel::Render()
 		gaugeRight(0.9f) | color(Color::GreenLight),
 	}));
 
-	settings.push_back(separatorLight());
-
 	// Max tokens setting
 	settings.push_back(hbox({
 		text("Max Tokens") | bold,
 		separatorEmpty(),
 		text("2048") | color(Color::CyanLight),
 	}));
-
-	settings.push_back(separatorLight());
 
 	// Repeat penalty setting
 	settings.push_back(hbox({
@@ -54,16 +48,12 @@ Element InferenceSettingsPanel::Render()
 		text("1.1") | color(Color::MagentaLight),
 	}));
 
-	settings.push_back(separatorLight());
-
 	// Stop sequence setting
 	settings.push_back(hbox({
 		text("Stop Sequences") | bold,
 		separatorEmpty(),
 		text("") | color(Color::CyanLight),
 	}));
-
-	settings.push_back(separatorLight());
 
 	// Logits processor
 	settings.push_back(hbox({
@@ -74,8 +64,6 @@ Element InferenceSettingsPanel::Render()
 
 	return window(text("Inference Settings") | bold,
 				  vbox({
-					  separatorLight(),
 					  flex(vbox(settings)),
-					  separatorLight(),
 				  }));
 }

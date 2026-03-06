@@ -37,7 +37,6 @@ Element ModelsPanel::Render()
 
 	return window(text("Models") | bold,
 				  vbox({
-					  separatorLight(),
 					  flex(vbox(model_entries)),
 				  }));
 }
