@@ -13,12 +13,12 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
-# Collect all subdirectories under include/ as include paths
+# Collect all subdirectories under include/ for additional include paths
 file(GLOB INCLUDE_SUBDIRS LIST_DIRECTORIES true ${CMAKE_SOURCE_DIR}/include/*)
 
 # httplib header-only interface library
 add_library(httplib INTERFACE)
-target_include_directories(httplib INTERFACE ${INCLUDE_SUBDIRS})
+target_include_directories(httplib INTERFACE ${CMAKE_SOURCE_DIR}/include ${INCLUDE_SUBDIRS})
 
 # Collect all sources using glob
 file(GLOB_RECURSE ALL_SOURCES

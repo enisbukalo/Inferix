@@ -24,7 +24,7 @@ import sys, json
 try:
     data = json.load(sys.stdin)
     for m in data.get('data', []):
-        if m.get('state') == 'loaded' and m.get('type') == 'llm':
+        if m.get('state') == 'loaded':
             print(m.get('id', ''))
 except Exception as e:
     sys.stderr.write(f'Error parsing /api/v0/models: {e}\n')
@@ -40,10 +40,9 @@ import sys, json
 try:
     data = json.load(sys.stdin)
     for m in data.get('models', []):
-        if m.get('type') == 'llm':
-            key = m.get('key', '')
-            display = m.get('display_name') or key
-            print(f'{key}\t{display}')
+        key = m.get('key', '')
+        display = m.get('display_name') or key
+        print(f'{key}\t{display}')
 except Exception as e:
     sys.stderr.write(f'Error parsing /api/v1/models: {e}\n')
 "
@@ -125,4 +124,4 @@ if [[ ! "$confirm" =~ ^[Yy] ]]; then
   echo "Operation cancelled."
   exit 0
 fi
-claude --model "$selected_model" .
+claude --model "$selected_model" 
