@@ -11,7 +11,8 @@
 #include <fstream>
 #include <sstream>
 
-void MemoryMonitor::update_linux() {
+void MemoryMonitor::update_linux()
+{
 	std::ifstream file("/proc/meminfo");
 
 	uint64_t total = 0, available = 0;
@@ -38,12 +39,14 @@ void MemoryMonitor::update_linux() {
 	new_stats.available_mb = available;
 	new_stats.used_mb = total - available;
 	// Calculate usage percentage
-	new_stats.usage_percentage = total > 0 ? (new_stats.used_mb * 100.0 / total) : 0.0;
+	new_stats.usage_percentage =
+		total > 0 ? (new_stats.used_mb * 100.0 / total) : 0.0;
 
 	std::lock_guard<std::mutex> lock(stats_mutex_);
 	stats_ = new_stats;
 }
 
-void MemoryMonitor::update() {
+void MemoryMonitor::update()
+{
 	update_linux();
 }

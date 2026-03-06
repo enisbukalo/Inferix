@@ -11,7 +11,8 @@
 #include <sstream>
 #include <thread>
 
-void CpuMonitor::update_linux() {
+void CpuMonitor::update_linux()
+{
 	std::ifstream file("/proc/stat");
 
 	long long prev_idle = 0, prev_total = 0;
@@ -23,14 +24,17 @@ void CpuMonitor::update_linux() {
 		std::string cpu;
 		iss >> cpu;
 
-		// Parse CPU time fields: user, nice, system, idle, iowait, irq, softirq, steal
+		// Parse CPU time fields: user, nice, system, idle, iowait, irq, softirq,
+		// steal
 		long long user, nice, system, idle, iowait, irq, softirq, steal;
-		iss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal;
+		iss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >>
+			steal;
 
 		// Idle time includes both idle and iowait states
 		prev_idle = idle + iowait;
 		// Total time is sum of all CPU time fields
-		prev_total = user + nice + system + idle + iowait + irq + softirq + steal;
+		prev_total =
+			user + nice + system + idle + iowait + irq + softirq + steal;
 	}
 
 	// Wait for a short interval to measure CPU activity
@@ -49,10 +53,12 @@ void CpuMonitor::update_linux() {
 		iss >> cpu;
 
 		long long user, nice, system, idle, iowait, irq, softirq, steal;
-		iss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal;
+		iss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >>
+			steal;
 
 		curr_idle = idle + iowait;
-		curr_total = user + nice + system + idle + iowait + irq + softirq + steal;
+		curr_total =
+			user + nice + system + idle + iowait + irq + softirq + steal;
 	}
 
 	// Calculate the change in idle and total time during the interval

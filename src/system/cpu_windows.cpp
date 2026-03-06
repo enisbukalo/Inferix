@@ -10,7 +10,8 @@
 #include <thread>
 #include <windows.h>
 
-void CpuMonitor::update_windows() {
+void CpuMonitor::update_windows()
+{
 	// Take first snapshot of system times
 	FILETIME prev_idle_time, prev_kernel_time, prev_user_time;
 	FILETIME curr_idle_time, curr_kernel_time, curr_user_time;
@@ -56,7 +57,8 @@ void CpuMonitor::update_windows() {
 	if (total_delta > 0) {
 		ProcessorStats new_stats;
 		// CPU usage = 1 - (idle_time / total_time), expressed as percentage
-		new_stats.usage_percentage = (1.0 - (double)idle_delta / total_delta) * 100.0;
+		new_stats.usage_percentage =
+			(1.0 - (double)idle_delta / total_delta) * 100.0;
 
 		std::lock_guard<std::mutex> lock(stats_mutex_);
 		stats_ = new_stats;

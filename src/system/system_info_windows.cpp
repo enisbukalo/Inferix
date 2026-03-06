@@ -11,17 +11,27 @@
 #include <string>
 #include <windows.h>
 
-Hardware SystemInfo::get_cpu_info() {
+Hardware SystemInfo::get_cpu_info()
+{
 	std::string model_name;
 
 	// Open Windows Registry key for CPU information
 	HKEY key;
-	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &key) == ERROR_SUCCESS) {
+	if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
+					  "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0",
+					  0,
+					  KEY_READ,
+					  &key) == ERROR_SUCCESS) {
 
 		char buffer[256];
 		DWORD size = sizeof(buffer);
 		// Read ProcessorNameString value from registry
-		if (RegQueryValueExA(key, "ProcessorNameString", nullptr, nullptr, reinterpret_cast<LPBYTE>(buffer), &size) == ERROR_SUCCESS) {
+		if (RegQueryValueExA(key,
+							 "ProcessorNameString",
+							 nullptr,
+							 nullptr,
+							 reinterpret_cast<LPBYTE>(buffer),
+							 &size) == ERROR_SUCCESS) {
 			model_name = buffer;
 		}
 		RegCloseKey(key);
@@ -36,14 +46,16 @@ Hardware SystemInfo::get_cpu_info() {
 		model = (space != std::string::npos) ? model_name.substr(space + 1) : "";
 	}
 
-	return {HardwareType::CPU, make, model};
+	return { HardwareType::CPU, make, model };
 }
 
-void SystemInfo::update_windows() {
+void SystemInfo::update_windows()
+{
 	cpu_ = get_cpu_info();
 	gpus_ = SystemInfoUtils::get_gpu_info();
 }
 
-void SystemInfo::update() {
+void SystemInfo::update()
+{
 	update_windows();
 }

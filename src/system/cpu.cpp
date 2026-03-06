@@ -9,7 +9,8 @@
 
 #include "cpu_monitor.h"
 
-void CpuMonitor::update() {
+void CpuMonitor::update()
+{
 #ifdef _WIN32
 	update_windows();
 #elif __linux__

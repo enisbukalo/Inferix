@@ -12,7 +12,8 @@
 
 using namespace ftxui;
 
-Element InferenceSettingsPanel::Render() {
+Element InferenceSettingsPanel::Render()
+{
 	Elements settings;
 
 	// Temperature setting (0.0 - 1.0)

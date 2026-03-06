@@ -12,7 +12,8 @@
 
 using namespace ftxui;
 
-Element ModelsPanel::Render() {
+Element ModelsPanel::Render()
+{
 	Elements model_entries;
 
 	// Placeholder model entries - structure ready for future data

@@ -13,7 +13,8 @@
 
 using namespace ftxui;
 
-Element ModelPresetsPanel::Render() {
+Element ModelPresetsPanel::Render()
+{
 	// Header row
 	std::vector<Element> header = {
 		text("Preset Name") | bold,
@@ -23,16 +24,22 @@ Element ModelPresetsPanel::Render() {
 
 	// Data rows
 	std::vector<std::vector<Element>> rows = {
-		{text("Fast") | color(Color::CyanLight), text("llama-2-7b") | color(Color::CyanLight), text("[ ]") | color(Color::Black)},
-		{text("Balanced") | color(Color::MagentaLight), text("mistral-7b") | color(Color::MagentaLight), text("[ ]") | color(Color::Black)},
-		{text("Quality") | color(Color::CyanLight), text("llama-2-13b") | color(Color::CyanLight), text("[ ]") | color(Color::Black)},
+		{ text("Fast") | color(Color::CyanLight),
+		  text("llama-2-7b") | color(Color::CyanLight),
+		  text("[ ]") | color(Color::Black) },
+		{ text("Balanced") | color(Color::MagentaLight),
+		  text("mistral-7b") | color(Color::MagentaLight),
+		  text("[ ]") | color(Color::Black) },
+		{ text("Quality") | color(Color::CyanLight),
+		  text("llama-2-13b") | color(Color::CyanLight),
+		  text("[ ]") | color(Color::Black) },
 	};
 
 	// Insert header at beginning
-	rows.insert(rows.begin(), {header});
+	rows.insert(rows.begin(), { header });
 
 	Table table(rows);
-	auto padding = [](Element e) { return hbox({e, text(" ")}); };
+	auto padding = [](Element e) { return hbox({ e, text(" ") }); };
 	table.SelectAll().DecorateCells(padding);
 
 	// Decorate header row

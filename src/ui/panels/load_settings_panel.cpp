@@ -13,7 +13,8 @@
 
 using namespace ftxui;
 
-Element LoadSettingsPanel::Render() {
+Element LoadSettingsPanel::Render()
+{
 	// Header row
 	std::vector<Element> header = {
 		text("Setting") | bold,
@@ -22,18 +23,23 @@ Element LoadSettingsPanel::Render() {
 
 	// Data rows
 	std::vector<std::vector<Element>> rows = {
-		{text("Model Path") | color(Color::CyanLight), text("/models/") | color(Color::CyanLight)},
-		{text("Format") | color(Color::MagentaLight), text("GGUF") | color(Color::MagentaLight)},
-		{text("Cache Size") | color(Color::CyanLight), text("2048 MB") | color(Color::CyanLight)},
-		{text("Auto-Load") | color(Color::MagentaLight), text("Enabled") | color(Color::MagentaLight)},
-		{text("Backend") | color(Color::CyanLight), text("CPU+GPU") | color(Color::CyanLight)},
+		{ text("Model Path") | color(Color::CyanLight),
+		  text("/models/") | color(Color::CyanLight) },
+		{ text("Format") | color(Color::MagentaLight),
+		  text("GGUF") | color(Color::MagentaLight) },
+		{ text("Cache Size") | color(Color::CyanLight),
+		  text("2048 MB") | color(Color::CyanLight) },
+		{ text("Auto-Load") | color(Color::MagentaLight),
+		  text("Enabled") | color(Color::MagentaLight) },
+		{ text("Backend") | color(Color::CyanLight),
+		  text("CPU+GPU") | color(Color::CyanLight) },
 	};
 
 	// Insert header at beginning
-	rows.insert(rows.begin(), {header});
+	rows.insert(rows.begin(), { header });
 
 	Table table(rows);
-	auto padding = [](Element e) { return hbox({e, text(" ")}); };
+	auto padding = [](Element e) { return hbox({ e, text(" ") }); };
 	table.SelectAll().DecorateCells(padding);
 
 	// Decorate header row

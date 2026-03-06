@@ -10,7 +10,8 @@
 #include <cmath>
 #include <windows.h>
 
-void MemoryMonitor::update_windows() {
+void MemoryMonitor::update_windows()
+{
 	MEMORYSTATUSEX statex{};
 	statex.dwLength = sizeof(statex);
 
@@ -19,16 +20,21 @@ void MemoryMonitor::update_windows() {
 		MemoryStats new_stats;
 		// Convert bytes to MiB (1 MiB = 1048576 bytes)
 		new_stats.total_mb = std::round(statex.ullTotalPhys / 1048576.0);
-		new_stats.used_mb = std::round((statex.ullTotalPhys - statex.ullAvailPhys) / 1048576.0);
+		new_stats.used_mb =
+			std::round((statex.ullTotalPhys - statex.ullAvailPhys) / 1048576.0);
 		new_stats.available_mb = std::round(statex.ullAvailPhys / 1048576.0);
 		// Calculate usage percentage
-		new_stats.usage_percentage = (new_stats.total_mb > 0) ? (new_stats.used_mb * 100.0 / new_stats.total_mb) : 0.0;
+		new_stats.usage_percentage =
+			(new_stats.total_mb > 0)
+				? (new_stats.used_mb * 100.0 / new_stats.total_mb)
+				: 0.0;
 
 		std::lock_guard<std::mutex> lock(stats_mutex_);
 		stats_ = new_stats;
 	}
 }
 
-void MemoryMonitor::update() {
+void MemoryMonitor::update()
+{
 	update_windows();
 }

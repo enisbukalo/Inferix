@@ -20,12 +20,15 @@
 #define PCLOSE pclose
 #endif
 
-void GpuMonitor::update() {
+void GpuMonitor::update()
+{
 	// Execute nvidia-smi with CSV output format for GPU statistics
 	// Query: index, memory.total, memory.used, memory.free, utilization.gpu
-	FILE *pipe = POPEN("nvidia-smi --query-gpu=index,memory.total,memory.used,memory.free,utilization.gpu"
-					   " --format=csv,noheader,nounits",
-					   "r");
+	FILE *pipe = POPEN(
+		"nvidia-smi "
+		"--query-gpu=index,memory.total,memory.used,memory.free,utilization.gpu"
+		" --format=csv,noheader,nounits",
+		"r");
 	if (!pipe)
 		return;
 
@@ -38,7 +41,13 @@ void GpuMonitor::update() {
 		int index, util_pct;
 		uint64_t total, used, free;
 		// Parse: index, total_mb, used_mb, free_mb, utilization_pct
-		if (std::sscanf(buffer, "%d, %" SCNu64 ", %" SCNu64 ", %" SCNu64 ", %d", &index, &total, &used, &free, &util_pct) == 5) {
+		if (std::sscanf(buffer,
+						"%d, %" SCNu64 ", %" SCNu64 ", %" SCNu64 ", %d",
+						&index,
+						&total,
+						&used,
+						&free,
+						&util_pct) == 5) {
 			MemoryStats s;
 			s.id = index;
 			s.total_mb = total;
@@ -62,12 +71,14 @@ void GpuMonitor::update() {
 	load_stats_ = std::move(new_load_stats);
 }
 
-std::vector<MemoryStats> GpuMonitor::get_stats() const {
+std::vector<MemoryStats> GpuMonitor::get_stats() const
+{
 	std::lock_guard<std::mutex> lock(stats_mutex_);
 	return stats_;
 }
 
-std::vector<ProcessorStats> GpuMonitor::get_load_stats() const {
+std::vector<ProcessorStats> GpuMonitor::get_load_stats() const
+{
 	std::lock_guard<std::mutex> lock(stats_mutex_);
 	return load_stats_;
 }

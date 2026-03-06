@@ -16,7 +16,8 @@
  *
  * @return 0 on successful execution.
  */
-int main() {
+int main()
+{
 	App::Run();
 	return 0;
 }

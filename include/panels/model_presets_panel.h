@@ -9,7 +9,8 @@
  * associated model, and quick-select capability structure. Follows the
  * ServerInfoPanel pattern with table formatting.
  */
-class ModelPresetsPanel {
+class ModelPresetsPanel
+{
   public:
 	/**
 	 * @brief Builds and returns an FTXUI element showing model presets.

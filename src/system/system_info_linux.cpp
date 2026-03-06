@@ -11,7 +11,8 @@
 #include <fstream>
 #include <string>
 
-Hardware SystemInfo::get_cpu_info() {
+Hardware SystemInfo::get_cpu_info()
+{
 	std::ifstream file("/proc/cpuinfo");
 
 	std::string model_name;
@@ -20,7 +21,8 @@ Hardware SystemInfo::get_cpu_info() {
 	auto trim = [](const std::string &s) {
 		auto start = s.find_first_not_of(" \t");
 		auto end = s.find_last_not_of(" \t");
-		return (start == std::string::npos) ? "" : s.substr(start, end - start + 1);
+		return (start == std::string::npos) ? ""
+											: s.substr(start, end - start + 1);
 	};
 
 	// Parse /proc/cpuinfo line by line
@@ -48,14 +50,16 @@ Hardware SystemInfo::get_cpu_info() {
 		model = (space != std::string::npos) ? model_name.substr(space + 1) : "";
 	}
 
-	return {HardwareType::CPU, make, model};
+	return { HardwareType::CPU, make, model };
 }
 
-void SystemInfo::update_linux() {
+void SystemInfo::update_linux()
+{
 	cpu_ = get_cpu_info();
 	gpus_ = SystemInfoUtils::get_gpu_info();
 }
 
-void SystemInfo::update() {
+void SystemInfo::update()
+{
 	update_linux();
 }

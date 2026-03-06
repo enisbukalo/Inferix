@@ -9,7 +9,8 @@
  * temperature, top_p, max_tokens, and other runtime options. Uses
  * key-value layout with visual indicators where appropriate.
  */
-class InferenceSettingsPanel {
+class InferenceSettingsPanel
+{
   public:
 	/**
 	 * @brief Builds and returns an FTXUI element showing inference settings.

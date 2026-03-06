@@ -9,7 +9,8 @@
  * and cache configuration options. Follows the SystemInfoPanel pattern
  * using table layout for keyed settings display.
  */
-class LoadSettingsPanel {
+class LoadSettingsPanel
+{
   public:
 	/**
 	 * @brief Builds and returns an FTXUI element showing load settings.

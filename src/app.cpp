@@ -19,18 +19,45 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
 
+#include <string>
+#include <vector>
+
 using namespace ftxui;
 
-void App::Run() {
+void App::Run()
+{
 	auto screen = ScreenInteractive::Fullscreen();
 	SystemMonitorRunner runner(screen);
 
-	auto container = Renderer([] {
-		return vbox({hbox({SystemResourcesPanel::Render()}),
-					 hbox({vbox({ModelsPanel::Render(), ModelPresetsPanel::Render()}) | flex,
-						   vbox({LoadSettingsPanel::Render(), InferenceSettingsPanel::Render()}) | flex}) |
-						 flex});
+	std::vector<std::string> tab_values{ "Settings", "OpenCode" };
+	int selected_tab = 0;
+	auto tab_toggle = Toggle(&tab_values, &selected_tab);
+
+	auto settings_content = Renderer([] {
+		return hbox({ vbox({ ModelsPanel::Render(),
+							 ModelPresetsPanel::Render() }) |
+						  flex,
+					  vbox({ LoadSettingsPanel::Render(),
+							 InferenceSettingsPanel::Render() }) |
+						  flex }) |
+			   flex;
 	});
 
+	auto opencode_content = Renderer(
+		[] { return window(text("OpenCode") | bold, text("")) | flex; });
+
+	auto tab_container =
+		Container::Tab({ settings_content, opencode_content }, &selected_tab);
+
+	auto interactive =
+		Container::Vertical({ tab_toggle, tab_container }) | borderRounded;
+
+	auto container = Renderer(interactive, [&] {
+		return vbox({
+			SystemResourcesPanel::Render(),
+			separatorHeavy(),
+			interactive->Render(),
+		});
+	});
 	screen.Loop(container);
 }
