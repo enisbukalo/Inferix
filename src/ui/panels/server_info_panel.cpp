@@ -1,3 +1,11 @@
+/**
+ * @file server_info_panel.cpp
+ * @brief Server status panel implementation.
+ *
+ * Implements an animated status indicator that pulses between colors
+ * to show server connection state.
+ */
+
 #include "server_info_panel.h"
 
 #include <ftxui/dom/elements.hpp>

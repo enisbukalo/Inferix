@@ -1,3 +1,11 @@
+/**
+ * @file models_panel.cpp
+ * @brief Models panel implementation.
+ *
+ * Implements a panel that displays a list of available AI/ML models
+ * for inference with placeholder content.
+ */
+
 #include "models_panel.h"
 
 #include <ftxui/dom/elements.hpp>

@@ -1,3 +1,11 @@
+/**
+ * @file system_monitor_runner.cpp
+ * @brief Background monitoring thread implementation.
+ *
+ * Implements the polling thread that periodically updates all system
+ * monitors (CPU, GPU, RAM) and triggers UI redraws via FTXUI events.
+ */
+
 #include "system_monitor_runner.h"
 #include "cpu_monitor.h"
 #include "gpu_monitor.h"

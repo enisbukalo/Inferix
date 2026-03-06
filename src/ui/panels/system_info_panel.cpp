@@ -1,3 +1,11 @@
+/**
+ * @file system_info_panel.cpp
+ * @brief System information panel implementation.
+ *
+ * Implements a panel that displays detected CPU and GPU hardware
+ * information in a table format.
+ */
+
 #include "system_info_panel.h"
 #include "system_info.h"
 

@@ -1,3 +1,12 @@
+/**
+ * @file cpu.cpp
+ * @brief CPU monitor platform dispatcher.
+ *
+ * Provides the platform-dispatched update() method that routes to
+ * the appropriate Linux or Windows implementation based on compile-time
+ * preprocessor definitions.
+ */
+
 #include "cpu_monitor.h"
 
 void CpuMonitor::update() {

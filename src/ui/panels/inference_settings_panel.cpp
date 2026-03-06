@@ -1,3 +1,11 @@
+/**
+ * @file inference_settings_panel.cpp
+ * @brief Inference settings panel implementation.
+ *
+ * Implements a panel that displays runtime inference parameters
+ * such as temperature, top_p, max_tokens, and other model settings.
+ */
+
 #include "inference_settings_panel.h"
 
 #include <ftxui/dom/elements.hpp>
@@ -51,7 +59,7 @@ Element InferenceSettingsPanel::Render() {
 	settings.push_back(hbox({
 		text("Stop Sequences") | bold,
 		separatorEmpty(),
-		text("<|endoftext|>") | color(Color::CyanLight),
+		text("") | color(Color::CyanLight),
 	}));
 
 	settings.push_back(separatorLight());

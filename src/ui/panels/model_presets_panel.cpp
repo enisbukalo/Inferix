@@ -1,3 +1,11 @@
+/**
+ * @file model_presets_panel.cpp
+ * @brief Model presets panel implementation.
+ *
+ * Implements a panel that displays preset configurations for AI models
+ * in a table format with alternating row colors.
+ */
+
 #include "model_presets_panel.h"
 
 #include <ftxui/dom/elements.hpp>

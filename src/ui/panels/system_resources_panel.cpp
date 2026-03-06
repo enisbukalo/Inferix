@@ -1,3 +1,11 @@
+/**
+ * @file system_resources_panel.cpp
+ * @brief System resources panel implementation.
+ *
+ * Implements the main system monitoring panel that displays CPU/GPU load
+ * gauges and a comprehensive memory usage table for RAM and all GPUs.
+ */
+
 #include "system_resources_panel.h"
 #include "cpu_monitor.h"
 #include "gpu_monitor.h"

@@ -1,3 +1,11 @@
+/**
+ * @file load_settings_panel.cpp
+ * @brief Load settings panel implementation.
+ *
+ * Implements a panel that displays model loading configuration settings
+ * in a table format with alternating row colors.
+ */
+
 #include "load_settings_panel.h"
 
 #include <ftxui/dom/elements.hpp>
