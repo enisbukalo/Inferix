@@ -34,30 +34,41 @@ void App::Run()
 	auto tab_toggle = Toggle(&tab_values, &selected_tab);
 
 	auto settings_content = Renderer([] {
-		return hbox({ vbox({ ModelsPanel::Render(),
-							 ModelPresetsPanel::Render() }) |
-						  flex,
-					  vbox({ LoadSettingsPanel::Render(),
-							 InferenceSettingsPanel::Render() }) |
-						  flex }) |
+		return window(text(""),
+					  hbox({ separatorEmpty(),
+							 vbox({ ModelsPanel::Render(),
+									ModelPresetsPanel::Render() }) |
+								 flex,
+							 separatorEmpty(),
+							 vbox({ LoadSettingsPanel::Render(),
+									InferenceSettingsPanel::Render() }) |
+								 flex,
+							 separatorEmpty() })) |
 			   flex;
 	});
 
-	auto opencode_content = Renderer(
-		[] { return window(text("OpenCode") | bold, text("")) | flex; });
+	auto server_content = Renderer([] {
+		return hbox({ text("Some really long status about the server probably "
+						   "here."),
+					  filler(),
+					  ServerInfoPanel::Render() });
+	});
+
+	auto opencode_content =
+		Renderer([] { return window(text("") | bold, text("")) | flex; });
 
 	auto tab_container =
 		Container::Tab({ settings_content, opencode_content }, &selected_tab);
 
-	auto interactive =
-		Container::Vertical({ tab_toggle, tab_container }) | borderRounded;
+	auto interactive = Container::Vertical({ tab_toggle, tab_container }) |
+					   borderRounded | flex;
 
 	auto container = Renderer(interactive, [&] {
-		return vbox({
-			SystemResourcesPanel::Render(),
-			separatorHeavy(),
-			interactive->Render(),
-		});
+		return vbox({ SystemResourcesPanel::Render(),
+					  separatorHeavy(),
+					  interactive->Render(),
+					  server_content->Render() }) |
+			   flex;
 	});
 	screen.Loop(container);
 }

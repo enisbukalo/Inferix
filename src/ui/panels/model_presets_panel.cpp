@@ -24,14 +24,12 @@ Element ModelPresetsPanel::Render()
 
 	// Data rows
 	std::vector<std::vector<Element>> rows = {
-		{ text("Fast") | color(Color::CyanLight),
-		  text("llama-2-7b") | color(Color::CyanLight),
+		{ text("Fast"), text("llama-2-7b"), text("[ ]") | color(Color::Black) },
+		{ text("Balanced"),
+		  text("mistral-7b"),
 		  text("[ ]") | color(Color::Black) },
-		{ text("Balanced") | color(Color::MagentaLight),
-		  text("mistral-7b") | color(Color::MagentaLight),
-		  text("[ ]") | color(Color::Black) },
-		{ text("Quality") | color(Color::CyanLight),
-		  text("llama-2-13b") | color(Color::CyanLight),
+		{ text("Quality"),
+		  text("llama-2-13b"),
 		  text("[ ]") | color(Color::Black) },
 	};
 
@@ -48,8 +46,7 @@ Element ModelPresetsPanel::Render()
 
 	// Decorate data rows with alternating colors
 	auto data_rows = table.SelectRows(1, -1);
-	data_rows.DecorateCellsAlternateRow(color(Color::CyanLight), 2, 1);
-	data_rows.DecorateCellsAlternateRow(color(Color::MagentaLight), 2, 0);
+	data_rows.DecorateCells(color(Color::CyanLight));
 
 	return window(text("Model Presets") | bold,
 				  vbox({

@@ -23,16 +23,11 @@ Element LoadSettingsPanel::Render()
 
 	// Data rows
 	std::vector<std::vector<Element>> rows = {
-		{ text("Model Path") | color(Color::CyanLight),
-		  text("/models/") | color(Color::CyanLight) },
-		{ text("Format") | color(Color::MagentaLight),
-		  text("GGUF") | color(Color::MagentaLight) },
-		{ text("Cache Size") | color(Color::CyanLight),
-		  text("2048 MB") | color(Color::CyanLight) },
-		{ text("Auto-Load") | color(Color::MagentaLight),
-		  text("Enabled") | color(Color::MagentaLight) },
-		{ text("Backend") | color(Color::CyanLight),
-		  text("CPU+GPU") | color(Color::CyanLight) },
+		{ text("Model Path"), text("/models/") },
+		{ text("Format"), text("GGUF") },
+		{ text("Cache Size"), text("2048 MB") },
+		{ text("Auto-Load"), text("Enabled") },
+		{ text("Backend"), text("CPU+GPU") },
 	};
 
 	// Insert header at beginning
@@ -48,8 +43,7 @@ Element LoadSettingsPanel::Render()
 
 	// Decorate data rows with alternating colors
 	auto data_rows = table.SelectRows(1, -1);
-	data_rows.DecorateCellsAlternateRow(color(Color::CyanLight), 2, 1);
-	data_rows.DecorateCellsAlternateRow(color(Color::MagentaLight), 2, 0);
+	data_rows.DecorateCells(color(Color::MagentaLight));
 
 	return window(text("Load Settings") | bold,
 				  vbox({
