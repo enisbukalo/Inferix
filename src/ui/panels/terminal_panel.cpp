@@ -310,6 +310,11 @@ bool TerminalPanel::IsCapturing() const
 	return capturing_.load();
 }
 
+void TerminalPanel::SetCapturing(bool value)
+{
+	capturing_.store(value);
+}
+
 bool TerminalPanel::HandleEvent(Event event)
 {
 	if (!spawned_.load() || pty_dead_.load())

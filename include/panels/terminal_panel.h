@@ -41,6 +41,7 @@ class TerminalPanel
 	bool IsSpawned() const;
 	bool WantsEvent(ftxui::Event event) const;
 	bool IsCapturing() const;
+	void SetCapturing(bool value);
 
 	bool HandleEvent(ftxui::Event event);
 

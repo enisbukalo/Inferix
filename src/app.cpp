@@ -97,8 +97,7 @@ void App::Run()
 		dynamic_terminals.push_back({ std::move(panel), idx });
 	}
 
-	auto interactive = Container::Vertical({ tab_toggle, tab_container }) |
-					   borderRounded | flex;
+	auto interactive = Container::Vertical({ tab_toggle, tab_container }) | flex;
 
 	// Spawn all terminals eagerly so they're ready when the user switches tabs.
 	terminal_panel.Spawn();
@@ -106,10 +105,40 @@ void App::Run()
 		dt.panel->Spawn();
 	}
 
+	int prev_tab = selected_tab;
+
 	auto container = Renderer(interactive, [&] {
+		// Auto-capture when switching to a terminal tab.
+		if (selected_tab != prev_tab) {
+			prev_tab = selected_tab;
+			if (selected_tab == 2) {
+				terminal_panel.SetCapturing(true);
+			}
+			for (auto &dt : dynamic_terminals) {
+				if (selected_tab == dt.tab_index) {
+					dt.panel->SetCapturing(true);
+				}
+			}
+		}
+
+		// Check if any active terminal tab is capturing input.
+		bool any_capturing = false;
+		if (selected_tab == 2 && terminal_panel.IsCapturing()) {
+			any_capturing = true;
+		}
+		for (auto &dt : dynamic_terminals) {
+			if (selected_tab == dt.tab_index && dt.panel->IsCapturing()) {
+				any_capturing = true;
+			}
+		}
+
+		auto panel = interactive->Render() | borderRounded;
+		if (any_capturing)
+			panel = panel | color(Color::LightGreen);
+
 		return vbox({ SystemResourcesPanel::Render(),
 					  separatorCharacter("*") | bold | color(Color::Orange3),
-					  interactive->Render(),
+					  panel,
 					  server_content->Render() }) |
 			   flex;
 	});
