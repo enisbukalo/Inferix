@@ -13,12 +13,21 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
-# Collect all subdirectories under include/ as include paths
-file(GLOB INCLUDE_SUBDIRS LIST_DIRECTORIES true ${CMAKE_SOURCE_DIR}/include/*)
+# libvterm third-party library
+add_subdirectory(third_party/libvterm-0.3.3)
+
+# Collect only subdirectories under include/ (not files)
+file(GLOB INCLUDE_SUBDIRS ${CMAKE_SOURCE_DIR}/include/*)
+set(INCLUDE_DIRS "")
+foreach(DIR ${INCLUDE_SUBDIRS})
+  if(IS_DIRECTORY ${DIR})
+    list(APPEND INCLUDE_DIRS ${DIR})
+  endif()
+endforeach()
 
 # httplib header-only interface library
 add_library(httplib INTERFACE)
-target_include_directories(httplib INTERFACE ${INCLUDE_SUBDIRS})
+target_include_directories(httplib INTERFACE ${CMAKE_SOURCE_DIR}/include ${INCLUDE_DIRS})
 
 # Collect all sources using glob
 file(GLOB_RECURSE ALL_SOURCES
@@ -53,7 +62,7 @@ endif()
 add_executable(Inferix ${ALL_SOURCES})
 
 # Target settings
-target_link_libraries(Inferix PRIVATE httplib ftxui::component ftxui::dom ftxui::screen)
+target_link_libraries(Inferix PRIVATE httplib ftxui::component ftxui::dom ftxui::screen vterm)
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   target_link_libraries(Inferix PRIVATE ws2_32)
   target_link_options(Inferix PRIVATE -static-libgcc -static-libstdc++ -static)

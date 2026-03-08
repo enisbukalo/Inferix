@@ -1,32 +1,27 @@
-#include "gpu_monitor.h"
-#include "ram_monitor.h"
-#include "server_info_panel.h"
-#include "system_monitor_runner.h"
-#include "system_resources_panel.h"
+/**
+ * @file main.cpp
+ * @brief Application entry point.
+ *
+ * Minimal main function that delegates all functionality to App::Run().
+ * This file serves as the compilation entry point for the Inferix TUI.
+ */
 
-#include <ftxui/component/component.hpp>
-#include <ftxui/component/screen_interactive.hpp>
-#include <ftxui/dom/elements.hpp>
+#include "app.h"
+#include "vterm.h"
 
-using namespace ftxui;
-
-int main() {
-	auto screen = ScreenInteractive::Fullscreen();
-
-	MemoryMonitor::instance().update();
-	GpuMonitor::instance().update();
-
-	SystemMonitorRunner runner(screen);
-
-	auto container = Renderer([] {
-		return vbox({hbox({SystemResourcesPanel::Render()}),
-					 hbox({vbox({window(text("Models") | bold, vbox({}) | flex), window(text("Model Presets") | bold, vbox({}) | flex)}) | flex,
-						   window(text("Model Chat"), vbox({}) | flex),
-						   vbox({window(text("Load Settings") | bold, vbox({}) | flex), window(text("Inference Settings") | bold, vbox({}) | flex)}) | flex}) |
-						 flex});
-	});
-
-	screen.Loop(container);
-
+/**
+ * @brief Program entry point.
+ *
+ * Launches the Inferix terminal UI by calling App::Run() and returns
+ * when the application exits.
+ *
+ * @return 0 on successful execution.
+ */
+int main()
+{
+	VTerm *vt = vterm_new(50, 100);
+	VTermScreen *vts = vterm_obtain_screen(vt);
+	vterm_screen_reset(vts, 1);
+	App::Run();
 	return 0;
 }

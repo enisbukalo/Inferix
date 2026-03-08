@@ -1,3 +1,11 @@
+/**
+ * @file system_monitor_runner.cpp
+ * @brief Background monitoring thread implementation.
+ *
+ * Implements the polling thread that periodically updates all system
+ * monitors (CPU, GPU, RAM) and triggers UI redraws via FTXUI events.
+ */
+
 #include "system_monitor_runner.h"
 #include "cpu_monitor.h"
 #include "gpu_monitor.h"
@@ -5,25 +13,32 @@
 #include <ftxui/component/event.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 
-SystemMonitorRunner::SystemMonitorRunner(ftxui::ScreenInteractive &screen) : screen_(screen), thread_(&SystemMonitorRunner::run, this) {
+SystemMonitorRunner::SystemMonitorRunner(ftxui::ScreenInteractive &screen)
+	: screen_(screen), thread_(&SystemMonitorRunner::run, this)
+{
 }
 
-SystemMonitorRunner::~SystemMonitorRunner() {
+SystemMonitorRunner::~SystemMonitorRunner()
+{
 	stop();
 }
 
-void SystemMonitorRunner::stop() {
+void SystemMonitorRunner::stop()
+{
 	stop_flag_.store(true);
 	cv_.notify_one();
 	if (thread_.joinable())
 		thread_.join();
 }
 
-void SystemMonitorRunner::run() {
+void SystemMonitorRunner::run()
+{
 	while (true) {
 		{
 			std::unique_lock<std::mutex> lock(cv_mutex_);
-			cv_.wait_for(lock, std::chrono::milliseconds(kThreadWaitTimeMs), [this] { return stop_flag_.load(); });
+			cv_.wait_for(lock,
+						 std::chrono::milliseconds(kThreadWaitTimeMs),
+						 [this] { return stop_flag_.load(); });
 		}
 		if (stop_flag_.load())
 			break;

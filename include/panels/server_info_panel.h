@@ -10,7 +10,8 @@
  * "DISCONNECTED" approximately every 2 seconds, synchronized with the
  * 500ms redraw cycle provided by @c SystemMonitorRunner.
  */
-class ServerInfoPanel {
+class ServerInfoPanel
+{
   public:
 	/**
 	 * @brief Builds and returns an FTXUI element showing animated server status.
