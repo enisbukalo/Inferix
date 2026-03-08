@@ -8,7 +8,6 @@
  */
 
 #include "terminal_panel.h"
-#include "pty_handler.h"
 
 #include <vterm.h>
 
@@ -50,16 +49,19 @@ static std::string Codepoint_to_utf8(uint32_t cp)
 // vterm output callback — keypresses flow through vterm → PTY
 // ---------------------------------------------------------------------------
 
-static void Vterm_output_cb(const char *s, size_t len, void * /*user*/)
+void Vterm_output_cb(const char *s, size_t len, void *user)
 {
-	PtyHandler::instance().write(s, len);
+	auto *panel = static_cast<TerminalPanel *>(user);
+	panel->pty_.write(s, len);
 }
 
 // ---------------------------------------------------------------------------
 // Construction / destruction
 // ---------------------------------------------------------------------------
 
-TerminalPanel::TerminalPanel(ScreenInteractive &screen) : screen_(screen)
+TerminalPanel::TerminalPanel(ScreenInteractive &screen,
+							 std::string initial_command)
+	: screen_(screen), initial_command_(std::move(initial_command))
 {
 }
 
@@ -96,9 +98,9 @@ void TerminalPanel::Spawn()
 	vts_ = vterm_obtain_screen(vt_);
 	vterm_screen_reset(vts_, 1);
 
-	vterm_output_set_callback(vt_, Vterm_output_cb, nullptr);
+	vterm_output_set_callback(vt_, Vterm_output_cb, this);
 
-	if (!PtyHandler::instance().spawn(cols_, rows_)) {
+	if (!pty_.spawn(cols_, rows_)) {
 		vterm_free(vt_);
 		vt_ = nullptr;
 		vts_ = nullptr;
@@ -109,6 +111,7 @@ void TerminalPanel::Spawn()
 	pty_dead_.store(false);
 	spawned_.store(true);
 
+	initial_cmd_sent_.store(false);
 	read_thread_ = std::thread(&TerminalPanel::ReadLoop, this);
 }
 
@@ -127,7 +130,7 @@ void TerminalPanel::Shutdown()
 	if (read_thread_.joinable())
 		read_thread_.join();
 
-	PtyHandler::instance().close();
+	pty_.close();
 
 	if (vt_) {
 		vterm_free(vt_);
@@ -147,12 +150,20 @@ void TerminalPanel::ReadLoop()
 	char buf[4096];
 
 	while (!stop_flag_.load()) {
-		int n = PtyHandler::instance().read(buf, sizeof(buf));
+		int n = pty_.read(buf, sizeof(buf));
 
 		if (n > 0) {
 			std::lock_guard<std::mutex> lock(vterm_mutex_);
 			vterm_input_write(vt_, buf, static_cast<size_t>(n));
 			screen_.PostEvent(Event::Custom);
+
+			// Send the initial command after the shell produces its first
+			// output (prompt), so it is ready to accept input.
+			if (!initial_command_.empty() && !initial_cmd_sent_.load()) {
+				initial_cmd_sent_.store(true);
+				std::string cmd = initial_command_ + "\r";
+				pty_.write(cmd.data(), cmd.size());
+			}
 		} else if (n == 0) {
 			// No data available — sleep briefly
 			std::unique_lock<std::mutex> lock(cv_mutex_);
@@ -161,7 +172,7 @@ void TerminalPanel::ReadLoop()
 			});
 		} else {
 			// PTY error / closed
-			if (!PtyHandler::instance().is_alive()) {
+			if (!pty_.is_alive()) {
 				pty_dead_.store(true);
 				screen_.PostEvent(Event::Custom);
 				break;
@@ -177,7 +188,7 @@ void TerminalPanel::ReadLoop()
 void TerminalPanel::Resize(int new_cols, int new_rows)
 {
 	vterm_set_size(vt_, new_rows, new_cols);
-	PtyHandler::instance().resize(new_cols, new_rows);
+	pty_.resize(new_cols, new_rows);
 	cols_ = new_cols;
 	rows_ = new_rows;
 }
@@ -396,6 +407,14 @@ bool TerminalPanel::HandleEvent(Event event)
 		}
 	}
 
+	// Pass any remaining input (Ctrl+key combos, Alt+key, etc.) directly
+	// to the PTY as raw bytes.
+	const std::string &raw = event.input();
+	if (!raw.empty()) {
+		pty_.write(raw.data(), raw.size());
+		return true;
+	}
+
 	return false;
 }
 
@@ -420,15 +439,12 @@ bool TerminalPanel::WantsEvent(ftxui::Event event) const
 {
 	if (!spawned_.load() || pty_dead_.load())
 		return false;
+
+	// Claim all keyboard input (characters, special keys, Ctrl/Alt combos)
+	// so it flows to the embedded terminal instead of the UI.
 	if (event.is_character())
 		return true;
-	if (event == Event::Return || event == Event::Backspace ||
-		event == Event::Delete || event == Event::ArrowUp ||
-		event == Event::ArrowDown || event == Event::ArrowLeft ||
-		event == Event::ArrowRight || event == Event::Home ||
-		event == Event::End || event == Event::PageUp ||
-		event == Event::PageDown || event == Event::Insert ||
-		event == Event::Escape || event == Event::Tab)
+	if (!event.input().empty())
 		return true;
 	return false;
 }

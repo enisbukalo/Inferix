@@ -12,7 +12,10 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <string>
 #include <thread>
+
+#include "pty_handler.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
@@ -25,7 +28,8 @@ struct VTermScreen;
 class TerminalPanel
 {
   public:
-	explicit TerminalPanel(ftxui::ScreenInteractive &screen);
+	explicit TerminalPanel(ftxui::ScreenInteractive &screen,
+						   std::string initial_command = "");
 	~TerminalPanel();
 
 	TerminalPanel(const TerminalPanel &) = delete;
@@ -38,6 +42,8 @@ class TerminalPanel
 	bool WantsEvent(ftxui::Event event) const;
 
 	bool HandleEvent(ftxui::Event event);
+
+	friend void Vterm_output_cb(const char *s, size_t len, void *user);
 
   private:
 	void ReadLoop();
@@ -57,4 +63,7 @@ class TerminalPanel
 	std::condition_variable cv_;
 	std::thread read_thread_;
 	ftxui::Box box_ = {};
+	std::string initial_command_;
+	std::atomic<bool> initial_cmd_sent_{ false };
+	PtyHandler pty_;
 };

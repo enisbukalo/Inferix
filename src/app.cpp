@@ -21,6 +21,7 @@
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -69,13 +70,43 @@ void App::Run()
 		{ settings_content, log_output_content, terminal_content },
 		&selected_tab);
 
+	// Dynamically added tabs (simulating loading from a config file).
+	// Store dynamic terminal panels so they survive until the event loop ends.
+	struct DynamicTerminal
+	{
+		std::unique_ptr<TerminalPanel> panel;
+		int tab_index;
+	};
+	std::vector<DynamicTerminal> dynamic_terminals;
+
+	{
+		auto panel = std::make_unique<TerminalPanel>(screen, "opencode");
+		auto component = panel->Component();
+		tab_values.push_back("Opencode");
+		tab_container->Add(component);
+		int idx = static_cast<int>(tab_values.size()) - 1;
+		dynamic_terminals.push_back({ std::move(panel), idx });
+	}
+
+	{
+		auto panel = std::make_unique<TerminalPanel>(screen, "gitui");
+		auto component = panel->Component();
+		tab_values.push_back("GitUI");
+		tab_container->Add(component);
+		int idx = static_cast<int>(tab_values.size()) - 1;
+		dynamic_terminals.push_back({ std::move(panel), idx });
+	}
+
 	auto interactive = Container::Vertical({ tab_toggle, tab_container }) |
 					   borderRounded | flex;
 
+	// Spawn all terminals eagerly so they're ready when the user switches tabs.
+	terminal_panel.Spawn();
+	for (auto &dt : dynamic_terminals) {
+		dt.panel->Spawn();
+	}
+
 	auto container = Renderer(interactive, [&] {
-		if (selected_tab == 2 && !terminal_panel.IsSpawned()) {
-			terminal_panel.Spawn();
-		}
 		return vbox({ SystemResourcesPanel::Render(),
 					  separatorCharacter("*") | bold | color(Color::Orange3),
 					  interactive->Render(),
@@ -83,11 +114,17 @@ void App::Run()
 			   flex;
 	});
 
-	// When the Terminal tab is active, intercept keyboard events before
+	// When a terminal tab is active, intercept keyboard events before
 	// the Toggle component consumes them (e.g. arrow keys, Tab, chars).
 	auto root = container | CatchEvent([&](Event event) {
 					if (selected_tab == 2 && terminal_panel.WantsEvent(event)) {
 						return terminal_panel.HandleEvent(event);
+					}
+					for (auto &dt : dynamic_terminals) {
+						if (selected_tab == dt.tab_index &&
+							dt.panel->WantsEvent(event)) {
+							return dt.panel->HandleEvent(event);
+						}
 					}
 					return false;
 				});

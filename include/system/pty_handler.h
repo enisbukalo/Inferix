@@ -3,7 +3,7 @@
 #include <mutex>
 
 /**
- * @brief Thread-safe singleton that manages a pseudo-terminal (PTY).
+ * @brief Thread-safe class that manages a pseudo-terminal (PTY).
  *
  * Spawns a shell process via a platform-specific PTY backend (ConPTY on
  * Windows, forkpty on Linux) and provides read/write/resize operations.
@@ -12,11 +12,7 @@
 class PtyHandler
 {
   public:
-	static PtyHandler &instance()
-	{
-		static PtyHandler handler;
-		return handler;
-	}
+	PtyHandler() = default;
 
 	/**
 	 * @brief Spawns a new shell process in a PTY of the given size.
@@ -55,7 +51,6 @@ class PtyHandler
 	~PtyHandler();
 
   private:
-	PtyHandler() = default;
 	PtyHandler(const PtyHandler &) = delete;
 	PtyHandler &operator=(const PtyHandler &) = delete;
 
