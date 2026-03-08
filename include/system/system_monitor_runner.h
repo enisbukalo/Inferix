@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <mutex>
 #include <thread>
 
@@ -9,23 +10,25 @@ class ScreenInteractive;
 }
 
 /**
- * @brief Manages a background thread that polls all monitors and triggers UI redraws.
+ * @brief Manages a background thread that polls all monitors and triggers UI
+ * redraws.
  *
- * On construction the polling thread is started immediately. Every 500 ms the thread
- * calls each monitor's @c update() method and then signals the FTXUI screen to
- * redraw. The thread is stopped and joined either by calling @ref stop() explicitly
- * or automatically by the destructor.
+ * On construction the polling thread is started immediately. Every 500 ms the
+ * thread calls each monitor's @c update() method and then signals the FTXUI
+ * screen to redraw. The thread is stopped and joined either by calling @ref
+ * stop() explicitly or automatically by the destructor.
  *
- * @note This class is not copyable or copy-assignable by design; monitor state and
- *       the running thread must remain uniquely owned.
+ * @note This class is not copyable or copy-assignable by design; monitor state
+ * and the running thread must remain uniquely owned.
  */
-class SystemMonitorRunner {
+class SystemMonitorRunner
+{
   public:
 	/**
 	 * @brief Constructs the runner and starts the background polling thread.
 	 *
-	 * @param screen The FTXUI interactive screen whose @c PostEvent will be called
-	 *               to trigger redraws.
+	 * @param screen The FTXUI interactive screen whose @c PostEvent will be
+	 * called to trigger redraws.
 	 */
 	explicit SystemMonitorRunner(ftxui::ScreenInteractive &screen);
 
@@ -40,7 +43,8 @@ class SystemMonitorRunner {
 	SystemMonitorRunner &operator=(const SystemMonitorRunner &) = delete;
 
 	/**
-	 * @brief Destructor. Calls @ref stop() to cleanly join the background thread.
+	 * @brief Destructor. Calls @ref stop() to cleanly join the background
+	 * thread.
 	 */
 	~SystemMonitorRunner();
 
@@ -55,8 +59,10 @@ class SystemMonitorRunner {
   private:
 	void run();
 
+	const uint8_t kThreadWaitTimeMs = 250;
+
 	ftxui::ScreenInteractive &screen_;
-	std::atomic<bool> stop_flag_{false};
+	std::atomic<bool> stop_flag_{ false };
 	std::mutex cv_mutex_;
 	std::condition_variable cv_;
 	std::thread thread_; // declared last — initialized after others

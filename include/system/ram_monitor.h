@@ -10,14 +10,16 @@
  * internally and can be retrieved at any time via @ref get_stats().
  * All public accessors are safe to call from multiple threads concurrently.
  */
-class MemoryMonitor {
+class MemoryMonitor
+{
   public:
 	/**
 	 * @brief Returns the process-wide singleton instance.
 	 *
 	 * @return Reference to the single @c MemoryMonitor object.
 	 */
-	static MemoryMonitor &instance() {
+	static MemoryMonitor &instance()
+	{
 		static MemoryMonitor monitor;
 		return monitor;
 	}
@@ -40,9 +42,11 @@ class MemoryMonitor {
 	/**
 	 * @brief Calls @ref update() and returns the resulting stats.
 	 *
-	 * @note Not yet fully implemented; may return @c std::nullopt as a placeholder.
+	 * @note Not yet fully implemented; may return @c std::nullopt as a
+	 * placeholder.
 	 *
-	 * @return The new @c MemoryStats on success, or @c std::nullopt if sampling failed.
+	 * @return The new @c MemoryStats on success, or @c std::nullopt if sampling
+	 * failed.
 	 */
 	std::optional<MemoryStats> try_update();
 

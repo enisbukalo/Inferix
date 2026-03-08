@@ -10,14 +10,16 @@
  * internally and can be retrieved at any time via @ref get_stats().
  * All public accessors are safe to call from multiple threads concurrently.
  */
-class CpuMonitor {
+class CpuMonitor
+{
   public:
 	/**
 	 * @brief Returns the process-wide singleton instance.
 	 *
 	 * @return Reference to the single @c CpuMonitor object.
 	 */
-	static CpuMonitor &instance() {
+	static CpuMonitor &instance()
+	{
 		static CpuMonitor monitor;
 		return monitor;
 	}
@@ -40,7 +42,8 @@ class CpuMonitor {
 	/**
 	 * @brief Calls @ref update() and returns the resulting stats.
 	 *
-	 * @return The new @c ProcessorStats on success, or @c std::nullopt if sampling failed.
+	 * @return The new @c ProcessorStats on success, or @c std::nullopt if
+	 * sampling failed.
 	 */
 	std::optional<ProcessorStats> try_update();
 

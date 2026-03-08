@@ -7,7 +7,8 @@
 /**
  * @brief Discriminates between CPU and GPU hardware entries.
  */
-enum class HardwareType {
+enum class HardwareType
+{
 	CPU, ///< Central processing unit.
 	GPU	 ///< Graphics processing unit.
 };
@@ -15,7 +16,8 @@ enum class HardwareType {
 /**
  * @brief Identifies a hardware device by type, manufacturer, and model name.
  */
-struct Hardware {
+struct Hardware
+{
 	HardwareType type; ///< Whether this entry describes a CPU or GPU.
 	std::string make;  ///< Manufacturer name (e.g. "Intel", "NVIDIA").
 	std::string model; ///< Model / product name (e.g. "Core i9-13900K").
@@ -28,20 +30,23 @@ struct Hardware {
  * during startup; subsequent reads via @ref get_cpu() and @ref get_gpus() are
  * cheap accessor calls.
  */
-class SystemInfo {
+class SystemInfo
+{
   public:
 	/**
 	 * @brief Returns the process-wide singleton instance.
 	 *
 	 * @return Reference to the single @c SystemInfo object.
 	 */
-	static SystemInfo &instance() {
+	static SystemInfo &instance()
+	{
 		static SystemInfo info;
 		return info;
 	}
 
 	/**
-	 * @brief Detects hardware on the current platform and populates internal state.
+	 * @brief Detects hardware on the current platform and populates internal
+	 * state.
 	 *
 	 * Dispatches to the appropriate platform implementation
 	 * (Linux, Windows, or a no-op fallback).
@@ -53,22 +58,29 @@ class SystemInfo {
 	 *
 	 * @return A @c Hardware value whose @c type is @c HardwareType::CPU.
 	 */
-	Hardware get_cpu() const { return cpu_; }
+	Hardware get_cpu() const
+	{
+		return cpu_;
+	}
 
 	/**
 	 * @brief Returns all detected GPU descriptors.
 	 *
-	 * @return A vector of @c Hardware values whose @c type is @c HardwareType::GPU.
-	 *         Empty if no GPUs were detected.
+	 * @return A vector of @c Hardware values whose @c type is @c
+	 * HardwareType::GPU. Empty if no GPUs were detected.
 	 */
-	std::vector<Hardware> get_gpus() const { return gpus_; }
+	std::vector<Hardware> get_gpus() const
+	{
+		return gpus_;
+	}
 
 	/**
 	 * @brief Attempts a hardware detection update.
 	 *
 	 * Calls @ref update() and returns the detected CPU descriptor on success.
 	 *
-	 * @return The CPU @c Hardware descriptor, or @c std::nullopt if detection failed.
+	 * @return The CPU @c Hardware descriptor, or @c std::nullopt if detection
+	 * failed.
 	 */
 	std::optional<Hardware> try_update();
 
