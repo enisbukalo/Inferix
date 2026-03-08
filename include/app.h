@@ -4,14 +4,27 @@
 #include <ftxui/component/screen_interactive.hpp>
 
 /**
+ * @file app.h
  * @brief Main application orchestrator for the Inferix TUI.
  *
  * Manages the application lifecycle and initializes the terminal UI
  * with all panels and the background monitoring system. The application
  * uses a singleton pattern with a static Run() entry point.
  *
+ * The App class orchestrates the FTXUI layout, creating a grid structure
+ * that contains:
+ * - System resources panel (CPU/GPU/RAM monitoring)
+ * - Model management panels (models list, presets, load settings)
+ * - Inference settings panel (runtime parameters)
+ * - Server status indicator
+ * - Terminal panel with PTY support
+ *
  * @note This class is intentionally minimal; all functionality is
  *       delegated to panel classes and the SystemMonitorRunner.
+ *
+ * @note The application uses a tabbed interface for the terminal
+ *       functionality, supporting both static and dynamic terminal
+ *       panels that can be spawned on demand.
  */
 class App {
   public:
@@ -32,6 +45,8 @@ class App {
 	 * @brief Default constructor - private to prevent instantiation.
 	 *
 	 * The App class uses only static methods and cannot be instantiated.
+	 * This enforces the static-only design pattern where all functionality
+	 * is accessed through App::Run().
 	 */
 	App() = default;
 };

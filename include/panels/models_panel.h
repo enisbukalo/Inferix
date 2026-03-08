@@ -3,10 +3,20 @@
 #include <ftxui/dom/elements.hpp>
 
 /**
+ * @file models_panel.h
  * @brief Panel that displays the list of available AI/ML models for inference.
  *
- * Provides a scrollable view of loaded models with placeholder structure
- * ready for future model entry data. Uses vbox with flex for scrollable content.
+ * This panel provides a scrollable list view of available model files
+ * that can be loaded for inference. Each entry includes:
+ * - Selection checkbox: For selecting the model
+ * - Model filename: The GGUF or other model file name
+ *
+ * The panel uses a vbox layout with flex modifier to enable scrolling
+ * when the model list exceeds the available vertical space. Each row
+ * is styled with a window border for clear visual separation.
+ *
+ * @note Currently displays placeholder content; future implementations
+ *       will populate this with actual model metadata from the filesystem.
  */
 class ModelsPanel
 {

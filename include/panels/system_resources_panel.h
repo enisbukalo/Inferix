@@ -6,12 +6,28 @@
 #include <vector>
 
 /**
+ * @file system_resources_panel.h
  * @brief Stateless panel that renders live resource-usage gauges and a memory
  * table.
  *
- * Composes CPU load gauges, GPU load gauges, and a tabular memory breakdown
- * (RAM + per-GPU VRAM) into a single FTXUI element. All methods are static;
- * the class holds no instance state.
+ * This panel provides a comprehensive view of system resources, including:
+ * - CPU load gauge: Vertical bar showing current CPU utilization
+ * - GPU load gauges: One vertical bar per detected GPU
+ * - Memory table: Tabular display of RAM and VRAM usage with:
+ *   - Total capacity
+ *   - Used memory
+ *   - Available memory
+ *   - Usage percentage
+ *   - Color-coded gauge indicator
+ * - Total memory column: Aggregated RAM + all GPU VRAM
+ *
+ * The panel is completely stateless; all data is fetched from the
+ * monitor singletons (CpuMonitor, MemoryMonitor, GpuMonitor) on
+ * each render call. All helper methods are static.
+ *
+ * @note This panel is designed for high-frequency updates (typically
+ *       2Hz via SystemMonitorRunner) and minimizes allocations
+ *       during rendering for performance.
  */
 class SystemResourcesPanel
 {

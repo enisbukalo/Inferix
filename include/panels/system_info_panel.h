@@ -3,10 +3,19 @@
 #include <ftxui/dom/elements.hpp>
 
 /**
+ * @file system_info_panel.h
  * @brief Stateless panel that renders detected hardware information.
  *
- * Reads CPU and GPU identifiers from @c SystemInfo and formats them
- * into an FTXUI element suitable for display in the TUI layout.
+ * This panel displays the detected CPU and GPU hardware information
+ * obtained from the SystemInfo singleton. The information is presented
+ * in a table format with alternating row colors for visual distinction.
+ *
+ * The panel queries SystemInfo::instance() on each render call to get
+ * the latest hardware information, ensuring the display is always
+ * up-to-date with the current system state.
+ *
+ * @note This panel is stateless; all data is fetched from SystemInfo
+ *       on each render call. No internal state is maintained.
  */
 class SystemInfoPanel
 {

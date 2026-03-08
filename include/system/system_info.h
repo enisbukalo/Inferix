@@ -5,7 +5,20 @@
 #include <vector>
 
 /**
+ * @file system_info.h
+ * @brief Hardware detection and identification for Inferix.
+ *
+ * This header provides the core data structures for hardware identification,
+ * including CPU and GPU detection. The SystemInfo singleton class uses
+ * platform-specific implementations to query hardware information and
+ * populate these structures.
+ */
+
+/**
  * @brief Discriminates between CPU and GPU hardware entries.
+ *
+ * This enumeration is used to distinguish between central processing units
+ * and graphics processing units in the hardware inventory.
  */
 enum class HardwareType
 {
@@ -15,6 +28,10 @@ enum class HardwareType
 
 /**
  * @brief Identifies a hardware device by type, manufacturer, and model name.
+ *
+ * This structure holds the essential identification information for any
+ * detected hardware device. The make and model strings are parsed from
+ * platform-specific sources (e.g., /proc/cpuinfo on Linux, Registry on Windows).
  */
 struct Hardware
 {
@@ -26,73 +43,155 @@ struct Hardware
 /**
  * @brief Singleton that detects and stores CPU and GPU hardware identifiers.
  *
- * Hardware detection is platform-dispatched at runtime. Call @ref update() once
- * during startup; subsequent reads via @ref get_cpu() and @ref get_gpus() are
- * cheap accessor calls.
+ * Hardware detection is platform-dispatched at runtime based on compile-time
+ * platform detection macros. The singleton pattern ensures a single source of
+ * truth for hardware information throughout the application.
+ *
+ * Platform-specific implementations:
+ * - Linux: Parses /proc/cpuinfo for CPU, nvidia-smi for GPUs
+ * - Windows: Queries Registry for CPU, nvidia-smi for GPUs
+ * - Unknown: Returns default "Unknown" values
+ *
+ * Usage pattern:
+ * @code
+ * SystemInfo::instance().update();
+ * auto cpu = SystemInfo::instance().get_cpu();
+ * auto gpus = SystemInfo::instance().get_gpus();
+ * @endcode
+ *
+ * @note The update() method must be called before accessing hardware data.
+ *       Subsequent calls to get_cpu() and get_gpus() are thread-safe
+ *       read-only operations.
  */
 class SystemInfo
 {
   public:
-	/**
-	 * @brief Returns the process-wide singleton instance.
-	 *
-	 * @return Reference to the single @c SystemInfo object.
-	 */
-	static SystemInfo &instance()
-	{
-		static SystemInfo info;
-		return info;
-	}
+/**
+ * @brief Returns the process-wide singleton instance.
+ *
+ * This implements the Meyers' singleton pattern using a function-local
+ * static variable, which guarantees thread-safe lazy initialization in
+ * C++11 and later. The instance is created on first call and persists
+ * for the lifetime of the program.
+ *
+ * @return Reference to the single @c SystemInfo object.
+ * @note The instance is lazily initialized on first call.
+ */
+static SystemInfo &instance()
+{
+	static SystemInfo info;
+	return info;
+}
 
-	/**
-	 * @brief Detects hardware on the current platform and populates internal
-	 * state.
-	 *
-	 * Dispatches to the appropriate platform implementation
-	 * (Linux, Windows, or a no-op fallback).
-	 */
-	void update();
+/**
+ * @brief Detects hardware on the current platform and populates internal state.
+ *
+ * This method queries the operating system for CPU and GPU information
+ * using platform-specific mechanisms:
+ * - On Linux: Reads /proc/cpuinfo and executes nvidia-smi
+ * - On Windows: Queries the Registry and executes nvidia-smi
+ * - On other platforms: Returns default "Unknown" values
+ *
+ * The detected hardware information is stored in internal member variables
+ * and can be accessed via get_cpu() and get_gpus() until the next update().
+ *
+ * @note This method should be called before accessing hardware data.
+ *       It is safe to call multiple times; subsequent calls will refresh
+ *       the cached hardware information.
+ */
+void update();
 
-	/**
-	 * @brief Returns the detected CPU descriptor.
-	 *
-	 * @return A @c Hardware value whose @c type is @c HardwareType::CPU.
-	 */
-	Hardware get_cpu() const
-	{
-		return cpu_;
-	}
+/**
+ * @brief Returns the detected CPU descriptor.
+ *
+ * @return A @c Hardware value whose @c type is @c HardwareType::CPU.
+ *         The make and model fields contain the manufacturer and model
+ *         name respectively, or "Unknown" if detection failed.
+ * @note This method is thread-safe and can be called concurrently with
+ *       update() or other get_* methods.
+ * @see get_gpus()
+ */
+Hardware get_cpu() const
+{
+	return cpu_;
+}
 
-	/**
-	 * @brief Returns all detected GPU descriptors.
-	 *
-	 * @return A vector of @c Hardware values whose @c type is @c
-	 * HardwareType::GPU. Empty if no GPUs were detected.
-	 */
-	std::vector<Hardware> get_gpus() const
-	{
-		return gpus_;
-	}
+/**
+ * @brief Returns all detected GPU descriptors.
+ *
+ * @return A vector of @c Hardware values whose @c type is @c
+ * HardwareType::GPU. The vector contains one entry per detected GPU,
+ * ordered by device index. Returns an empty vector if no GPUs were
+ * detected or if nvidia-smi is unavailable.
+ * @note This method is thread-safe and can be called concurrently with
+ *       update() or other get_* methods.
+ * @see get_cpu()
+ */
+std::vector<Hardware> get_gpus() const
+{
+	return gpus_;
+}
 
-	/**
-	 * @brief Attempts a hardware detection update.
-	 *
-	 * Calls @ref update() and returns the detected CPU descriptor on success.
-	 *
-	 * @return The CPU @c Hardware descriptor, or @c std::nullopt if detection
-	 * failed.
-	 */
-	std::optional<Hardware> try_update();
+/**
+ * @brief Attempts a hardware detection update and returns the CPU descriptor.
+ *
+ * This convenience method calls @ref update() and immediately returns the
+ * detected CPU information. It provides a quick way to check if hardware
+ * detection is working without storing the result separately.
+ *
+ * @return The CPU @c Hardware descriptor. The make and model fields will
+ *         contain "Unknown" if detection failed or no CPU information
+ *         was available.
+ * @note Unlike get_cpu(), this method does not return std::nullopt on
+ *       failure; it returns a Hardware struct with "Unknown" values.
+ * @see update(), get_cpu()
+ */
+std::optional<Hardware> try_update();
 
   private:
+	/**
+	 * @brief Private default constructor for singleton pattern.
+	 *
+	 * The SystemInfo class can only be instantiated through the instance()
+	 * static method, which uses Meyers' singleton pattern.
+	 */
 	SystemInfo() = default;
 
 	Hardware cpu_;
 	std::vector<Hardware> gpus_;
 
+	/**
+	 * @brief Linux-specific hardware detection implementation.
+	 *
+	 * Parses /proc/cpuinfo for CPU information and executes nvidia-smi
+	 * for GPU detection.
+	 */
 	void update_linux();
+
+	/**
+	 * @brief Windows-specific hardware detection implementation.
+	 *
+	 * Queries the Windows Registry for CPU information and executes
+	 * nvidia-smi for GPU detection.
+	 */
 	void update_windows();
+
+	/**
+	 * @brief Fallback implementation for unknown platforms.
+	 *
+	 * Sets CPU and GPU information to "Unknown" values. This method
+	 * is called on platforms that are not explicitly supported.
+	 */
 	void update_unknown();
 
+	/**
+	 * @brief Extracts CPU information from platform-specific source.
+	 *
+	 * This method is called by the platform-specific update() methods
+	 * to populate the cpu_ member variable with detected CPU information.
+	 *
+	 * @return Hardware struct containing the detected CPU's type, make,
+	 *         and model. Returns "Unknown" values if detection fails.
+	 */
 	Hardware get_cpu_info();
 };
