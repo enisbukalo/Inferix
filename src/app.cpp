@@ -15,8 +15,10 @@
 #include "server_info_panel.h"
 #include "system_monitor_runner.h"
 #include "system_resources_panel.h"
+#include "terminal_panel.h"
 
 #include <ftxui/component/component.hpp>
+#include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
 
 #include <string>
@@ -28,6 +30,7 @@ void App::Run()
 {
 	auto screen = ScreenInteractive::Fullscreen();
 	SystemMonitorRunner runner(screen);
+	TerminalPanel terminal_panel(screen);
 
 	std::vector<std::string> tab_values{ "Settings", "Server Log", "Terminal" };
 	int selected_tab = 0;
@@ -56,9 +59,7 @@ void App::Run()
 					  ServerInfoPanel::Render() });
 	});
 
-	// Placeholder for when we implement a Terminal
-	auto terminal_content =
-		Renderer([] { return window(text(""), text(""), ftxui::EMPTY) | flex; });
+	auto terminal_content = terminal_panel.Component();
 
 	// Placeholder for when we implement reading live log outputs from llama.cpp
 	auto log_output_content =
@@ -72,11 +73,24 @@ void App::Run()
 					   borderRounded | flex;
 
 	auto container = Renderer(interactive, [&] {
+		if (selected_tab == 2 && !terminal_panel.IsSpawned()) {
+			terminal_panel.Spawn();
+		}
 		return vbox({ SystemResourcesPanel::Render(),
 					  separatorCharacter("*") | bold | color(Color::Orange3),
 					  interactive->Render(),
 					  server_content->Render() }) |
 			   flex;
 	});
-	screen.Loop(container);
+
+	// When the Terminal tab is active, intercept keyboard events before
+	// the Toggle component consumes them (e.g. arrow keys, Tab, chars).
+	auto root = container | CatchEvent([&](Event event) {
+					if (selected_tab == 2 && terminal_panel.WantsEvent(event)) {
+						return terminal_panel.HandleEvent(event);
+					}
+					return false;
+				});
+
+	screen.Loop(root);
 }

@@ -7,7 +7,6 @@
  */
 
 #include "app.h"
-#include "vterm.h"
 
 /**
  * @brief Program entry point.
@@ -19,9 +18,6 @@
  */
 int main()
 {
-	VTerm *vt = vterm_new(50, 100);
-	VTermScreen *vts = vterm_obtain_screen(vt);
-	vterm_screen_reset(vts, 1);
 	App::Run();
 	return 0;
 }
