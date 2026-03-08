@@ -56,11 +56,11 @@ void App::Run()
 					  ServerInfoPanel::Render() });
 	});
 
-// Placeholder for when we implement a Terminal
+	// Placeholder for when we implement a Terminal
 	auto terminal_content =
 		Renderer([] { return window(text(""), text(""), ftxui::EMPTY) | flex; });
 
-// Placeholder for when we implement reading live log outputs from llama.cpp
+	// Placeholder for when we implement reading live log outputs from llama.cpp
 	auto log_output_content =
 		Renderer([] { return window(text(""), text(""), ftxui::EMPTY) | flex; });
 
