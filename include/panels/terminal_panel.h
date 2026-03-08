@@ -40,6 +40,7 @@ class TerminalPanel
 	void Shutdown();
 	bool IsSpawned() const;
 	bool WantsEvent(ftxui::Event event) const;
+	bool IsCapturing() const;
 
 	bool HandleEvent(ftxui::Event event);
 
@@ -65,5 +66,6 @@ class TerminalPanel
 	ftxui::Box box_ = {};
 	std::string initial_command_;
 	std::atomic<bool> initial_cmd_sent_{ false };
+	std::atomic<bool> capturing_{ true };
 	PtyHandler pty_;
 };

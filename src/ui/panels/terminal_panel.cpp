@@ -292,16 +292,41 @@ Element TerminalPanel::RenderScreen()
 		lines.push_back(hbox(std::move(cells)));
 	}
 
-	return window(text(""), vbox(std::move(lines)), EMPTY) | flex;
+	auto content = vbox(std::move(lines));
+	if (!capturing_.load()) {
+		auto hint =
+			text(" DETACHED - Press Ctrl+T to re-attach ") | bold | inverted;
+		content = vbox({ content, hint });
+	}
+	return window(text(""), content, EMPTY) | flex;
 }
 
 // ---------------------------------------------------------------------------
 // HandleEvent — keyboard input → vterm → PTY
 // ---------------------------------------------------------------------------
 
+bool TerminalPanel::IsCapturing() const
+{
+	return capturing_.load();
+}
+
 bool TerminalPanel::HandleEvent(Event event)
 {
 	if (!spawned_.load() || pty_dead_.load())
+		return false;
+
+	// Ctrl+T toggles capture mode — releases input to the UI.
+	// Check both raw input byte and FTXUI character representation.
+	const std::string &raw = event.input();
+	if (raw.size() == 1 && raw[0] == '\x14') {
+		capturing_.store(!capturing_.load());
+		screen_.PostEvent(Event::Custom); // trigger redraw for hint
+		return true;
+	}
+
+	// When not capturing, only Ctrl+T is handled (above). Let everything
+	// else fall through to FTXUI for tab navigation, etc.
+	if (!capturing_.load())
 		return false;
 
 	std::lock_guard<std::mutex> lock(vterm_mutex_);
@@ -408,9 +433,8 @@ bool TerminalPanel::HandleEvent(Event event)
 	}
 
 	// Pass any remaining input (Ctrl+key combos, Alt+key, etc.) directly
-	// to the PTY as raw bytes.
-	const std::string &raw = event.input();
-	if (!raw.empty()) {
+	// to the PTY as raw bytes. Skip null-only sequences (e.g. Event::Custom).
+	if (!raw.empty() && raw.find_first_not_of('\0') != std::string::npos) {
 		pty_.write(raw.data(), raw.size());
 		return true;
 	}
@@ -440,11 +464,20 @@ bool TerminalPanel::WantsEvent(ftxui::Event event) const
 	if (!spawned_.load() || pty_dead_.load())
 		return false;
 
-	// Claim all keyboard input (characters, special keys, Ctrl/Alt combos)
-	// so it flows to the embedded terminal instead of the UI.
+	// Always intercept Ctrl+T so HandleEvent can toggle capture mode.
+	if (event.input() == std::string("\x14"))
+		return true;
+
+	// When not capturing, let the UI handle input (tab switching, etc.).
+	if (!capturing_.load())
+		return false;
+
+	// Capture mode: claim all keyboard input for the terminal.
+	// Skip null-only events (e.g. Event::Custom used for redraws).
 	if (event.is_character())
 		return true;
-	if (!event.input().empty())
+	const std::string &inp = event.input();
+	if (!inp.empty() && inp.find_first_not_of('\0') != std::string::npos)
 		return true;
 	return false;
 }
