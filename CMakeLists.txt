@@ -42,6 +42,8 @@ list(REMOVE_ITEM ALL_SOURCES
     "${CMAKE_SOURCE_DIR}/src/system/cpu_windows.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/system_info_linux.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/system_info_windows.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/pty_linux.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/pty_windows.cpp"
 )
 
 # Add back only the files for the current platform
@@ -50,12 +52,14 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
       "${CMAKE_SOURCE_DIR}/src/system/ram_windows.cpp"
       "${CMAKE_SOURCE_DIR}/src/system/cpu_windows.cpp"
       "${CMAKE_SOURCE_DIR}/src/system/system_info_windows.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/pty_windows.cpp"
   )
 else()
   list(APPEND ALL_SOURCES
       "${CMAKE_SOURCE_DIR}/src/system/ram_linux.cpp"
       "${CMAKE_SOURCE_DIR}/src/system/cpu_linux.cpp"
       "${CMAKE_SOURCE_DIR}/src/system/system_info_linux.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/pty_linux.cpp"
   )
 endif()
 
@@ -66,6 +70,8 @@ target_link_libraries(Inferix PRIVATE httplib ftxui::component ftxui::dom ftxui:
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   target_link_libraries(Inferix PRIVATE ws2_32)
   target_link_options(Inferix PRIVATE -static-libgcc -static-libstdc++ -static)
+else()
+  target_link_libraries(Inferix PRIVATE util)
 endif()
 target_compile_options(Inferix PRIVATE -Wall -Wextra -g -O3)
 set_target_properties(Inferix PROPERTIES OUTPUT_NAME "Inferix")
