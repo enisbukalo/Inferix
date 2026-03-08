@@ -82,6 +82,14 @@ void TerminalPanel::Spawn()
 	if (spawned_.load())
 		return;
 
+	// Use reflected box dimensions if available, otherwise keep defaults.
+	int box_cols = (box_.x_max - box_.x_min + 1) - 2;
+	int box_rows = (box_.y_max - box_.y_min + 1) - 2;
+	if (box_cols > 0 && box_rows > 0) {
+		cols_ = box_cols;
+		rows_ = box_rows;
+	}
+
 	vt_ = vterm_new(rows_, cols_);
 	vterm_set_utf8(vt_, 1);
 
@@ -163,6 +171,18 @@ void TerminalPanel::ReadLoop()
 }
 
 // ---------------------------------------------------------------------------
+// Resize — update vterm + PTY dimensions (caller must hold vterm_mutex_)
+// ---------------------------------------------------------------------------
+
+void TerminalPanel::Resize(int new_cols, int new_rows)
+{
+	vterm_set_size(vt_, new_rows, new_cols);
+	PtyHandler::instance().resize(new_cols, new_rows);
+	cols_ = new_cols;
+	rows_ = new_rows;
+}
+
+// ---------------------------------------------------------------------------
 // RenderScreen — read vterm cells → FTXUI elements
 // ---------------------------------------------------------------------------
 
@@ -183,6 +203,18 @@ Element TerminalPanel::RenderScreen()
 	}
 
 	std::lock_guard<std::mutex> lock(vterm_mutex_);
+
+	// Resize vterm + PTY if the container dimensions changed.
+	int new_cols = (box_.x_max - box_.x_min + 1) - 2; // subtract window border
+	int new_rows = (box_.y_max - box_.y_min + 1) - 2;
+	if (new_cols < 1)
+		new_cols = 1;
+	if (new_rows < 1)
+		new_rows = 1;
+	if (new_cols > 0 && new_rows > 0 && box_.x_max > 0 && box_.y_max > 0 &&
+		(new_cols != cols_ || new_rows != rows_)) {
+		Resize(new_cols, new_rows);
+	}
 
 	Elements lines;
 	lines.reserve(static_cast<size_t>(rows_));
@@ -379,7 +411,7 @@ Component TerminalPanel::Component()
 		auto elem = RenderScreen();
 		if (focused)
 			elem = elem | focus;
-		return elem;
+		return elem | reflect(box_);
 	});
 	return impl | CatchEvent([this](Event e) { return HandleEvent(e); });
 }

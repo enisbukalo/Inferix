@@ -17,6 +17,7 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/box.hpp>
 
 struct VTerm;
 struct VTermScreen;
@@ -40,6 +41,7 @@ class TerminalPanel
 
   private:
 	void ReadLoop();
+	void Resize(int new_cols, int new_rows);
 	ftxui::Element RenderScreen();
 
 	ftxui::ScreenInteractive &screen_;
@@ -54,4 +56,5 @@ class TerminalPanel
 	std::mutex cv_mutex_;
 	std::condition_variable cv_;
 	std::thread read_thread_;
+	ftxui::Box box_ = {};
 };
