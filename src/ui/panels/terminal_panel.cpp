@@ -227,6 +227,15 @@ Element TerminalPanel::RenderScreen()
 		Resize(new_cols, new_rows);
 	}
 
+	VTermState *state = vterm_obtain_state(vt_);
+	VTermPos cursor_pos { 0, 0 };
+	vterm_state_get_cursorpos(state, &cursor_pos);
+	VTermValue cursor_visible_value {};
+	bool cursor_visible =
+		vterm_state_get_termprop(state, VTERM_PROP_CURSORVISIBLE,
+							 &cursor_visible_value) &&
+		cursor_visible_value.boolean;
+
 	Elements lines;
 	lines.reserve(static_cast<size_t>(rows_));
 
@@ -282,6 +291,10 @@ Element TerminalPanel::RenderScreen()
 				elem = elem | inverted;
 			if (cell.attrs.italic)
 				elem = elem | dim; // FTXUI has no italic; use dim as fallback
+
+			if (cursor_visible && cursor_pos.row == row && cursor_pos.col == col) {
+				elem = elem | inverted;
+			}
 
 			cells.push_back(elem);
 
