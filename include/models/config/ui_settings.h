@@ -11,8 +11,6 @@ namespace Config {
  * appearance and behavior of the terminal user interface.
  */
 
-namespace Config {
-
 /**
  * @brief UI/settings panel settings.
  *
@@ -86,7 +84,5 @@ struct UISettings
 	 */
 	int refresh_rate_ms = 250;
 };
-
-} // namespace Config
 
 } // namespace Config

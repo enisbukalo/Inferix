@@ -1,14 +1,13 @@
 #pragma once
 #include <string>
 
-namespace Config {
-
 /**
  * @file user_settings.h
  * @brief Terminal emulator configuration settings.
  *
  * This header defines the TerminalSettings structure which controls
  * the embedded terminal emulator's behavior and initialization.
+ * Users can create and save multiple named terminal configurations.
  */
 
 namespace Config {
@@ -16,29 +15,44 @@ namespace Config {
 /**
  * @brief Terminal emulator settings.
  *
- * Configuration for the embedded terminal emulator:
- * - **Default shell**: Override system default shell
- * - **Initial command**: Command to run after shell starts
- * - **Working directory**: Starting directory for the shell
- * - **Default dimensions**: Fallback terminal size
+ * Configuration for a named terminal instance. Users can create
+ * multiple terminal settings and save them, allowing quick switching
+ * between different terminal configurations (e.g., dev terminal,
+ * root terminal, project-specific terminals).
  *
- * The terminal emulator provides an interactive shell within the
- * Inferix application, useful for debugging, running commands,
- * or accessing the system directly.
- *
- * @note Empty string values typically mean "use system default"
- *       or "not configured".
+ * @note Built-in terminals like "gitui" and "opencode" are handled
+ *       in code, not stored in config.
+ * @note Users create and save custom terminal configurations via UI.
  *
  * @code
- * // Configure terminal for development
- * TerminalSettings terminal;
- * terminal.default_shell = "/bin/bash";
- * terminal.working_directory = "/home/user/projects";
- * terminal.initial_command = "git status";
+ * // Create a development terminal
+ * TerminalSettings dev_terminal;
+ * dev_terminal.name = "dev";
+ * dev_terminal.default_shell = "/bin/bash";
+ * dev_terminal.working_directory = "/home/user/projects";
+ * dev_terminal.initial_command = "git status";
+ *
+ * // Create a root terminal
+ * TerminalSettings root_terminal;
+ * root_terminal.name = "root";
+ * root_terminal.default_shell = "/bin/bash";
+ * root_terminal.initial_command = "sudo bash";
  * @endcode
  */
 struct TerminalSettings
 {
+	/**
+	 * @brief Name identifier for this terminal configuration.
+	 *
+	 * Used to reference this terminal in the UI and config. Should be
+	 * unique across all user-created terminals.
+	 *
+	 * @note Built-in terminals ("gitui", "opencode") are not stored
+	 *       here - they're created in code.
+	 * @example "dev", "root", "project-x", "debug"
+	 */
+	std::string name;
+
 	/**
 	 * @brief Shell program to execute.
 	 *
@@ -100,7 +114,5 @@ struct TerminalSettings
 	 */
 	int default_rows = 24;
 };
-
-} // namespace Config
 
 } // namespace Config
