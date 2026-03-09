@@ -102,7 +102,8 @@ class SystemMonitorRunner
 
   private:
 	/**
-	 * @brief Background thread function that polls monitors and triggers redraws.
+	 * @brief Background thread function that polls monitors and triggers
+	 * redraws.
 	 *
 	 * This loop:
 	 * 1. Calls update() on CpuMonitor, MemoryMonitor, and GpuMonitor

@@ -3,7 +3,8 @@
 
 /**
  * @file processor_stats.h
- * @brief Snapshot of processor utilisation for a single CPU or GPU compute engine.
+ * @brief Snapshot of processor utilisation for a single CPU or GPU compute
+ * engine.
  *
  * This structure captures a point-in-time snapshot of processor load
  * statistics. The usage percentage represents the fraction of time the
@@ -15,5 +16,6 @@
  */
 struct ProcessorStats
 {
-	double usage_percentage = 0.0; ///< Processor load as a percentage of total capacity (0–100 %).
+	double usage_percentage =
+		0.0; ///< Processor load as a percentage of total capacity (0–100 %).
 };

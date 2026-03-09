@@ -18,7 +18,8 @@
  * snapshot via mutex protection. All public methods are safe to call
  * from multiple threads concurrently.
  *
- * Sampling interval: Determined by caller; typically 500ms via SystemMonitorRunner
+ * Sampling interval: Determined by caller; typically 500ms via
+ * SystemMonitorRunner
  */
 class MemoryMonitor
 {

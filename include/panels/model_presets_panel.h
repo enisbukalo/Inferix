@@ -9,7 +9,8 @@
  * This panel displays predefined inference presets that combine model
  * selection with optimized runtime parameters:
  * - Fast: Smaller models optimized for speed (e.g., llama-2-7b)
- * - Balanced: Mid-sized models with good quality/speed tradeoff (e.g., mistral-7b)
+ * - Balanced: Mid-sized models with good quality/speed tradeoff (e.g.,
+ * mistral-7b)
  * - Quality: Larger models for maximum quality (e.g., llama-2-13b)
  *
  * Each preset row includes:

@@ -3,7 +3,8 @@
  * @brief Stateful terminal panel that embeds a PTY + VTerm in an FTXUI tab.
  *
  * This class implements a terminal emulator that integrates three components:
- * 1. PtyHandler - Platform-specific PTY management (ConPTY on Windows, forkpty on Linux)
+ * 1. PtyHandler - Platform-specific PTY management (ConPTY on Windows, forkpty
+ * on Linux)
  * 2. libvterm - ANSI escape sequence parser for terminal content
  * 3. FTXUI - UI rendering framework for the terminal display
  *
@@ -78,7 +79,8 @@ class TerminalPanel
 	TerminalPanel(const TerminalPanel &) = delete;
 
 	/**
-	 * @brief Deleted copy-assignment operator — terminal state cannot be duplicated.
+	 * @brief Deleted copy-assignment operator — terminal state cannot be
+	 * duplicated.
 	 *
 	 * Each terminal panel owns a unique PTY and vterm instance that
 	 * cannot be shared or copied.

@@ -17,7 +17,8 @@
  *
  * The panel uses a horizontal key-value layout with gauge indicators
  * for percentage-based settings. All values are currently placeholders
- * and would be populated from application configuration in a full implementation.
+ * and would be populated from application configuration in a full
+ * implementation.
  */
 class InferenceSettingsPanel
 {
