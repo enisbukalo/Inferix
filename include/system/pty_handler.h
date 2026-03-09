@@ -223,7 +223,8 @@ class PtyHandler
 	void close_linux();
 
 	/**
-	 * @brief Windows-specific close implementation using CloseHandle and TerminateProcess.
+	 * @brief Windows-specific close implementation using CloseHandle and
+	 * TerminateProcess.
 	 */
 	void close_windows();
 

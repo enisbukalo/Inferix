@@ -227,6 +227,10 @@ Element TerminalPanel::RenderScreen()
 		Resize(new_cols, new_rows);
 	}
 
+	// Query cursor position
+	VTermPos cursor_pos = {};
+	vterm_state_get_cursorpos(vterm_obtain_state(vt_), &cursor_pos);
+
 	Elements lines;
 	lines.reserve(static_cast<size_t>(rows_));
 
@@ -282,6 +286,10 @@ Element TerminalPanel::RenderScreen()
 				elem = elem | inverted;
 			if (cell.attrs.italic)
 				elem = elem | dim; // FTXUI has no italic; use dim as fallback
+
+			// Apply cursor inversion if this cell is at cursor position
+			if (cursor_pos.row == row && cursor_pos.col == col)
+				elem = elem | inverted;
 
 			cells.push_back(elem);
 
