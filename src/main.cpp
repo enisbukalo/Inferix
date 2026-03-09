@@ -7,17 +7,18 @@
  */
 
 #include "app.h"
+#include "config_manager.h"
 
 /**
  * @brief Program entry point.
  *
- * Launches the Inferix terminal UI by calling App::Run() and returns
- * when the application exits.
+ * Loads user configuration and launches the Inferix terminal UI.
  *
  * @return 0 on successful execution.
  */
 int main()
 {
+	ConfigManager::Instance().Load();
 	App::Run();
 	return 0;
 }
