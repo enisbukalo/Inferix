@@ -346,6 +346,14 @@ bool TerminalPanel::HandleEvent(Event event)
 
 	VTermModifier mod = VTERM_MOD_NONE;
 
+	// Ctrl+J sends a literal newline (LF) without executing - useful for
+	// multi-line commands. Check raw input since FTXUI normalizes Ctrl+J
+	// to Event::Return, same as Enter key.
+	if (raw.size() == 1 && raw[0] == '\x0a') {
+		vterm_keyboard_unichar(vt_, '\n', mod);
+		return true;
+	}
+
 	// Special keys
 	if (event == Event::Return) {
 		vterm_keyboard_key(vt_, VTERM_KEY_ENTER, mod);
