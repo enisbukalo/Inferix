@@ -3,12 +3,24 @@
 #include <ftxui/dom/elements.hpp>
 
 /**
+ * @file server_info_panel.h
  * @brief Animated panel that displays the current server connection status.
  *
- * Uses a static frame counter incremented on each render call to drive a
- * pulsing color indicator. The status toggles between "CONNECTED" and
- * "DISCONNECTED" approximately every 2 seconds, synchronized with the
- * 500ms redraw cycle provided by @c SystemMonitorRunner.
+ * This panel provides a visual indicator of the inference server's connection
+ * state. The animation uses a frame counter that increments on each render
+ * call to create a pulsing effect:
+ *
+ * - Frames 0-7: Green indicator, "CONNECTED" status
+ * - Frames 8-15: Red indicator, "DISCONNECTED" status
+ * - Cycle repeats every 16 frames (~2 seconds at 8fps)
+ *
+ * The status toggle is synchronized with the 500ms redraw cycle from
+ * SystemMonitorRunner, resulting in approximately 2-second intervals
+ * between state changes.
+ *
+ * @note This is a placeholder implementation; actual server connection
+ *       status would be determined by monitoring the inference server's
+ *       health endpoint or socket connection.
  */
 class ServerInfoPanel
 {

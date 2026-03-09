@@ -3,11 +3,18 @@
 #include <ftxui/dom/elements.hpp>
 
 /**
+ * @file load_settings_panel.h
  * @brief Configuration panel for loading AI/ML models.
  *
- * Provides a settings interface with model paths, format selectors,
- * and cache configuration options. Follows the SystemInfoPanel pattern
- * using table layout for keyed settings display.
+ * This panel displays the current model loading configuration settings:
+ * - Model Path: Directory where models are stored
+ * - Format: Model file format (e.g., GGUF, ONNX)
+ * - Cache Size: Maximum cache size for model loading
+ * - Auto-Load: Whether to automatically load models on startup
+ * - Backend: Hardware backend for inference (CPU, GPU, or hybrid)
+ *
+ * The panel uses a table layout with alternating row colors for visual
+ * distinction. The header row has a dark background with white text.
  */
 class LoadSettingsPanel
 {
