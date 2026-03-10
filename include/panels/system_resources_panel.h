@@ -107,12 +107,12 @@ class SystemResourcesPanel
 	 * Aggregates system RAM and all GPU memory into a single column showing
 	 * combined totals, usage, and available memory.
 	 *
-	 * @param gpu_stats A vector of GPU MemoryStats snapshots.
-	 * @param ram_stats The current MemoryStats snapshot for system RAM.
+	 * @param gpuStats A vector of GPU MemoryStats snapshots.
+	 * @param ramStats The current MemoryStats snapshot for system RAM.
 	 * @return A 2-D vector of ftxui::Element rows (5 rows: Total, Used, Avail,
 	 * Usage, Gauge).
 	 */
 	static std::vector<ftxui::Element>
-	BuildTotalMemoryColumn(const std::vector<MemoryStats> &gpu_stats,
-						   const MemoryStats &ram_stats);
+	BuildTotalMemoryColumn(const std::vector<MemoryStats> &gpuStats,
+						   const MemoryStats &ramStats);
 };

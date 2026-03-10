@@ -35,12 +35,12 @@ void MemoryMonitor::update_linux()
 	}
 
 	MemoryStats new_stats;
-	new_stats.total_mb = total;
-	new_stats.available_mb = available;
-	new_stats.used_mb = total - available;
+	new_stats.totalMb = total;
+	new_stats.availableMb = available;
+	new_stats.usedMb = total - available;
 	// Calculate usage percentage
-	new_stats.usage_percentage =
-		total > 0 ? (new_stats.used_mb * 100.0 / total) : 0.0;
+	new_stats.usagePercentage =
+		total > 0 ? (new_stats.usedMb * 100.0 / total) : 0.0;
 
 	std::lock_guard<std::mutex> lock(stats_mutex_);
 	stats_ = new_stats;

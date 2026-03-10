@@ -57,7 +57,7 @@ void CpuMonitor::update_windows()
 	if (total_delta > 0) {
 		ProcessorStats new_stats;
 		// CPU usage = 1 - (idle_time / total_time), expressed as percentage
-		new_stats.usage_percentage =
+		new_stats.usagePercentage =
 			(1.0 - (double)idle_delta / total_delta) * 100.0;
 
 		std::lock_guard<std::mutex> lock(stats_mutex_);

@@ -16,6 +16,6 @@
  */
 struct ProcessorStats
 {
-	double usage_percentage =
+	double usagePercentage =
 		0.0; ///< Processor load as a percentage of total capacity (0–100 %).
 };

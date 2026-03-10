@@ -50,16 +50,16 @@ void GpuMonitor::update()
 						&util_pct) == 5) {
 			MemoryStats s;
 			s.id = index;
-			s.total_mb = total;
-			s.used_mb = used;
-			s.available_mb = free;
+			s.totalMb = total;
+			s.usedMb = used;
+			s.availableMb = free;
 			// Calculate memory usage percentage
-			s.usage_percentage = (total > 0) ? (used * 100.0 / total) : 0.0;
+			s.usagePercentage = (total > 0) ? (used * 100.0 / total) : 0.0;
 			new_stats.push_back(s);
 
 			ProcessorStats p;
 			// GPU utilization is already a percentage from nvidia-smi
-			p.usage_percentage = static_cast<double>(util_pct);
+			p.usagePercentage = static_cast<double>(util_pct);
 			new_load_stats.push_back(p);
 		}
 	}

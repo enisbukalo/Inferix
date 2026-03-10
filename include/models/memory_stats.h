@@ -15,10 +15,10 @@
  */
 struct MemoryStats
 {
-	int id = 0;			   ///< Zero-based device index (GPU index or 0 for RAM).
-	uint64_t total_mb = 0; ///< Total memory capacity in MiB.
-	uint64_t used_mb = 0;  ///< Currently used memory in MiB.
-	uint64_t available_mb = 0; ///< Currently free memory in MiB.
-	double usage_percentage =
+	int id = 0;			  ///< Zero-based device index (GPU index or 0 for RAM).
+	uint64_t totalMb = 0; ///< Total memory capacity in MiB.
+	uint64_t usedMb = 0;  ///< Currently used memory in MiB.
+	uint64_t availableMb = 0; ///< Currently free memory in MiB.
+	double usagePercentage =
 		0.0; ///< Used memory as a percentage of total (0–100 %).
 };

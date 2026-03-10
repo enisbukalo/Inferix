@@ -51,10 +51,10 @@ class MemoryMonitor
 	 * - Unknown: No-op; stats_ remains unchanged
 	 *
 	 * The calculated statistics include:
-	 * - total_mb: Total system memory in MiB
-	 * - used_mb: Currently used memory in MiB (total - available)
-	 * - available_mb: Currently free memory in MiB
-	 * - usage_percentage: Used memory as a percentage of total (0-100%)
+	 * - totalMb: Total system memory in MiB
+	 * - usedMb: Currently used memory in MiB (total - available)
+	 * - availableMb: Currently free memory in MiB
+	 * - usagePercentage: Used memory as a percentage of total (0-100%)
 	 *
 	 * @note This method is thread-safe. Multiple concurrent calls will
 	 *       serialize via the internal mutex.
@@ -70,10 +70,10 @@ class MemoryMonitor
 	 * The snapshot is protected by a mutex to ensure thread-safe access.
 	 *
 	 * @return A copy of the most recently sampled @c MemoryStats containing:
-	 *         - total_mb: Total system memory in MiB
-	 *         - used_mb: Currently used memory in MiB
-	 *         - available_mb: Currently free memory in MiB
-	 *         - usage_percentage: Used memory as a percentage of total (0-100%)
+	 *         - totalMb: Total system memory in MiB
+	 *         - usedMb: Currently used memory in MiB
+	 *         - availableMb: Currently free memory in MiB
+	 *         - usagePercentage: Used memory as a percentage of total (0-100%)
 	 *
 	 * @note This method is thread-safe and can be called concurrently
 	 *       with update() or other get_* methods.

@@ -36,19 +36,18 @@ const ftxui::LinearGradient kMemoryGradient = ftxui::LinearGradient()
 } // namespace
 
 std::vector<std::vector<Element>>
-SystemResourcesPanel::BuildRamRows(const MemoryStats &ram_stats)
+SystemResourcesPanel::BuildRamRows(const MemoryStats &ramStats)
 {
 	std::ostringstream oss_total, oss_used, oss_avail, oss_pct;
 	oss_total << std::fixed << std::setprecision(2)
-			  << (ram_stats.total_mb / 1024.0);
-	oss_used << std::fixed << std::setprecision(2)
-			 << (ram_stats.used_mb / 1024.0);
+			  << (ramStats.totalMb / 1024.0);
+	oss_used << std::fixed << std::setprecision(2) << (ramStats.usedMb / 1024.0);
 	oss_avail << std::fixed << std::setprecision(2)
-			  << (ram_stats.available_mb / 1024.0);
-	oss_pct << std::fixed << std::setprecision(2) << ram_stats.usage_percentage;
+			  << (ramStats.availableMb / 1024.0);
+	oss_pct << std::fixed << std::setprecision(2) << ramStats.usagePercentage;
 
 	Element gauge =
-		gaugeRight(ram_stats.usage_percentage / 100.0f) | color(kMemoryGradient);
+		gaugeRight(ramStats.usagePercentage / 100.0f) | color(kMemoryGradient);
 
 	std::vector<std::vector<Element>> rows = {
 		{ text("Total") | bold, text(oss_total.str()) },
@@ -62,22 +61,22 @@ SystemResourcesPanel::BuildRamRows(const MemoryStats &ram_stats)
 }
 
 std::vector<std::vector<Element>>
-SystemResourcesPanel::BuildGpuRows(const std::vector<MemoryStats> &gpu_stats)
+SystemResourcesPanel::BuildGpuRows(const std::vector<MemoryStats> &gpuStats)
 {
 	std::vector<std::vector<Element>> rows(5);
-	for (size_t i = 0; i < gpu_stats.size(); ++i) {
-		const auto &stats = gpu_stats[i];
+	for (size_t i = 0; i < gpuStats.size(); ++i) {
+		const auto &stats = gpuStats[i];
 		std::ostringstream oss_total, oss_used, oss_avail, oss_pct;
 		oss_total << std::fixed << std::setprecision(2)
-				  << (stats.total_mb / 1024.0);
+				  << (stats.totalMb / 1024.0);
 		oss_used << std::fixed << std::setprecision(2)
-				 << (stats.used_mb / 1024.0);
+				 << (stats.usedMb / 1024.0);
 		oss_avail << std::fixed << std::setprecision(2)
-				  << (stats.available_mb / 1024.0);
-		oss_pct << std::fixed << std::setprecision(2) << stats.usage_percentage;
+				  << (stats.availableMb / 1024.0);
+		oss_pct << std::fixed << std::setprecision(2) << stats.usagePercentage;
 
 		Element gauge =
-			gaugeRight(stats.usage_percentage / 100.0f) | color(kMemoryGradient);
+			gaugeRight(stats.usagePercentage / 100.0f) | color(kMemoryGradient);
 
 		rows[0].push_back(text(oss_total.str()));
 		rows[1].push_back(text(oss_used.str()));
@@ -88,14 +87,13 @@ SystemResourcesPanel::BuildGpuRows(const std::vector<MemoryStats> &gpu_stats)
 	return rows;
 }
 
-Element
-SystemResourcesPanel::BuildCpuGauge(const ProcessorStats &processor_stats)
+Element SystemResourcesPanel::BuildCpuGauge(const ProcessorStats &processorStats)
 {
 	auto toReturn =
 		hbox({
 			vtext("CPU") | vcenter | hcenter | bgcolor(Color::NavyBlue),
 			separatorLight(),
-			gaugeUp(processor_stats.usage_percentage / 100.0) |
+			gaugeUp(processorStats.usagePercentage / 100.0) |
 				ftxui::color(kGaugeGradient),
 		}) |
 		borderRounded;
@@ -103,59 +101,57 @@ SystemResourcesPanel::BuildCpuGauge(const ProcessorStats &processor_stats)
 }
 
 ftxui::Element SystemResourcesPanel::BuildGpuGauges(
-	const std::vector<ProcessorStats> &gpu_load_stats)
+	const std::vector<ProcessorStats> &gpuLoadStats)
 {
-	if (gpu_load_stats.empty())
+	if (gpuLoadStats.empty())
 		return ftxui::text("No GPU");
 
 	Elements gauges;
-	for (size_t i = 0; i < gpu_load_stats.size(); ++i) {
-		gauges.push_back(
-			hbox({
-				vtext("GPU" + std::to_string(i)) | vcenter | hcenter |
-					bgcolor(Color::NavyBlue),
-				separatorLight(),
-				gaugeUp(gpu_load_stats[i].usage_percentage / 100.0) |
-					ftxui::color(kGaugeGradient),
-			}) |
-			borderRounded);
+	for (size_t i = 0; i < gpuLoadStats.size(); ++i) {
+		gauges.push_back(hbox({
+							 vtext("GPU" + std::to_string(i)) | vcenter |
+								 hcenter | bgcolor(Color::NavyBlue),
+							 separatorLight(),
+							 gaugeUp(gpuLoadStats[i].usagePercentage / 100.0) |
+								 ftxui::color(kGaugeGradient),
+						 }) |
+						 borderRounded);
 	}
 	return hbox(std::move(gauges));
 }
 
 std::vector<ftxui::Element> SystemResourcesPanel::BuildTotalMemoryColumn(
-	const std::vector<MemoryStats> &gpu_stats,
-	const MemoryStats &ram_stats)
+	const std::vector<MemoryStats> &gpuStats,
+	const MemoryStats &ramStats)
 {
 	// Calculate totals
-	uint64_t total_mb = ram_stats.total_mb;
-	uint64_t used_mb = ram_stats.used_mb;
-	uint64_t available_mb = ram_stats.available_mb;
+	uint64_t totalMb = ramStats.totalMb;
+	uint64_t usedMb = ramStats.usedMb;
+	uint64_t availableMb = ramStats.availableMb;
 
-	for (const auto &gpu : gpu_stats) {
-		total_mb += gpu.total_mb;
-		used_mb += gpu.used_mb;
-		available_mb += gpu.available_mb;
+	for (const auto &gpu : gpuStats) {
+		totalMb += gpu.totalMb;
+		usedMb += gpu.usedMb;
+		availableMb += gpu.availableMb;
 	}
 
 	// Calculate usage percentage
-	double usage_percentage = 0.0;
-	if (total_mb > 0) {
-		usage_percentage =
-			(static_cast<double>(used_mb) / static_cast<double>(total_mb)) *
-			100.0;
+	double usagePercentage = 0.0;
+	if (totalMb > 0) {
+		usagePercentage =
+			(static_cast<double>(usedMb) / static_cast<double>(totalMb)) * 100.0;
 	}
 
 	// Format values
 	std::ostringstream oss_total, oss_used, oss_avail, oss_pct;
-	oss_total << std::fixed << std::setprecision(2) << (total_mb / 1024.0);
-	oss_used << std::fixed << std::setprecision(2) << (used_mb / 1024.0);
-	oss_avail << std::fixed << std::setprecision(2) << (available_mb / 1024.0);
-	oss_pct << std::fixed << std::setprecision(2) << usage_percentage;
+	oss_total << std::fixed << std::setprecision(2) << (totalMb / 1024.0);
+	oss_used << std::fixed << std::setprecision(2) << (usedMb / 1024.0);
+	oss_avail << std::fixed << std::setprecision(2) << (availableMb / 1024.0);
+	oss_pct << std::fixed << std::setprecision(2) << usagePercentage;
 
 	// Build gauge
 	Element gauge =
-		gaugeRight(usage_percentage / 100.0f) | color(kMemoryGradient);
+		gaugeRight(usagePercentage / 100.0f) | color(kMemoryGradient);
 
 	// Return column as transposed (5 rows, 1 column each)
 	return { text(oss_total.str()),
@@ -166,12 +162,12 @@ std::vector<ftxui::Element> SystemResourcesPanel::BuildTotalMemoryColumn(
 }
 
 std::vector<Element>
-SystemResourcesPanel::BuildHeaderRow(const std::vector<MemoryStats> &gpu_stats)
+SystemResourcesPanel::BuildHeaderRow(const std::vector<MemoryStats> &gpuStats)
 {
 	std::vector<Element> header;
 	header.push_back(text("")); // Empty for label column
 	header.push_back(text("RAM") | bold);
-	for (const auto &gpu : gpu_stats) {
+	for (const auto &gpu : gpuStats) {
 		header.push_back(text("GPU " + std::to_string(gpu.id)) | bold);
 	}
 	header.push_back(text("TOTAL") | bold);

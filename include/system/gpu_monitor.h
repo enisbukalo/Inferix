@@ -79,10 +79,10 @@ class GpuMonitor
 	 * @return A vector of @c MemoryStats, one entry per detected GPU, ordered by
 	 *         device index. Each entry contains:
 	 *         - id: GPU device index
-	 *         - total_mb: Total VRAM capacity in MiB
-	 *         - used_mb: Currently used VRAM in MiB
-	 *         - available_mb: Free VRAM in MiB
-	 *         - usage_percentage: VRAM usage as a percentage (0-100%)
+	 *         - totalMb: Total VRAM capacity in MiB
+	 *         - usedMb: Currently used VRAM in MiB
+	 *         - availableMb: Free VRAM in MiB
+	 *         - usagePercentage: VRAM usage as a percentage (0-100%)
 	 *
 	 * Returns an empty vector if:
 	 * - No NVIDIA GPUs were detected
@@ -104,7 +104,7 @@ class GpuMonitor
 	 *
 	 * @return A vector of @c ProcessorStats, one entry per detected GPU, ordered
 	 *         by device index. Each entry contains:
-	 *         - usage_percentage: GPU compute utilization as a percentage
+	 *         - usagePercentage: GPU compute utilization as a percentage
 	 * (0-100%)
 	 *
 	 * Returns an empty vector if:

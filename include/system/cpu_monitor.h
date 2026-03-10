@@ -69,7 +69,7 @@ class CpuMonitor
 	 * The snapshot is protected by a mutex to ensure thread-safe access.
 	 *
 	 * @return A copy of the most recently sampled @c ProcessorStats.
-	 *         The usage_percentage field contains the latest CPU usage
+	 *         The usagePercentage field contains the latest CPU usage
 	 *         value (0.0 to 100.0), or 0.0 if no update has been performed.
 	 * @note This method is thread-safe and can be called concurrently
 	 *       with update() or other get_* methods.

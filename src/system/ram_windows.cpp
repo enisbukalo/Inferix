@@ -19,14 +19,14 @@ void MemoryMonitor::update_windows()
 	if (GlobalMemoryStatusEx(&statex)) {
 		MemoryStats new_stats;
 		// Convert bytes to MiB (1 MiB = 1048576 bytes)
-		new_stats.total_mb = std::round(statex.ullTotalPhys / 1048576.0);
-		new_stats.used_mb =
+		new_stats.totalMb = std::round(statex.ullTotalPhys / 1048576.0);
+		new_stats.usedMb =
 			std::round((statex.ullTotalPhys - statex.ullAvailPhys) / 1048576.0);
-		new_stats.available_mb = std::round(statex.ullAvailPhys / 1048576.0);
+		new_stats.availableMb = std::round(statex.ullAvailPhys / 1048576.0);
 		// Calculate usage percentage
-		new_stats.usage_percentage =
-			(new_stats.total_mb > 0)
-				? (new_stats.used_mb * 100.0 / new_stats.total_mb)
+		new_stats.usagePercentage =
+			(new_stats.totalMb > 0)
+				? (new_stats.usedMb * 100.0 / new_stats.totalMb)
 				: 0.0;
 
 		std::lock_guard<std::mutex> lock(stats_mutex_);
