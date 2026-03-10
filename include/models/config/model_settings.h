@@ -22,16 +22,16 @@ namespace Config {
  * - **Speculative decoding**: Draft model configuration
  * - **Chat behavior**: Templates and reasoning format
  *
- * @note Only one model source should be set (model_path, model_url,
- *       or hf_repo/hf_file).
+ * @note Only one model source should be set (modelPath, modelUrl,
+ *       or hfRepo/hfFile).
  * @see https://github.com/ggerganov/llama.cpp for detailed documentation
  *
  * @code
  * // Load model from local file
  * LoadSettings settings;
- * settings.model_path = "models/mistral-7b.gguf";
- * settings.n_gpu_layers = "all";  // Offload all layers to GPU
- * settings.ctx_size = 4096;       // 4K context
+ * settings.modelPath = "models/mistral-7b.gguf";
+ * settings.ngpuLayers = "all";  // Offload all layers to GPU
+ * settings.ctxSize = 4096;       // 4K context
  * @endcode
  */
 struct LoadSettings
@@ -52,7 +52,7 @@ struct LoadSettings
 	 * Corresponds to: `-m FNAME` or `--model FNAME`
 	 * @note Use absolute paths or paths relative to the executable.
 	 */
-	std::string model_path;
+	std::string modelPath;
 
 	/**
 	 * @brief URL to download model from.
@@ -62,7 +62,7 @@ struct LoadSettings
 	 *
 	 * Corresponds to: `-mu URL` or `--model-url URL`
 	 */
-	std::string model_url;
+	std::string modelUrl;
 
 	/**
 	 * @brief HuggingFace repository identifier.
@@ -74,17 +74,17 @@ struct LoadSettings
 	 *
 	 * Corresponds to: `-hf REPO` or `--hf-repo REPO`
 	 */
-	std::string hf_repo;
+	std::string hfRepo;
 
 	/**
 	 * @brief Specific file in HuggingFace repository.
 	 *
-	 * When using hf_repo, this specifies the exact filename
+	 * When using hfRepo, this specifies the exact filename
 	 * to download. If empty, llama.cpp will auto-select.
 	 *
 	 * Corresponds to: `-hff FILE` or `--hf-file FILE`
 	 */
-	std::string hf_file;
+	std::string hfFile;
 
 	/**
 	 * @brief HuggingFace access token.
@@ -95,7 +95,7 @@ struct LoadSettings
 	 * Corresponds to: `-hft TOKEN` or `--hf-token TOKEN`
 	 * @note Never commit tokens to version control.
 	 */
-	std::string hf_token;
+	std::string hfToken;
 
 	/**
 	 * @name GPU Configuration
@@ -116,7 +116,7 @@ struct LoadSettings
 	 * @default "auto"
 	 * @note Higher values use more VRAM but provide faster inference.
 	 */
-	std::string n_gpu_layers = "auto";
+	std::string ngpuLayers = "auto";
 
 	/**
 	 * @brief Tensor splitting mode across GPUs.
@@ -129,7 +129,7 @@ struct LoadSettings
 	 * Corresponds to: `-sm MODE`
 	 * @note Requires multiple GPUs to be effective.
 	 */
-	std::string split_mode;
+	std::string splitMode;
 
 	/**
 	 * @brief Tensor split ratios for multiple GPUs.
@@ -140,7 +140,7 @@ struct LoadSettings
 	 * Corresponds to: `-ts RATIO1,RATIO2,...`
 	 * @note Sum of ratios should equal 1.0 for proper splitting.
 	 */
-	std::string tensor_split;
+	std::string tensorSplit;
 
 	/**
 	 * @brief Primary GPU index for model loading.
@@ -152,7 +152,7 @@ struct LoadSettings
 	 * @default -1 (auto)
 	 * @range -1 or valid GPU index
 	 */
-	int main_gpu = -1;
+	int mainGpu = -1;
 
 	/**
 	 * @name Context and Batching
@@ -171,7 +171,7 @@ struct LoadSettings
 	 * @note Must be a power of 2 for optimal performance.
 	 * @note Larger contexts require more memory.
 	 */
-	int ctx_size = 0;
+	int ctxSize = 0;
 
 	/**
 	 * @brief Logical batch size.
@@ -182,18 +182,18 @@ struct LoadSettings
 	 * Corresponds to: `-b SIZE`
 	 * @default 2048
 	 */
-	int batch_size = 2048;
+	int batchSize = 2048;
 
 	/**
 	 * @brief Physical batch size.
 	 *
 	 * Internal batch size for computation. Should typically be
-	 * a divisor of batch_size.
+	 * a divisor of batchSize.
 	 *
 	 * Corresponds to: `-ub SIZE`
 	 * @default 512
 	 */
-	int ubatch_size = 512;
+	int ubatchSize = 512;
 
 	/**
 	 * @brief Number of parallel server slots.
@@ -223,17 +223,17 @@ struct LoadSettings
 	 * Corresponds to: `-ctk TYPE`
 	 * @default "f16"
 	 */
-	std::string cache_type_k = "f16";
+	std::string cacheTypeK = "f16";
 
 	/**
 	 * @brief Data type for V-cache.
 	 *
-	 * Precision for value cache storage. Options same as cache_type_k.
+	 * Precision for value cache storage. Options same as cacheTypeK.
 	 *
 	 * Corresponds to: `-ctv TYPE`
 	 * @default "f16"
 	 */
-	std::string cache_type_v = "f16";
+	std::string cacheTypeV = "f16";
 
 	/**
 	 * @brief Enable KV cache offloading to GPU.
@@ -244,7 +244,7 @@ struct LoadSettings
 	 * Corresponds to: `--kv-offload`
 	 * @default true
 	 */
-	bool kv_offload = true;
+	bool kvOffload = true;
 
 	/**
 	 * @name Memory Management
@@ -264,7 +264,7 @@ struct LoadSettings
 	 * @default "auto"
 	 * @note Can significantly reduce memory usage for large contexts.
 	 */
-	std::string flash_attn = "auto";
+	std::string flashAttn = "auto";
 
 	/**
 	 * @brief Lock model in RAM.
@@ -314,7 +314,7 @@ struct LoadSettings
 	 * Corresponds to: `-tb COUNT`
 	 * @default -1 (auto)
 	 */
-	int threads_batch = -1;
+	int threadsBatch = -1;
 
 	/**
 	 * @name Adapters and Multimodal
@@ -357,7 +357,7 @@ struct LoadSettings
 	 * Corresponds to: `-md FNAME` or `--model-draft FNAME`
 	 * @note Draft model should be smaller and faster than main model.
 	 */
-	std::string model_draft;
+	std::string modelDraft;
 
 	/**
 	 * @brief Maximum speculative tokens.
@@ -368,7 +368,7 @@ struct LoadSettings
 	 * Corresponds to: `--draft-max N`
 	 * @default -1 (auto)
 	 */
-	int draft_max = -1;
+	int draftMax = -1;
 
 	/**
 	 * @name Chat Behavior
@@ -385,7 +385,7 @@ struct LoadSettings
 	 * Corresponds to: `--chat-template NAME`
 	 * @note If empty, model's default template is used.
 	 */
-	std::string chat_template;
+	std::string chatTemplate;
 
 	/**
 	 * @brief Reasoning format for models with reasoning capability.
@@ -397,7 +397,7 @@ struct LoadSettings
 	 *
 	 * Corresponds to: `--reasoning-format FORMAT`
 	 */
-	std::string reasoning_format;
+	std::string reasoningFormat;
 
 	/**
 	 * @name Miscellaneous
@@ -411,7 +411,7 @@ struct LoadSettings
 	 *
 	 * Corresponds to: `--fit`
 	 * @default true
-	 * @note Recommended for most users; disables manual n_gpu_layers.
+	 * @note Recommended for most users; disables manual ngpuLayers.
 	 */
 	bool fit = true;
 };
@@ -434,8 +434,8 @@ struct LoadSettings
  * - **Mirostat**: Entropy-based sampling
  * - **Constrained generation**: Grammar and JSON constraints
  *
- * @note For creative writing: higher temperature (0.8-1.2), moderate top_p (0.9)
- * @note For factual/analytical: lower temperature (0.2-0.5), higher top_p
+ * @note For creative writing: higher temperature (0.8-1.2), moderate topP (0.9)
+ * @note For factual/analytical: lower temperature (0.2-0.5), higher topP
  * (0.95+)
  * @see https://github.com/ggerganov/llama.cpp for detailed algorithm
  * documentation
@@ -444,14 +444,14 @@ struct LoadSettings
  * // Creative writing settings
  * InferenceSettings creative;
  * creative.temperature = 1.2f;
- * creative.top_p = 0.9f;
- * creative.repeat_penalty = 1.1f;
+ * creative.topP = 0.9f;
+ * creative.repeatPenalty = 1.1f;
  *
  * // Precise/analytical settings
  * InferenceSettings analytical;
  * analytical.temperature = 0.3f;
- * analytical.top_p = 0.95f;
- * analytical.top_k = 20;
+ * analytical.topP = 0.95f;
+ * analytical.topK = 20;
  * @endcode
  */
 struct InferenceSettings
@@ -472,7 +472,7 @@ struct InferenceSettings
 	 * @default -1 (unlimited)
 	 * @note Very high values may cause memory issues with long contexts.
 	 */
-	int n_predict = -1;
+	int nPredict = -1;
 
 	/**
 	 * @name Sampling Chain
@@ -490,16 +490,15 @@ struct InferenceSettings
 	 * - `penalties`: Apply repetition penalties
 	 * - `dry`: DRY (Depth-based Repetition) penalty
 	 * - `top_n_sigma`: Top N-sigma sampling
-	 * - `top_k`: Top-K sampling
-	 * - `typ_p`: Typical sampling
-	 * - `top_p`: Nucleus (top-p) sampling
-	 * - `min_p`: Minimum probability sampling
+	 * - `topK`: Top-K sampling
+	 * - `topP`: Nucleus (top-p) sampling
+	 * - `minP`: Minimum probability sampling
 	 * - `xtc`: XTC (exclusive) sampling
 	 * - `temperature`: Temperature scaling
 	 *
 	 * Corresponds to: `--samplers LIST`
 	 * @default
-	 * "penalties;dry;top_n_sigma;top_k;typ_p;top_p;min_p;xtc;temperature"
+	 * "penalties;dry;top_n_sigma;topK;typ_p;topP;minP;xtc;temperature"
 	 * @note Order matters - samplers are applied left to right.
 	 */
 	std::string samplers;
@@ -546,9 +545,9 @@ struct InferenceSettings
 	 * Corresponds to: `--top-k K`
 	 * @default 40
 	 * @range 0 (disabled) to vocabulary size
-	 * @note Often used together with top_p for best results.
+	 * @note Often used together with topP for best results.
 	 */
-	int top_k = 40;
+	int topK = 40;
 
 	/**
 	 * @brief Top-P (nucleus) sampling threshold.
@@ -561,20 +560,20 @@ struct InferenceSettings
 	 * @range 0.0 to 1.0
 	 * @note 1.0 disables the filter (all tokens considered).
 	 */
-	float top_p = 0.95f;
+	float topP = 0.95f;
 
 	/**
 	 * @brief Minimum probability threshold for tokens.
 	 *
-	 * Only considers tokens with probability >= min_p * max_probability.
-	 * Provides an alternative to top_k/top_p.
+	 * Only considers tokens with probability >= minP * max_probability.
+	 * Provides an alternative to topK/topP.
 	 *
 	 * Corresponds to: `--min-p VALUE`
 	 * @default 0.05f
 	 * @range 0.0 (disabled) to 1.0
 	 * @note Useful when you want a relative threshold rather than absolute.
 	 */
-	float min_p = 0.05f;
+	float minP = 0.05f;
 
 	/**
 	 * @brief Top N-sigma sampling threshold.
@@ -585,9 +584,9 @@ struct InferenceSettings
 	 * Corresponds to: `--top-nsigma VALUE`
 	 * @default -1.0f (disabled)
 	 * @range -1.0 (disabled) to ~4.0
-	 * @note Alternative to top_k/top_p with statistical interpretation.
+	 * @note Alternative to topK/topP with statistical interpretation.
 	 */
-	float top_nsigma = -1.0f;
+	float topNsigma = -1.0f;
 
 	/**
 	 * @brief Typical sampling parameter.
@@ -600,7 +599,7 @@ struct InferenceSettings
 	 * @range 0.0 to 1.0
 	 * @note Based on "locally typical sampling" research.
 	 */
-	float typical_p = 1.0f;
+	float typicalP = 1.0f;
 
 	/**
 	 * @name XTC Sampling
@@ -618,7 +617,7 @@ struct InferenceSettings
 	 * @default 0.0f (disabled)
 	 * @range 0.0 to 1.0
 	 */
-	float xtc_probability = 0.0f;
+	float xtcProbability = 0.0f;
 
 	/**
 	 * @brief XTC sampling threshold.
@@ -629,7 +628,7 @@ struct InferenceSettings
 	 * @default 0.1f
 	 * @range 0.0 to 1.0
 	 */
-	float xtc_threshold = 0.1f;
+	float xtcThreshold = 0.1f;
 
 	/**
 	 * @name Repetition Penalties
@@ -640,14 +639,14 @@ struct InferenceSettings
 	/**
 	 * @brief Number of tokens to check for repetition.
 	 *
-	 * Looks back this many tokens when applying repeat_penalty.
+	 * Looks back this many tokens when applying repeatPenalty.
 	 * Use -1 to check the entire context.
 	 *
 	 * Corresponds to: `--repeat-last-n N`
 	 * @default 64
 	 * @range 0 (disabled) to context size, or -1 for full context
 	 */
-	int repeat_last_n = 64;
+	int repeatLastN = 64;
 
 	/**
 	 * @brief Repetition penalty factor.
@@ -660,7 +659,7 @@ struct InferenceSettings
 	 * @range 1.0 to ~2.0
 	 * @note >1.0 penalizes repetition; <1.0 encourages it.
 	 */
-	float repeat_penalty = 1.0f;
+	float repeatPenalty = 1.0f;
 
 	/**
 	 * @brief Presence penalty.
@@ -673,7 +672,7 @@ struct InferenceSettings
 	 * @range -2.0 to 2.0
 	 * @note Positive values discourage new topics; negative encourage them.
 	 */
-	float presence_penalty = 0.0f;
+	float presencePenalty = 0.0f;
 
 	/**
 	 * @brief Frequency penalty.
@@ -684,9 +683,9 @@ struct InferenceSettings
 	 * Corresponds to: `--frequency-penalty VALUE`
 	 * @default 0.0f (disabled)
 	 * @range -2.0 to 2.0
-	 * @note Similar to OpenAI's frequency_penalty parameter.
+	 * @note Similar to OpenAI's frequencyPenalty parameter.
 	 */
-	float frequency_penalty = 0.0f;
+	float frequencyPenalty = 0.0f;
 
 	/**
 	 * @name DRY Sampling
@@ -704,7 +703,7 @@ struct InferenceSettings
 	 * @default 0.0f (disabled)
 	 * @range 0.0 to ~5.0
 	 */
-	float dry_multiplier = 0.0f;
+	float dryMultiplier = 0.0f;
 
 	/**
 	 * @brief DRY penalty base value.
@@ -714,7 +713,7 @@ struct InferenceSettings
 	 * Corresponds to: `--dry-base VALUE`
 	 * @default 1.75f
 	 */
-	float dry_base = 1.75f;
+	float dryBase = 1.75f;
 
 	/**
 	 * @brief DRY allowed repetition length.
@@ -724,7 +723,7 @@ struct InferenceSettings
 	 * Corresponds to: `--dry-allowed-length N`
 	 * @default 2
 	 */
-	int dry_allowed_length = 2;
+	int dryAllowedLength = 2;
 
 	/**
 	 * @brief DRY penalty lookback window.
@@ -734,7 +733,7 @@ struct InferenceSettings
 	 * Corresponds to: `--dry-penalty-last-n N`
 	 * @default -1 (full context)
 	 */
-	int dry_penalty_last_n = -1;
+	int dryPenaltyLastN = -1;
 
 	/**
 	 * @name Dynamic Temperature
@@ -752,7 +751,7 @@ struct InferenceSettings
 	 * @default 0.0f (disabled)
 	 * @range 0.0 to ~2.0
 	 */
-	float dynatemp_range = 0.0f;
+	float dynatempRange = 0.0f;
 
 	/**
 	 * @brief Dynamic temperature exponent.
@@ -762,7 +761,7 @@ struct InferenceSettings
 	 * Corresponds to: `--dynatemp-exp VALUE`
 	 * @default 1.0f
 	 */
-	float dynatemp_exp = 1.0f;
+	float dynatempExp = 1.0f;
 
 	/**
 	 * @name Mirostat Sampling
@@ -795,7 +794,7 @@ struct InferenceSettings
 	 * @default 0.1f
 	 * @range 0.0 to ~1.0
 	 */
-	float mirostat_lr = 0.1f;
+	float mirostatLr = 0.1f;
 
 	/**
 	 * @brief Mirostat target entropy (tau).
@@ -807,7 +806,7 @@ struct InferenceSettings
 	 * @default 5.0f
 	 * @range ~1.0 to ~10.0
 	 */
-	float mirostat_ent = 5.0f;
+	float mirostatEnt = 5.0f;
 
 	/**
 	 * @name Constrained Generation
@@ -847,7 +846,7 @@ struct InferenceSettings
 	 * })""";
 	 * @endcode
 	 */
-	std::string json_schema;
+	std::string jsonSchema;
 };
 
 /**

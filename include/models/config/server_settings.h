@@ -27,7 +27,7 @@ namespace Config {
  * ServerSettings settings;
  * settings.host = "0.0.0.0";
  * settings.port = 8080;
- * settings.api_key = "secret-key";
+ * settings.apiKey = "secret-key";
  * @endcode
  */
 struct ServerSettings
@@ -73,18 +73,18 @@ struct ServerSettings
 	 * Corresponds to: `--api-key KEY`
 	 * @note For production use, use a cryptographically random string.
 	 */
-	std::string api_key;
+	std::string apiKey;
 
 	/**
 	 * @brief Path to file containing the API key.
 	 *
-	 * Alternative to setting api_key directly. The file should contain
+	 * Alternative to setting apiKey directly. The file should contain
 	 * the API key as plain text. Useful for separating secrets from
 	 * configuration.
 	 *
 	 * Corresponds to: `--api-key-file FNAME`
 	 */
-	std::string api_key_file;
+	std::string apiKeyFile;
 
 	/**
 	 * @brief Request timeout in seconds.
@@ -106,7 +106,7 @@ struct ServerSettings
 	 * Corresponds to: `--threads-http N`
 	 * @default -1 (auto)
 	 */
-	int threads_http = -1;
+	int threadsHttp = -1;
 
 	/**
 	 * @name SSL/TLS Settings
@@ -118,23 +118,23 @@ struct ServerSettings
 	 * @brief Path to SSL private key file.
 	 *
 	 * The private key for TLS encryption. Must be in PEM format.
-	 * Required when ssl_cert_file is set.
+	 * Required when sslCertFile is set.
 	 *
 	 * Corresponds to: `--ssl-key-file FNAME`
-	 * @note Both ssl_key_file and ssl_cert_file must be set for HTTPS.
+	 * @note Both sslKeyFile and sslCertFile must be set for HTTPS.
 	 */
-	std::string ssl_key_file;
+	std::string sslKeyFile;
 
 	/**
 	 * @brief Path to SSL certificate file.
 	 *
 	 * The certificate for TLS encryption. Must be in PEM format and
-	 * match the private key in ssl_key_file.
+	 * match the private key in sslKeyFile.
 	 *
 	 * Corresponds to: `--ssl-cert-file FNAME`
-	 * @note Both ssl_key_file and ssl_cert_file must be set for HTTPS.
+	 * @note Both sslKeyFile and sslCertFile must be set for HTTPS.
 	 */
-	std::string ssl_cert_file;
+	std::string sslCertFile;
 
 	/**
 	 * @name Static File Serving
@@ -160,7 +160,7 @@ struct ServerSettings
 	 *
 	 * Corresponds to: `--api-prefix PREFIX`
 	 */
-	std::string api_prefix;
+	std::string apiPrefix;
 
 	/**
 	 * @brief Path for media file serving.
@@ -170,7 +170,7 @@ struct ServerSettings
 	 *
 	 * Corresponds to: `--media-path PATH`
 	 */
-	std::string media_path;
+	std::string mediaPath;
 
 	/**
 	 * @name Server Behavior Settings
@@ -230,7 +230,7 @@ struct ServerSettings
 	 * Corresponds to: `-cb` or `--cont-batching`
 	 * @default true
 	 */
-	bool cont_batching = true;
+	bool contBatching = true;
 
 	/**
 	 * @brief Enable prompt caching.
@@ -240,7 +240,7 @@ struct ServerSettings
 	 * Corresponds to: `--cache-prompt`
 	 * @default true
 	 */
-	bool cache_prompt = true;
+	bool cachePrompt = true;
 
 	/**
 	 * @brief Number of cached prompts to reuse.
@@ -251,7 +251,7 @@ struct ServerSettings
 	 * Corresponds to: `--cache-reuse N`
 	 * @default 0
 	 */
-	int cache_reuse = 0;
+	int cacheReuse = 0;
 
 	/**
 	 * @brief Enable context shift mode.
@@ -261,7 +261,7 @@ struct ServerSettings
 	 * Corresponds to: `--context-shift`
 	 * @default false
 	 */
-	bool context_shift = false;
+	bool contextShift = false;
 
 	/**
 	 * @brief Perform warmup on startup.
@@ -293,7 +293,7 @@ struct ServerSettings
 	 * Corresponds to: `--prefill-assistant`
 	 * @default true
 	 */
-	bool prefill_assistant = true;
+	bool prefillAssistant = true;
 
 	/**
 	 * @brief Slot prompt similarity threshold.
@@ -305,7 +305,7 @@ struct ServerSettings
 	 * @default 0.1f
 	 * @range 0.0-1.0
 	 */
-	float slot_prompt_similarity = 0.1f;
+	float slotPromptSimilarity = 0.1f;
 
 	/**
 	 * @brief Idle timeout before server sleeps.
@@ -316,7 +316,7 @@ struct ServerSettings
 	 * Corresponds to: `--sleep-idle-seconds SECONDS`
 	 * @default -1 (disabled)
 	 */
-	int sleep_idle_seconds = -1;
+	int sleepIdleSeconds = -1;
 
 	/**
 	 * @name Endpoint Settings
@@ -361,7 +361,7 @@ struct ServerSettings
 	 *
 	 * Corresponds to: `--slot-save-path PATH`
 	 */
-	std::string slot_save_path;
+	std::string slotSavePath;
 };
 
 } // namespace Config

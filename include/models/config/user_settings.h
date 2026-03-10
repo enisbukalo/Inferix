@@ -28,15 +28,14 @@ namespace Config {
  * // Create a development terminal
  * TerminalSettings dev_terminal;
  * dev_terminal.name = "dev";
- * dev_terminal.default_shell = "/bin/bash";
- * dev_terminal.working_directory = "/home/user/projects";
- * dev_terminal.initial_command = "git status";
+ * dev_terminal.defaultShell = "/bin/bash";
+ * dev_terminal.workingDirectory = "/home/user/projects";
+ * dev_terminal.initialCommand = "git status";
  *
  * // Create a root terminal
  * TerminalSettings root_terminal;
- * root_terminal.name = "root";
- * root_terminal.default_shell = "/bin/bash";
- * root_terminal.initial_command = "sudo bash";
+ * root_terminal.defaultShell = "/bin/bash";
+ * root_terminal.initialCommand = "sudo bash";
  * @endcode
  */
 struct TerminalSettings
@@ -64,7 +63,7 @@ struct TerminalSettings
 	 * @note Examples: "/bin/bash", "/bin/zsh", "powershell.exe"
 	 * @see std::system for shell execution details
 	 */
-	std::string default_shell;
+	std::string defaultShell;
 
 	/**
 	 * @brief Command to execute after shell starts.
@@ -73,10 +72,10 @@ struct TerminalSettings
 	 * Useful for setting up environment or running diagnostics.
 	 *
 	 * @default "" (none)
-	 * @note The command runs in the context of default_shell.
+	 * @note The command runs in the context of defaultShell.
 	 * @note Examples: "cd /project && git status", "nvim"
 	 */
-	std::string initial_command;
+	std::string initialCommand;
 
 	/**
 	 * @brief Working directory for the shell.
@@ -88,7 +87,7 @@ struct TerminalSettings
 	 * @note Should be an absolute path for reliability.
 	 * @note The directory must exist and be accessible.
 	 */
-	std::string working_directory;
+	std::string workingDirectory;
 
 	/**
 	 * @brief Default terminal width in columns.
@@ -100,7 +99,7 @@ struct TerminalSettings
 	 * @range 16 to maximum terminal width
 	 * @note Modern terminals typically support 120+ columns.
 	 */
-	int default_cols = 80;
+	int defaultCols = 80;
 
 	/**
 	 * @brief Default terminal height in rows.
@@ -110,9 +109,9 @@ struct TerminalSettings
 	 *
 	 * @default 24
 	 * @range 8 to maximum terminal height
-	 * @note Combined with default_cols, determines initial buffer size.
+	 * @note Combined with defaultCols, determines initial buffer size.
 	 */
-	int default_rows = 24;
+	int defaultRows = 24;
 };
 
 } // namespace Config

@@ -20,15 +20,15 @@ namespace Config {
  * - **Show system panel**: Toggle system monitor visibility
  * - **Refresh rate**: How often to update monitoring data
  *
- * @note The default_tab values correspond to tab indices in the
+ * @note The defaultTab values correspond to tab indices in the
  *       main UI window. The mapping may change as new tabs are added.
  *
  * @code
  * // Configure UI for development
  * UISettings ui;
  * ui.theme = "dark";
- * ui.default_tab = 1;  // Open Server Log by default
- * ui.refresh_rate_ms = 100;  // Fast updates for monitoring
+ * ui.defaultTab = 1;  // Open Server Log by default
+ * ui.refreshRateMs = 100;  // Fast updates for monitoring
  * @endcode
  */
 struct UISettings
@@ -56,7 +56,7 @@ struct UISettings
 	 * @default 0 (Settings)
 	 * @note Tab indices may change as new tabs are added to the UI.
 	 */
-	int default_tab = 0;
+	int defaultTab = 0;
 
 	/**
 	 * @brief Show system monitoring panel.
@@ -70,7 +70,7 @@ struct UISettings
 	 * @default true
 	 * @note Disabling may improve performance on low-end systems.
 	 */
-	bool show_system_panel = true;
+	bool showSystemPanel = true;
 
 	/**
 	 * @brief Refresh rate for monitoring data in milliseconds.
@@ -82,7 +82,7 @@ struct UISettings
 	 * @range 50-1000 recommended
 	 * @note Values below 100ms may cause noticeable CPU usage.
 	 */
-	int refresh_rate_ms = 250;
+	int refreshRateMs = 250;
 };
 
 } // namespace Config

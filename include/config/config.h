@@ -60,7 +60,7 @@ namespace Config {
  * // Create with custom values
  * UserConfig config{
  *     ServerSettings{.host = "0.0.0.0", .port = 8080},
- *     LoadSettings{.model_path = "models/mistral.gguf"},
+ *     LoadSettings{.modelPath = "models/mistral.gguf"},
  *     InferenceSettings{.temperature = 0.7f},
  *     UISettings{},
  *     TerminalSettings{},
