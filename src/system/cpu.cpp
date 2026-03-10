@@ -12,10 +12,10 @@
 void CpuMonitor::update()
 {
 #ifdef _WIN32
-	update_windows();
+	updateWindows();
 #elif __linux__
-	update_linux();
+	updateLinux();
 #else
-	update_unknown();
+	updateUnknown();
 #endif
 }

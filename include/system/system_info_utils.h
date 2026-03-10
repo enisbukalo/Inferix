@@ -7,7 +7,7 @@
  * @brief Utility functions for querying hardware information from the system.
  *
  * This namespace provides platform-independent utility functions for
- * hardware detection. The primary function, get_gpu_info(), queries
+ * hardware detection. The primary function, getGpuInfo(), queries
  * NVIDIA GPUs using the nvidia-smi command-line tool.
  */
 namespace SystemInfoUtils {
@@ -42,6 +42,6 @@ namespace SystemInfoUtils {
  *       in the system PATH. On systems without NVIDIA GPUs or drivers,
  *       the function will return an empty vector without error.
  */
-std::vector<Hardware> get_gpu_info();
+std::vector<Hardware> getGpuInfo();
 
 } // namespace SystemInfoUtils

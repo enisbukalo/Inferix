@@ -1,5 +1,5 @@
 /**
- * @file system_info_windows.cpp
+ * @file systemInfoWindows.cpp
  * @brief Windows-specific system information implementation.
  *
  * Implements CPU and GPU detection for Windows using the Windows Registry
@@ -11,9 +11,9 @@
 #include <string>
 #include <windows.h>
 
-Hardware SystemInfo::get_cpu_info()
+Hardware SystemInfo::getCpuInfo()
 {
-	std::string model_name;
+	std::string modelName;
 
 	// Open Windows Registry key for CPU information
 	HKEY key;
@@ -32,7 +32,7 @@ Hardware SystemInfo::get_cpu_info()
 							 nullptr,
 							 reinterpret_cast<LPBYTE>(buffer),
 							 &size) == ERROR_SUCCESS) {
-			model_name = buffer;
+			modelName = buffer;
 		}
 		RegCloseKey(key);
 	}
@@ -40,22 +40,22 @@ Hardware SystemInfo::get_cpu_info()
 	// Parse "Intel Core i9-13900K" into make="Intel" and model="Core i9-13900K"
 	std::string make = "Unknown";
 	std::string model = "Unknown";
-	if (!model_name.empty()) {
-		auto space = model_name.find(' ');
-		make = model_name.substr(0, space);
-		model = (space != std::string::npos) ? model_name.substr(space + 1) : "";
+	if (!modelName.empty()) {
+		auto space = modelName.find(' ');
+		make = modelName.substr(0, space);
+		model = (space != std::string::npos) ? modelName.substr(space + 1) : "";
 	}
 
 	return { HardwareType::CPU, make, model };
 }
 
-void SystemInfo::update_windows()
+void SystemInfo::updateWindows()
 {
-	cpu_ = get_cpu_info();
-	gpus_ = SystemInfoUtils::get_gpu_info();
+	cpu_ = getCpuInfo();
+	gpus_ = SystemInfoUtils::getGpuInfo();
 }
 
 void SystemInfo::update()
 {
-	update_windows();
+	updateWindows();
 }

@@ -1,5 +1,5 @@
 /**
- * @file system_info_panel.cpp
+ * @file systemInfoPanel.cpp
  * @brief System information panel implementation.
  *
  * Implements a panel that displays detected CPU and GPU hardware
@@ -18,8 +18,8 @@ using namespace ftxui;
 Element SystemInfoPanel::Render()
 {
 	SystemInfo::instance().update();
-	auto cpu = SystemInfo::instance().get_cpu();
-	auto gpus = SystemInfo::instance().get_gpus();
+	auto cpu = SystemInfo::instance().getCpu();
+	auto gpus = SystemInfo::instance().getGpus();
 
 	auto padding = [](Element e) { return hbox({ e, text(" ") }); };
 

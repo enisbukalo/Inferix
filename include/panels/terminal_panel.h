@@ -18,7 +18,7 @@
  * Thread model:
  * - Main thread: Handles rendering and event processing
  * - Background thread (ReadLoop): Reads PTY output and posts redraw events
- * - Thread-safe access to vterm state via vterm_mutex_
+ * - Thread-safe access to vterm state via vtermMutex_
  */
 
 #pragma once
@@ -47,7 +47,7 @@ class TerminalPanel
 	 *
 	 * @param screen Reference to the FTXUI interactive screen that will
 	 *               render this terminal panel.
-	 * @param initial_command Optional command to execute after the shell
+	 * @param initialCommand Optional command to execute after the shell
 	 *                        produces its first output (e.g., "cd /home/user").
 	 * @note The terminal is not spawned until Spawn() is called explicitly.
 	 *       The component must be added to the UI before spawning to
@@ -125,7 +125,7 @@ class TerminalPanel
 	 * @brief Shuts down the terminal and releases all resources.
 	 *
 	 * This method:
-	 * 1. Signals the ReadLoop thread to stop via stop_flag_
+	 * 1. Signals the ReadLoop thread to stop via stopFlag_
 	 * 2. Notifies cv_ to wake the thread if it's waiting
 	 * 3. Joins the ReadLoop thread
 	 * 4. Closes the PTY and terminates the shell
@@ -151,7 +151,7 @@ class TerminalPanel
 	 * terminal should handle an incoming event. The terminal captures
 	 * events when:
 	 * - It has been spawned
-	 * - The shell is still running (pty_dead_ is false)
+	 * - The shell is still running (ptyDead_ is false)
 	 * - Capture mode is enabled (capturing_ is true)
 	 * - The event is character input or a special key
 	 *
@@ -215,18 +215,18 @@ class TerminalPanel
 	 * 4. Sends the initial command after the first shell output
 	 * 5. Detects shell exit via pty_.is_alive()
 	 *
-	 * The loop terminates when stop_flag_ is set, either by calling
+	 * The loop terminates when stopFlag_ is set, either by calling
 	 * Shutdown() or when the shell process exits.
 	 *
-	 * @note This method is called by the read_thread_ member.
-	 * @note Thread-safe access to vterm state via vterm_mutex_.
+	 * @note This method is called by the readThread_ member.
+	 * @note Thread-safe access to vterm state via vtermMutex_.
 	 */
 	void ReadLoop();
 
 	/**
 	 * @brief Resizes the vterm and PTY to new dimensions.
 	 *
-	 * This method must be called with vterm_mutex_ held. It:
+	 * This method must be called with vtermMutex_ held. It:
 	 * 1. Calls vterm_set_size() to update the vterm dimensions
 	 * 2. Calls pty_.resize() to notify the shell of the new size
 	 * 3. Updates cols_ and rows_ member variables
@@ -250,7 +250,7 @@ class TerminalPanel
 	 * 6. Wraps the result in a window element
 	 *
 	 * @return An ftxui::Element representing the terminal screen.
-	 * @note This method is thread-safe; vterm_mutex_ must be held by the caller.
+	 * @note This method is thread-safe; vtermMutex_ must be held by the caller.
 	 * @see RenderLoop()
 	 */
 	ftxui::Element RenderScreen();
@@ -260,16 +260,16 @@ class TerminalPanel
 	VTermScreen *vts_ = nullptr;
 	int rows_ = 24;
 	int cols_ = 80;
-	std::atomic<bool> stop_flag_{ false };
+	std::atomic<bool> stopFlag_{ false };
 	std::atomic<bool> spawned_{ false };
-	std::atomic<bool> pty_dead_{ false };
-	std::mutex vterm_mutex_;
-	std::mutex cv_mutex_;
+	std::atomic<bool> ptyDead_{ false };
+	std::mutex vtermMutex_;
+	std::mutex cvMutex_;
 	std::condition_variable cv_;
-	std::thread read_thread_;
+	std::thread readThread_;
 	ftxui::Box box_ = {};
-	std::string initial_command_;
-	std::atomic<bool> initial_cmd_sent_{ false };
+	std::string initialCommand_;
+	std::atomic<bool> initialCmdSent_{ false };
 	std::atomic<bool> capturing_{ true };
 	PtyHandler pty_;
 };

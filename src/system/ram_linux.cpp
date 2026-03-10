@@ -1,5 +1,5 @@
 /**
- * @file ram_linux.cpp
+ * @file ramLinux.cpp
  * @brief Linux-specific RAM monitoring implementation.
  *
  * Parses /proc/meminfo to extract memory statistics and converts
@@ -11,7 +11,7 @@
 #include <fstream>
 #include <sstream>
 
-void MemoryMonitor::update_linux()
+void MemoryMonitor::updateLinux()
 {
 	std::ifstream file("/proc/meminfo");
 
@@ -34,19 +34,19 @@ void MemoryMonitor::update_linux()
 		}
 	}
 
-	MemoryStats new_stats;
-	new_stats.totalMb = total;
-	new_stats.availableMb = available;
-	new_stats.usedMb = total - available;
+	MemoryStats newStats;
+	newStats.totalMb = total;
+	newStats.availableMb = available;
+	newStats.usedMb = total - available;
 	// Calculate usage percentage
-	new_stats.usagePercentage =
-		total > 0 ? (new_stats.usedMb * 100.0 / total) : 0.0;
+	newStats.usagePercentage =
+		total > 0 ? (newStats.usedMb * 100.0 / total) : 0.0;
 
-	std::lock_guard<std::mutex> lock(stats_mutex_);
-	stats_ = new_stats;
+	std::lock_guard<std::mutex> lock(statsMutex_);
+	stats_ = newStats;
 }
 
 void MemoryMonitor::update()
 {
-	update_linux();
+	updateLinux();
 }

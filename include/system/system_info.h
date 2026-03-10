@@ -55,12 +55,12 @@ struct Hardware
  * Usage pattern:
  * @code
  * SystemInfo::instance().update();
- * auto cpu = SystemInfo::instance().get_cpu();
- * auto gpus = SystemInfo::instance().get_gpus();
+ * auto cpu = SystemInfo::instance().getCpu();
+ * auto gpus = SystemInfo::instance().getGpus();
  * @endcode
  *
  * @note The update() method must be called before accessing hardware data.
- *       Subsequent calls to get_cpu() and get_gpus() are thread-safe
+ *       Subsequent calls to getCpu() and getGpus() are thread-safe
  *       read-only operations.
  */
 class SystemInfo
@@ -94,7 +94,7 @@ class SystemInfo
 	 * - On other platforms: Returns default "Unknown" values
 	 *
 	 * The detected hardware information is stored in internal member variables
-	 * and can be accessed via get_cpu() and get_gpus() until the next update().
+	 * and can be accessed via getCpu() and getGpus() until the next update().
 	 *
 	 * @note This method should be called before accessing hardware data.
 	 *       It is safe to call multiple times; subsequent calls will refresh
@@ -110,9 +110,9 @@ class SystemInfo
 	 *         name respectively, or "Unknown" if detection failed.
 	 * @note This method is thread-safe and can be called concurrently with
 	 *       update() or other get_* methods.
-	 * @see get_gpus()
+	 * @see getGpus()
 	 */
-	Hardware get_cpu() const
+	Hardware getCpu() const
 	{
 		return cpu_;
 	}
@@ -126,9 +126,9 @@ class SystemInfo
 	 * detected or if nvidia-smi is unavailable.
 	 * @note This method is thread-safe and can be called concurrently with
 	 *       update() or other get_* methods.
-	 * @see get_cpu()
+	 * @see getCpu()
 	 */
-	std::vector<Hardware> get_gpus() const
+	std::vector<Hardware> getGpus() const
 	{
 		return gpus_;
 	}
@@ -144,11 +144,11 @@ class SystemInfo
 	 * @return The CPU @c Hardware descriptor. The make and model fields will
 	 *         contain "Unknown" if detection failed or no CPU information
 	 *         was available.
-	 * @note Unlike get_cpu(), this method does not return std::nullopt on
+	 * @note Unlike getCpu(), this method does not return std::nullopt on
 	 *       failure; it returns a Hardware struct with "Unknown" values.
-	 * @see update(), get_cpu()
+	 * @see update(), getCpu()
 	 */
-	std::optional<Hardware> try_update();
+	std::optional<Hardware> tryUpdate();
 
   private:
 	/**
@@ -168,7 +168,7 @@ class SystemInfo
 	 * Parses /proc/cpuinfo for CPU information and executes nvidia-smi
 	 * for GPU detection.
 	 */
-	void update_linux();
+	void updateLinux();
 
 	/**
 	 * @brief Windows-specific hardware detection implementation.
@@ -176,7 +176,7 @@ class SystemInfo
 	 * Queries the Windows Registry for CPU information and executes
 	 * nvidia-smi for GPU detection.
 	 */
-	void update_windows();
+	void updateWindows();
 
 	/**
 	 * @brief Fallback implementation for unknown platforms.
@@ -184,7 +184,7 @@ class SystemInfo
 	 * Sets CPU and GPU information to "Unknown" values. This method
 	 * is called on platforms that are not explicitly supported.
 	 */
-	void update_unknown();
+	void updateUnknown();
 
 	/**
 	 * @brief Extracts CPU information from platform-specific source.
@@ -195,5 +195,5 @@ class SystemInfo
 	 * @return Hardware struct containing the detected CPU's type, make,
 	 *         and model. Returns "Unknown" values if detection fails.
 	 */
-	Hardware get_cpu_info();
+	Hardware getCpuInfo();
 };

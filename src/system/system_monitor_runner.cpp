@@ -1,5 +1,5 @@
 /**
- * @file system_monitor_runner.cpp
+ * @file systemMonitorRunner.cpp
  * @brief Background monitoring thread implementation.
  *
  * Implements the polling thread that periodically updates all system
@@ -25,7 +25,7 @@ SystemMonitorRunner::~SystemMonitorRunner()
 
 void SystemMonitorRunner::stop()
 {
-	stop_flag_.store(true);
+	stopFlag_.store(true);
 	cv_.notify_one();
 	if (thread_.joinable())
 		thread_.join();
@@ -35,12 +35,12 @@ void SystemMonitorRunner::run()
 {
 	while (true) {
 		{
-			std::unique_lock<std::mutex> lock(cv_mutex_);
+			std::unique_lock<std::mutex> lock(cvMutex_);
 			cv_.wait_for(lock,
 						 std::chrono::milliseconds(kThreadWaitTimeMs),
-						 [this] { return stop_flag_.load(); });
+						 [this] { return stopFlag_.load(); });
 		}
-		if (stop_flag_.load())
+		if (stopFlag_.load())
 			break;
 		MemoryMonitor::instance().update();
 		CpuMonitor::instance().update();

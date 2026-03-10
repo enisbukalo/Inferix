@@ -1,5 +1,5 @@
 /**
- * @file terminal_panel.cpp
+ * @file terminalPanel.cpp
  * @brief Terminal panel implementation — PTY + VTerm + FTXUI rendering.
  *
  * Wires together PtyHandler (platform PTY), libvterm (ANSI parser), and
@@ -60,8 +60,8 @@ void Vterm_output_cb(const char *s, size_t len, void *user)
 // ---------------------------------------------------------------------------
 
 TerminalPanel::TerminalPanel(ScreenInteractive &screen,
-							 std::string initial_command)
-	: screen_(screen), initial_command_(std::move(initial_command))
+							 std::string initialCommand)
+	: screen_(screen), initialCommand_(std::move(initialCommand))
 {
 }
 
@@ -85,11 +85,11 @@ void TerminalPanel::Spawn()
 		return;
 
 	// Use reflected box dimensions if available, otherwise keep defaults.
-	int box_cols = (box_.x_max - box_.x_min + 1) - 2;
-	int box_rows = (box_.y_max - box_.y_min + 1) - 2;
-	if (box_cols > 0 && box_rows > 0) {
-		cols_ = box_cols;
-		rows_ = box_rows;
+	int boxCols = (box_.x_max - box_.x_min + 1) - 2;
+	int boxRows = (box_.y_max - box_.y_min + 1) - 2;
+	if (boxCols > 0 && boxRows > 0) {
+		cols_ = boxCols;
+		rows_ = boxRows;
 	}
 
 	vt_ = vterm_new(rows_, cols_);
@@ -107,12 +107,12 @@ void TerminalPanel::Spawn()
 		return;
 	}
 
-	stop_flag_.store(false);
-	pty_dead_.store(false);
+	stopFlag_.store(false);
+	ptyDead_.store(false);
 	spawned_.store(true);
 
-	initial_cmd_sent_.store(false);
-	read_thread_ = std::thread(&TerminalPanel::ReadLoop, this);
+	initialCmdSent_.store(false);
+	readThread_ = std::thread(&TerminalPanel::ReadLoop, this);
 }
 
 // ---------------------------------------------------------------------------
@@ -124,11 +124,11 @@ void TerminalPanel::Shutdown()
 	if (!spawned_.load())
 		return;
 
-	stop_flag_.store(true);
+	stopFlag_.store(true);
 	cv_.notify_one();
 
-	if (read_thread_.joinable())
-		read_thread_.join();
+	if (readThread_.joinable())
+		readThread_.join();
 
 	pty_.close();
 
@@ -149,31 +149,31 @@ void TerminalPanel::ReadLoop()
 {
 	char buf[4096];
 
-	while (!stop_flag_.load()) {
+	while (!stopFlag_.load()) {
 		int n = pty_.read(buf, sizeof(buf));
 
 		if (n > 0) {
-			std::lock_guard<std::mutex> lock(vterm_mutex_);
+			std::lock_guard<std::mutex> lock(vtermMutex_);
 			vterm_input_write(vt_, buf, static_cast<size_t>(n));
 			screen_.PostEvent(Event::Custom);
 
 			// Send the initial command after the shell produces its first
 			// output (prompt), so it is ready to accept input.
-			if (!initial_command_.empty() && !initial_cmd_sent_.load()) {
-				initial_cmd_sent_.store(true);
-				std::string cmd = initial_command_ + "\r";
+			if (!initialCommand_.empty() && !initialCmdSent_.load()) {
+				initialCmdSent_.store(true);
+				std::string cmd = initialCommand_ + "\r";
 				pty_.write(cmd.data(), cmd.size());
 			}
 		} else if (n == 0) {
 			// No data available — sleep briefly
-			std::unique_lock<std::mutex> lock(cv_mutex_);
+			std::unique_lock<std::mutex> lock(cvMutex_);
 			cv_.wait_for(lock, std::chrono::milliseconds(16), [this] {
-				return stop_flag_.load();
+				return stopFlag_.load();
 			});
 		} else {
 			// PTY error / closed
-			if (!pty_.is_alive()) {
-				pty_dead_.store(true);
+			if (!pty_.isAlive()) {
+				ptyDead_.store(true);
 				screen_.PostEvent(Event::Custom);
 				break;
 			}
@@ -182,15 +182,15 @@ void TerminalPanel::ReadLoop()
 }
 
 // ---------------------------------------------------------------------------
-// Resize — update vterm + PTY dimensions (caller must hold vterm_mutex_)
+// Resize — update vterm + PTY dimensions (caller must hold vtermMutex_)
 // ---------------------------------------------------------------------------
 
-void TerminalPanel::Resize(int new_cols, int new_rows)
+void TerminalPanel::Resize(int newCols, int newRows)
 {
-	vterm_set_size(vt_, new_rows, new_cols);
-	pty_.resize(new_cols, new_rows);
-	cols_ = new_cols;
-	rows_ = new_rows;
+	vterm_set_size(vt_, newRows, newCols);
+	pty_.resize(newCols, newRows);
+	cols_ = newCols;
+	rows_ = newRows;
 }
 
 // ---------------------------------------------------------------------------
@@ -206,30 +206,30 @@ Element TerminalPanel::RenderScreen()
 			   flex;
 	}
 
-	if (pty_dead_.load()) {
+	if (ptyDead_.load()) {
 		return window(text(""),
 					  center(text("Shell process has exited.") | dim),
 					  EMPTY) |
 			   flex;
 	}
 
-	std::lock_guard<std::mutex> lock(vterm_mutex_);
+	std::lock_guard<std::mutex> lock(vtermMutex_);
 
 	// Resize vterm + PTY if the container dimensions changed.
-	int new_cols = (box_.x_max - box_.x_min + 1) - 2; // subtract window border
-	int new_rows = (box_.y_max - box_.y_min + 1) - 2;
-	if (new_cols < 1)
-		new_cols = 1;
-	if (new_rows < 1)
-		new_rows = 1;
-	if (new_cols > 0 && new_rows > 0 && box_.x_max > 0 && box_.y_max > 0 &&
-		(new_cols != cols_ || new_rows != rows_)) {
-		Resize(new_cols, new_rows);
+	int newCols = (box_.x_max - box_.x_min + 1) - 2; // subtract window border
+	int newRows = (box_.y_max - box_.y_min + 1) - 2;
+	if (newCols < 1)
+		newCols = 1;
+	if (newRows < 1)
+		newRows = 1;
+	if (newCols > 0 && newRows > 0 && box_.x_max > 0 && box_.y_max > 0 &&
+		(newCols != cols_ || newRows != rows_)) {
+		Resize(newCols, newRows);
 	}
 
 	// Query cursor position
-	VTermPos cursor_pos = {};
-	vterm_state_get_cursorpos(vterm_obtain_state(vt_), &cursor_pos);
+	VTermPos cursorPos = {};
+	vterm_state_get_cursorpos(vterm_obtain_state(vt_), &cursorPos);
 
 	Elements lines;
 	lines.reserve(static_cast<size_t>(rows_));
@@ -288,7 +288,7 @@ Element TerminalPanel::RenderScreen()
 				elem = elem | dim; // FTXUI has no italic; use dim as fallback
 
 			// Apply cursor inversion if this cell is at cursor position
-			if (cursor_pos.row == row && cursor_pos.col == col)
+			if (cursorPos.row == row && cursorPos.col == col)
 				elem = elem | inverted;
 
 			cells.push_back(elem);
@@ -325,7 +325,7 @@ void TerminalPanel::SetCapturing(bool value)
 
 bool TerminalPanel::HandleEvent(Event event)
 {
-	if (!spawned_.load() || pty_dead_.load())
+	if (!spawned_.load() || ptyDead_.load())
 		return false;
 
 	// Ctrl+T toggles capture mode — releases input to the UI.
@@ -342,7 +342,7 @@ bool TerminalPanel::HandleEvent(Event event)
 	if (!capturing_.load())
 		return false;
 
-	std::lock_guard<std::mutex> lock(vterm_mutex_);
+	std::lock_guard<std::mutex> lock(vtermMutex_);
 
 	VTermModifier mod = VTERM_MOD_NONE;
 
@@ -482,7 +482,7 @@ Component TerminalPanel::Component()
 
 bool TerminalPanel::WantsEvent(ftxui::Event event) const
 {
-	if (!spawned_.load() || pty_dead_.load())
+	if (!spawned_.load() || ptyDead_.load())
 		return false;
 
 	// Always intercept Ctrl+T so HandleEvent can toggle capture mode.

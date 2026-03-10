@@ -77,9 +77,9 @@ class MemoryMonitor
 	 *
 	 * @note This method is thread-safe and can be called concurrently
 	 *       with update() or other get_* methods.
-	 * @see try_update()
+	 * @see tryUpdate()
 	 */
-	MemoryStats get_stats() const;
+	MemoryStats getStats() const;
 
 	/**
 	 * @brief Calls @ref update() and returns the resulting stats.
@@ -96,7 +96,7 @@ class MemoryMonitor
 	 *       are performed atomically with respect to other threads.
 	 * @see update(), get_stats()
 	 */
-	std::optional<MemoryStats> try_update();
+	std::optional<MemoryStats> tryUpdate();
 
   private:
 	/**
@@ -108,7 +108,7 @@ class MemoryMonitor
 	MemoryMonitor() = default;
 
 	MemoryStats stats_;
-	mutable std::mutex stats_mutex_;
+	mutable std::mutex statsMutex_;
 
 	/**
 	 * @brief Linux-specific memory sampling implementation.
@@ -116,7 +116,7 @@ class MemoryMonitor
 	 * Parses /proc/meminfo to extract MemTotal and MemAvailable fields,
 	 * converting from kilobytes to mebibytes.
 	 */
-	void update_linux();
+	void updateLinux();
 
 	/**
 	 * @brief Windows-specific memory sampling implementation.
@@ -124,12 +124,12 @@ class MemoryMonitor
 	 * Uses GlobalMemoryStatusEx() API to query system memory statistics,
 	 * converting from bytes to mebibytes.
 	 */
-	void update_windows();
+	void updateWindows();
 
 	/**
 	 * @brief Fallback implementation for unknown platforms.
 	 *
 	 * This method does nothing; stats_ remains unchanged.
 	 */
-	void update_unknown();
+	void updateUnknown();
 };

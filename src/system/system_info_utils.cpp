@@ -1,5 +1,5 @@
 /**
- * @file system_info_utils.cpp
+ * @file systemInfoUtils.cpp
  * @brief System information utility functions.
  *
  * Provides cross-platform utilities for querying hardware information,
@@ -20,7 +20,7 @@
 #define NULL_REDIRECT "2>/dev/null"
 #endif
 
-std::vector<Hardware> SystemInfoUtils::get_gpu_info()
+std::vector<Hardware> SystemInfoUtils::getGpuInfo()
 {
 	std::vector<Hardware> gpus;
 

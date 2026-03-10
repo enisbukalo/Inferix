@@ -40,7 +40,7 @@ class SystemMonitorRunner
 	 *
 	 * This constructor:
 	 * 1. Stores the reference to the FTXUI screen
-	 * 2. Initializes the stop_flag_ to false
+	 * 2. Initializes the stopFlag_ to false
 	 * 3. Creates and starts the background thread via thread_
 	 *
 	 * The background thread begins polling immediately after construction.
@@ -74,7 +74,7 @@ class SystemMonitorRunner
 	 * thread.
 	 *
 	 * This destructor:
-	 * 1. Sets stop_flag_ to true
+	 * 1. Sets stopFlag_ to true
 	 * 2. Notifies cv_ to wake the polling thread
 	 * 3. Joins the background thread
 	 * 4. Ensures clean shutdown of all monitors
@@ -88,7 +88,7 @@ class SystemMonitorRunner
 	 * @brief Sets the stop flag, wakes the polling thread, and joins it.
 	 *
 	 * This method:
-	 * 1. Sets stop_flag_ to true
+	 * 1. Sets stopFlag_ to true
 	 * 2. Notifies cv_ to wake the polling thread if it's waiting
 	 * 3. Joins the background thread
 	 * 4. Ensures clean shutdown of all monitors
@@ -108,8 +108,8 @@ class SystemMonitorRunner
 	 * This loop:
 	 * 1. Calls update() on CpuMonitor, MemoryMonitor, and GpuMonitor
 	 * 2. Posts a Custom event to the FTXUI screen to trigger redraw
-	 * 3. Waits for kThreadWaitTimeMs (250ms) or until stop_flag_ is set
-	 * 4. Repeats until stop_flag_ is true
+	 * 3. Waits for kThreadWaitTimeMs (250ms) or until stopFlag_ is set
+	 * 4. Repeats until stopFlag_ is true
 	 *
 	 * The loop uses a condition variable to allow the thread to wake up
 	 * immediately if stop() is called, rather than waiting for the full
@@ -148,14 +148,14 @@ class SystemMonitorRunner
 	 * When set to true, the run() loop terminates and joins.
 	 * Protected by atomic operations for thread-safe access.
 	 */
-	std::atomic<bool> stop_flag_{ false };
+	std::atomic<bool> stopFlag_{ false };
 
 	/**
 	 * @brief Mutex for condition variable access.
 	 *
 	 * Protects access to cv_ during wait/notify operations.
 	 */
-	std::mutex cv_mutex_;
+	std::mutex cvMutex_;
 
 	/**
 	 * @brief Condition variable for thread coordination.
@@ -168,8 +168,8 @@ class SystemMonitorRunner
 	/**
 	 * @brief Background thread for polling monitors.
 	 *
-	 * Declared last to ensure proper initialization order: stop_flag_,
-	 * cv_mutex_, and cv_ must be initialized before thread_ starts.
+	 * Declared last to ensure proper initialization order: stopFlag_,
+	 * cvMutex_, and cv_ must be initialized before thread_ starts.
 	 */
 	std::thread thread_;
 };

@@ -1,5 +1,5 @@
 /**
- * @file cpu_linux.cpp
+ * @file cpuLinux.cpp
  * @brief Linux-specific CPU monitoring implementation.
  *
  * Parses /proc/stat to extract CPU time statistics and calculates
@@ -11,11 +11,11 @@
 #include <sstream>
 #include <thread>
 
-void CpuMonitor::update_linux()
+void CpuMonitor::updateLinux()
 {
 	std::ifstream file("/proc/stat");
 
-	long long prev_idle = 0, prev_total = 0;
+	long long prevIdle = 0, prevTotal = 0;
 
 	std::string line;
 	// Read first snapshot from /proc/stat
@@ -31,10 +31,9 @@ void CpuMonitor::update_linux()
 			steal;
 
 		// Idle time includes both idle and iowait states
-		prev_idle = idle + iowait;
+		prevIdle = idle + iowait;
 		// Total time is sum of all CPU time fields
-		prev_total =
-			user + nice + system + idle + iowait + irq + softirq + steal;
+		prevTotal = user + nice + system + idle + iowait + irq + softirq + steal;
 	}
 
 	// Wait for a short interval to measure CPU activity
@@ -44,7 +43,7 @@ void CpuMonitor::update_linux()
 	file.clear();
 	file.seekg(0);
 
-	long long curr_idle = 0, curr_total = 0;
+	long long currIdle = 0, currTotal = 0;
 
 	// Read second snapshot
 	if (std::getline(file, line)) {
@@ -56,21 +55,20 @@ void CpuMonitor::update_linux()
 		iss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >>
 			steal;
 
-		curr_idle = idle + iowait;
-		curr_total =
-			user + nice + system + idle + iowait + irq + softirq + steal;
+		currIdle = idle + iowait;
+		currTotal = user + nice + system + idle + iowait + irq + softirq + steal;
 	}
 
 	// Calculate the change in idle and total time during the interval
-	long long idle_delta = curr_idle - prev_idle;
-	long long total_delta = curr_total - prev_total;
+	long long idleDelta = currIdle - prevIdle;
+	long long totalDelta = currTotal - prevTotal;
 
-	if (total_delta > 0) {
-		ProcessorStats new_stats;
+	if (totalDelta > 0) {
+		ProcessorStats newStats;
 		// CPU usage = 1 - (idle_time / total_time), expressed as percentage
-		new_stats.usagePercentage = ((double)idle_delta / total_delta);
+		newStats.usagePercentage = ((double)idleDelta / totalDelta);
 
-		std::lock_guard<std::mutex> lock(stats_mutex_);
-		stats_ = new_stats;
+		std::lock_guard<std::mutex> lock(statsMutex_);
+		stats_ = newStats;
 	}
 }

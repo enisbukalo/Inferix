@@ -1,5 +1,5 @@
 /**
- * @file config_manager.cpp
+ * @file configManager.cpp
  * @brief Implementation of the ConfigManager singleton.
  *
  * This file implements the ConfigManager class, which provides a
@@ -22,7 +22,7 @@
  * @note The singleton is destroyed at program termination, but config
  *       should be saved explicitly before exit if modifications were made.
  *
- * @see config_manager.h for API documentation
+ * @see configManager.h for API documentation
  * @see config.h for UserConfig structure documentation
  */
 
@@ -59,8 +59,8 @@ std::string ConfigManager::GetConfigFilePath()
 
 bool ConfigManager::Load()
 {
-	std::string config_dir = GetConfigDir();
-	std::string config_file = GetConfigFilePath();
+	std::string configDir = GetConfigDir();
+	std::string configFile = GetConfigFilePath();
 
 	/*
 	 * Load algorithm:
@@ -75,7 +75,7 @@ bool ConfigManager::Load()
 
 	// Create config directory if it doesn't exist
 	try {
-		fs::create_directories(config_dir);
+		fs::create_directories(configDir);
 	} catch (const std::exception &) {
 		// If we can't create the directory, use defaults
 		config_ = Config::UserConfig{};
@@ -84,7 +84,7 @@ bool ConfigManager::Load()
 	}
 
 	// Try to read existing config file
-	std::ifstream file(config_file);
+	std::ifstream file(configFile);
 	if (file.is_open()) {
 		try {
 			json j = json::parse(file);
@@ -105,16 +105,16 @@ bool ConfigManager::Load()
 
 bool ConfigManager::Save()
 {
-	std::string config_dir = GetConfigDir();
-	std::string config_file = GetConfigFilePath();
+	std::string configDir = GetConfigDir();
+	std::string configFile = GetConfigFilePath();
 
 	try {
-		fs::create_directories(config_dir);
+		fs::create_directories(configDir);
 	} catch (const std::exception &) {
 		return false;
 	}
 
-	std::ofstream file(config_file);
+	std::ofstream file(configFile);
 	if (!file.is_open())
 		return false;
 

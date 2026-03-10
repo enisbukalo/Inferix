@@ -73,9 +73,9 @@ class CpuMonitor
 	 *         value (0.0 to 100.0), or 0.0 if no update has been performed.
 	 * @note This method is thread-safe and can be called concurrently
 	 *       with update() or other get_* methods.
-	 * @see try_update()
+	 * @see tryUpdate()
 	 */
-	ProcessorStats get_stats() const;
+	ProcessorStats getStats() const;
 
 	/**
 	 * @brief Calls @ref update() and returns the resulting stats.
@@ -89,9 +89,9 @@ class CpuMonitor
 	 *         sampling interval was too short to detect any CPU activity.
 	 * @note This method is thread-safe. The update and read operations
 	 *       are performed atomically with respect to other threads.
-	 * @see update(), get_stats()
+	 * @see update(), getStats()
 	 */
-	std::optional<ProcessorStats> try_update();
+	std::optional<ProcessorStats> tryUpdate();
 
   private:
 	/**
@@ -103,7 +103,7 @@ class CpuMonitor
 	CpuMonitor() = default;
 
 	ProcessorStats stats_;
-	mutable std::mutex stats_mutex_;
+	mutable std::mutex statsMutex_;
 
 	/**
 	 * @brief Linux-specific CPU sampling implementation.
@@ -111,7 +111,7 @@ class CpuMonitor
 	 * Parses /proc/stat to extract CPU time fields and calculates
 	 * usage by comparing idle time deltas over a 100ms sampling interval.
 	 */
-	void update_linux();
+	void updateLinux();
 
 	/**
 	 * @brief Windows-specific CPU sampling implementation.
@@ -119,12 +119,12 @@ class CpuMonitor
 	 * Uses GetSystemTimes() API to measure idle time deltas over a
 	 * 50ms sampling interval.
 	 */
-	void update_windows();
+	void updateWindows();
 
 	/**
 	 * @brief Fallback implementation for unknown platforms.
 	 *
 	 * This method does nothing; stats_ remains unchanged.
 	 */
-	void update_unknown();
+	void updateUnknown();
 };

@@ -64,7 +64,7 @@ class GpuMonitor
 	 *
 	 * @note This method is thread-safe. Multiple concurrent calls will
 	 *       serialize via the internal mutex.
-	 * @note The stats_ and load_stats_ vectors are updated atomically;
+	 * @note The stats_ and loadStats_ vectors are updated atomically;
 	 *       readers will never see a partially-updated state.
 	 */
 	void update();
@@ -91,9 +91,9 @@ class GpuMonitor
 	 *
 	 * @note This method is thread-safe and can be called concurrently
 	 *       with update() or other get_* methods.
-	 * @see get_load_stats()
+	 * @see getLoadStats()
 	 */
-	std::vector<MemoryStats> get_stats() const;
+	std::vector<MemoryStats> getStats() const;
 
 	/**
 	 * @brief Returns per-GPU compute utilisation snapshots.
@@ -114,13 +114,13 @@ class GpuMonitor
 	 *
 	 * @note This method is thread-safe and can be called concurrently
 	 *       with update() or other get_* methods.
-	 * @see get_stats()
+	 * @see getStats()
 	 */
-	std::vector<ProcessorStats> get_load_stats() const;
+	std::vector<ProcessorStats> getLoadStats() const;
 
   private:
 	GpuMonitor() = default;
 	std::vector<MemoryStats> stats_;
-	std::vector<ProcessorStats> load_stats_;
-	mutable std::mutex stats_mutex_;
+	std::vector<ProcessorStats> loadStats_;
+	mutable std::mutex statsMutex_;
 };

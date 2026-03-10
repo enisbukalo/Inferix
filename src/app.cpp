@@ -31,13 +31,13 @@ void App::Run()
 {
 	auto screen = ScreenInteractive::Fullscreen();
 	SystemMonitorRunner runner(screen);
-	TerminalPanel terminal_panel(screen);
+	TerminalPanel terminalPanel(screen);
 
-	std::vector<std::string> tab_values{ "Settings", "Server Log", "Terminal" };
-	int selected_tab = 0;
-	auto tab_toggle = Toggle(&tab_values, &selected_tab);
+	std::vector<std::string> tabValues{ "Settings", "Server Log", "Terminal" };
+	int selectedTab = 0;
+	auto tabToggle = Toggle(&tabValues, &selectedTab);
 
-	auto settings_content = Renderer([] {
+	auto settingsContent = Renderer([] {
 		return window(text(""),
 					  hbox({
 						  vbox({ ModelsPanel::Render(),
@@ -53,110 +53,110 @@ void App::Run()
 			   flex;
 	});
 
-	auto server_content = Renderer([] {
+	auto serverContent = Renderer([] {
 		return hbox({ text("Some really long status about the server probably "
 						   "here."),
 					  filler(),
 					  ServerInfoPanel::Render() });
 	});
 
-	auto terminal_content = terminal_panel.Component();
+	auto terminalContent = terminalPanel.Component();
 
 	// Placeholder for when we implement reading live log outputs from llama.cpp
-	auto log_output_content =
+	auto logOutputContent =
 		Renderer([] { return window(text(""), text(""), ftxui::EMPTY) | flex; });
 
-	auto tab_container = Container::Tab(
-		{ settings_content, log_output_content, terminal_content },
-		&selected_tab);
+	auto tabContainer =
+		Container::Tab({ settingsContent, logOutputContent, terminalContent },
+					   &selectedTab);
 
 	// Dynamically added tabs (simulating loading from a config file).
 	// Store dynamic terminal panels so they survive until the event loop ends.
 	struct DynamicTerminal
 	{
 		std::unique_ptr<TerminalPanel> panel;
-		int tab_index;
+		int tabIndex;
 	};
-	std::vector<DynamicTerminal> dynamic_terminals;
+	std::vector<DynamicTerminal> dynamicTerminals;
 
 	{
 		auto panel = std::make_unique<TerminalPanel>(screen, "opencode");
 		auto component = panel->Component();
-		tab_values.push_back("Opencode");
-		tab_container->Add(component);
-		int idx = static_cast<int>(tab_values.size()) - 1;
-		dynamic_terminals.push_back({ std::move(panel), idx });
+		tabValues.push_back("Opencode");
+		tabContainer->Add(component);
+		int idx = static_cast<int>(tabValues.size()) - 1;
+		dynamicTerminals.push_back({ std::move(panel), idx });
 	}
 
 	{
 		auto panel = std::make_unique<TerminalPanel>(screen, "gitui");
 		auto component = panel->Component();
-		tab_values.push_back("GitUI");
-		tab_container->Add(component);
-		int idx = static_cast<int>(tab_values.size()) - 1;
-		dynamic_terminals.push_back({ std::move(panel), idx });
+		tabValues.push_back("GitUI");
+		tabContainer->Add(component);
+		int idx = static_cast<int>(tabValues.size()) - 1;
+		dynamicTerminals.push_back({ std::move(panel), idx });
 	}
 
-	auto interactive = Container::Vertical({ tab_toggle, tab_container }) | flex;
+	auto interactive = Container::Vertical({ tabToggle, tabContainer }) | flex;
 
 	// Spawn all terminals eagerly so they're ready when the user switches tabs.
-	terminal_panel.Spawn();
-	for (auto &dt : dynamic_terminals) {
+	terminalPanel.Spawn();
+	for (auto &dt : dynamicTerminals) {
 		dt.panel->Spawn();
 	}
 
-	int prev_tab = selected_tab;
+	int prevTab = selectedTab;
 
 	auto container = Renderer(interactive, [&] {
 		// Auto-capture when switching to a terminal tab.
-		if (selected_tab != prev_tab) {
-			prev_tab = selected_tab;
-			if (selected_tab == 2) {
-				terminal_panel.SetCapturing(true);
+		if (selectedTab != prevTab) {
+			prevTab = selectedTab;
+			if (selectedTab == 2) {
+				terminalPanel.SetCapturing(true);
 			}
-			for (auto &dt : dynamic_terminals) {
-				if (selected_tab == dt.tab_index) {
+			for (auto &dt : dynamicTerminals) {
+				if (selectedTab == dt.tabIndex) {
 					dt.panel->SetCapturing(true);
 				}
 			}
 		}
 
 		// Check if any active terminal tab is capturing input.
-		bool any_capturing = false;
-		if (selected_tab == 2 && terminal_panel.IsCapturing()) {
-			any_capturing = true;
+		bool anyCapturing = false;
+		if (selectedTab == 2 && terminalPanel.IsCapturing()) {
+			anyCapturing = true;
 		}
-		for (auto &dt : dynamic_terminals) {
-			if (selected_tab == dt.tab_index && dt.panel->IsCapturing()) {
-				any_capturing = true;
+		for (auto &dt : dynamicTerminals) {
+			if (selectedTab == dt.tabIndex && dt.panel->IsCapturing()) {
+				anyCapturing = true;
 			}
 		}
 
 		auto panel = interactive->Render() | borderRounded;
-		if (any_capturing)
+		if (anyCapturing)
 			panel = panel | color(Color::LightGreen);
 
 		return vbox({ SystemResourcesPanel::Render(),
 					  separatorCharacter("*") | bold | color(Color::Orange3),
 					  panel,
-					  server_content->Render() }) |
+					  serverContent->Render() }) |
 			   flex;
 	});
 
 	// When a terminal tab is active, intercept keyboard events before
 	// the Toggle component consumes them (e.g. arrow keys, Tab, chars).
-	auto root = container | CatchEvent([&](Event event) {
-					if (selected_tab == 2 && terminal_panel.WantsEvent(event)) {
-						return terminal_panel.HandleEvent(event);
-					}
-					for (auto &dt : dynamic_terminals) {
-						if (selected_tab == dt.tab_index &&
-							dt.panel->WantsEvent(event)) {
-							return dt.panel->HandleEvent(event);
-						}
-					}
-					return false;
-				});
+	auto root =
+		container | CatchEvent([&](Event event) {
+			if (selectedTab == 2 && terminalPanel.WantsEvent(event)) {
+				return terminalPanel.HandleEvent(event);
+			}
+			for (auto &dt : dynamicTerminals) {
+				if (selectedTab == dt.tabIndex && dt.panel->WantsEvent(event)) {
+					return dt.panel->HandleEvent(event);
+				}
+			}
+			return false;
+		});
 
 	screen.Loop(root);
 }

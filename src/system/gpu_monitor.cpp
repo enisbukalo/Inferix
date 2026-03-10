@@ -1,5 +1,5 @@
 /**
- * @file gpu_monitor.cpp
+ * @file gpuMonitor.cpp
  * @brief NVIDIA GPU monitoring implementation.
  *
  * Parses nvidia-smi CSV output to extract VRAM usage and GPU utilization
@@ -32,13 +32,13 @@ void GpuMonitor::update()
 	if (!pipe)
 		return;
 
-	std::vector<MemoryStats> new_stats;
-	std::vector<ProcessorStats> new_load_stats;
+	std::vector<MemoryStats> newStats;
+	std::vector<ProcessorStats> newLoadStats;
 
 	char buffer[256];
 	// Parse CSV output line by line
 	while (std::fgets(buffer, sizeof(buffer), pipe)) {
-		int index, util_pct;
+		int index, utilPct;
 		uint64_t total, used, free;
 		// Parse: index, total_mb, used_mb, free_mb, utilization_pct
 		if (std::sscanf(buffer,
@@ -47,7 +47,7 @@ void GpuMonitor::update()
 						&total,
 						&used,
 						&free,
-						&util_pct) == 5) {
+						&utilPct) == 5) {
 			MemoryStats s;
 			s.id = index;
 			s.totalMb = total;
@@ -55,30 +55,30 @@ void GpuMonitor::update()
 			s.availableMb = free;
 			// Calculate memory usage percentage
 			s.usagePercentage = (total > 0) ? (used * 100.0 / total) : 0.0;
-			new_stats.push_back(s);
+			newStats.push_back(s);
 
 			ProcessorStats p;
 			// GPU utilization is already a percentage from nvidia-smi
-			p.usagePercentage = static_cast<double>(util_pct);
-			new_load_stats.push_back(p);
+			p.usagePercentage = static_cast<double>(utilPct);
+			newLoadStats.push_back(p);
 		}
 	}
 	PCLOSE(pipe);
 
 	// Update internal state under lock
-	std::lock_guard<std::mutex> lock(stats_mutex_);
-	stats_ = std::move(new_stats);
-	load_stats_ = std::move(new_load_stats);
+	std::lock_guard<std::mutex> lock(statsMutex_);
+	stats_ = std::move(newStats);
+	loadStats_ = std::move(newLoadStats);
 }
 
-std::vector<MemoryStats> GpuMonitor::get_stats() const
+std::vector<MemoryStats> GpuMonitor::getStats() const
 {
-	std::lock_guard<std::mutex> lock(stats_mutex_);
+	std::lock_guard<std::mutex> lock(statsMutex_);
 	return stats_;
 }
 
-std::vector<ProcessorStats> GpuMonitor::get_load_stats() const
+std::vector<ProcessorStats> GpuMonitor::getLoadStats() const
 {
-	std::lock_guard<std::mutex> lock(stats_mutex_);
-	return load_stats_;
+	std::lock_guard<std::mutex> lock(statsMutex_);
+	return loadStats_;
 }

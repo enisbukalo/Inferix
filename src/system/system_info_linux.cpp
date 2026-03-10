@@ -1,5 +1,5 @@
 /**
- * @file system_info_linux.cpp
+ * @file systemInfoLinux.cpp
  * @brief Linux-specific system information implementation.
  *
  * Implements CPU and GPU detection for Linux by parsing /proc/cpuinfo
@@ -11,11 +11,11 @@
 #include <fstream>
 #include <string>
 
-Hardware SystemInfo::get_cpu_info()
+Hardware SystemInfo::getCpuInfo()
 {
 	std::ifstream file("/proc/cpuinfo");
 
-	std::string model_name;
+	std::string modelName;
 
 	// Helper lambda to trim whitespace from strings
 	auto trim = [](const std::string &s) {
@@ -36,7 +36,7 @@ Hardware SystemInfo::get_cpu_info()
 
 		// Extract the "model name" field
 		if (key == "model name") {
-			model_name = value;
+			modelName = value;
 			break;
 		}
 	}
@@ -44,22 +44,22 @@ Hardware SystemInfo::get_cpu_info()
 	// Parse "Intel(R) Core(TM) i9-13900K CPU @ 3.00GHz" into make and model
 	std::string make = "Unknown";
 	std::string model = "Unknown";
-	if (!model_name.empty()) {
-		auto space = model_name.find(' ');
-		make = model_name.substr(0, space);
-		model = (space != std::string::npos) ? model_name.substr(space + 1) : "";
+	if (!modelName.empty()) {
+		auto space = modelName.find(' ');
+		make = modelName.substr(0, space);
+		model = (space != std::string::npos) ? modelName.substr(space + 1) : "";
 	}
 
 	return { HardwareType::CPU, make, model };
 }
 
-void SystemInfo::update_linux()
+void SystemInfo::updateLinux()
 {
-	cpu_ = get_cpu_info();
-	gpus_ = SystemInfoUtils::get_gpu_info();
+	cpu_ = getCpuInfo();
+	gpus_ = SystemInfoUtils::getGpuInfo();
 }
 
 void SystemInfo::update()
 {
-	update_linux();
+	updateLinux();
 }

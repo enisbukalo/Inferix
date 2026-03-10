@@ -1,5 +1,5 @@
 /**
- * @file pty_linux.cpp
+ * @file ptyLinux.cpp
  * @brief Linux-specific PTY implementation using forkpty().
  *
  * Spawns a shell process via forkpty and provides non-blocking read/write
@@ -15,9 +15,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-bool PtyHandler::spawn_linux(int cols, int rows)
+bool PtyHandler::spawnLinux(int cols, int rows)
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
 	if (alive_)
 		return false;
@@ -47,20 +47,20 @@ bool PtyHandler::spawn_linux(int cols, int rows)
 	if (flags != -1)
 		fcntl(master, F_SETFL, flags | O_NONBLOCK);
 
-	master_fd_ = master;
-	child_pid_ = pid;
+	masterFd_ = master;
+	childPid_ = pid;
 	alive_ = true;
 	return true;
 }
 
-int PtyHandler::read_linux(char *buf, std::size_t len)
+int PtyHandler::readLinux(char *buf, std::size_t len)
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
-	if (!alive_ || master_fd_ < 0)
+	if (!alive_ || masterFd_ < 0)
 		return -1;
 
-	ssize_t n = ::read(master_fd_, buf, len);
+	ssize_t n = ::read(masterFd_, buf, len);
 	if (n < 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			return 0;
@@ -69,61 +69,61 @@ int PtyHandler::read_linux(char *buf, std::size_t len)
 	return static_cast<int>(n);
 }
 
-int PtyHandler::write_linux(const char *data, std::size_t len)
+int PtyHandler::writeLinux(const char *data, std::size_t len)
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
-	if (!alive_ || master_fd_ < 0)
+	if (!alive_ || masterFd_ < 0)
 		return -1;
 
-	ssize_t n = ::write(master_fd_, data, len);
+	ssize_t n = ::write(masterFd_, data, len);
 	return (n < 0) ? -1 : static_cast<int>(n);
 }
 
-bool PtyHandler::resize_linux(int cols, int rows)
+bool PtyHandler::resizeLinux(int cols, int rows)
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
-	if (!alive_ || master_fd_ < 0)
+	if (!alive_ || masterFd_ < 0)
 		return false;
 
 	struct winsize ws = {};
 	ws.ws_col = static_cast<unsigned short>(cols);
 	ws.ws_row = static_cast<unsigned short>(rows);
 
-	return ioctl(master_fd_, TIOCSWINSZ, &ws) == 0;
+	return ioctl(masterFd_, TIOCSWINSZ, &ws) == 0;
 }
 
-void PtyHandler::close_linux()
+void PtyHandler::closeLinux()
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
 	if (!alive_)
 		return;
 
-	if (master_fd_ >= 0) {
-		::close(master_fd_);
-		master_fd_ = -1;
+	if (masterFd_ >= 0) {
+		::close(masterFd_);
+		masterFd_ = -1;
 	}
 
-	if (child_pid_ > 0) {
+	if (childPid_ > 0) {
 		int status;
-		waitpid(child_pid_, &status, 0);
-		child_pid_ = -1;
+		waitpid(childPid_, &status, 0);
+		childPid_ = -1;
 	}
 
 	alive_ = false;
 }
 
-bool PtyHandler::is_alive_linux()
+bool PtyHandler::isAliveLinux()
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
-	if (!alive_ || child_pid_ <= 0)
+	if (!alive_ || childPid_ <= 0)
 		return false;
 
 	int status;
-	pid_t result = waitpid(child_pid_, &status, WNOHANG);
+	pid_t result = waitpid(childPid_, &status, WNOHANG);
 
 	if (result == 0) {
 		// Child still running
@@ -132,10 +132,10 @@ bool PtyHandler::is_alive_linux()
 
 	// Child has exited
 	alive_ = false;
-	if (master_fd_ >= 0) {
-		::close(master_fd_);
-		master_fd_ = -1;
+	if (masterFd_ >= 0) {
+		::close(masterFd_);
+		masterFd_ = -1;
 	}
-	child_pid_ = -1;
+	childPid_ = -1;
 	return false;
 }

@@ -17,8 +17,8 @@
  * pipe handles (Windows) are managed internally.
  *
  * Thread model:
- * - All public methods are thread-safe via pty_mutex_
- * - Platform-specific implementations also acquire pty_mutex_ internally
+ * - All public methods are thread-safe via ptyMutex_
+ * - Platform-specific implementations also acquire ptyMutex_ internally
  * - PTY operations (spawn, read, write, resize, close) are serialized
  */
 class PtyHandler
@@ -36,7 +36,7 @@ class PtyHandler
 	 * @brief Spawns a new shell process in a PTY of the given size.
 	 *
 	 * This method:
-	 * 1. Acquires pty_mutex_ to ensure thread safety
+	 * 1. Acquires ptyMutex_ to ensure thread safety
 	 * 2. Checks that the PTY is not already spawned
 	 * 3. Creates a new PTY with the specified dimensions
 	 * 4. Forks/execs a shell process (bash/sh on Linux, cmd.exe on Windows)
@@ -65,7 +65,7 @@ class PtyHandler
 	 * @return Number of bytes read (0 if no data available, -1 on error).
 	 * @note This method is non-blocking; it returns immediately if no
 	 *       data is available.
-	 * @note Callers should check is_alive() to detect if the shell has
+	 * @note Callers should check isAlive() to detect if the shell has
 	 *       exited.
 	 */
 	int read(char *buf, std::size_t len);
@@ -127,7 +127,7 @@ class PtyHandler
 	 *         has exited or the PTY is not spawned.
 	 * @note This method is safe to call from any thread.
 	 */
-	bool is_alive();
+	bool isAlive();
 
 	/**
 	 * @brief Destructor that closes the PTY.
@@ -153,100 +153,100 @@ class PtyHandler
 	 */
 	PtyHandler &operator=(const PtyHandler &) = delete;
 
-	mutable std::mutex pty_mutex_;
+	mutable std::mutex ptyMutex_;
 	bool alive_ = false;
 
 	// Platform-specific dispatch targets
 	/**
 	 * @brief Linux-specific PTY spawn implementation using forkpty().
 	 */
-	bool spawn_linux(int cols, int rows);
+	bool spawnLinux(int cols, int rows);
 
 	/**
 	 * @brief Windows-specific PTY spawn implementation using ConPTY.
 	 */
-	bool spawn_windows(int cols, int rows);
+	bool spawnWindows(int cols, int rows);
 
 	/**
 	 * @brief Fallback implementation for unknown platforms.
 	 */
-	bool spawn_unknown(int cols, int rows);
+	bool spawnUnknown(int cols, int rows);
 
 	/**
 	 * @brief Linux-specific read implementation using read().
 	 */
-	int read_linux(char *buf, std::size_t len);
+	int readLinux(char *buf, std::size_t len);
 
 	/**
 	 * @brief Windows-specific read implementation using ReadFile().
 	 */
-	int read_windows(char *buf, std::size_t len);
+	int readWindows(char *buf, std::size_t len);
 
 	/**
 	 * @brief Fallback implementation for unknown platforms.
 	 */
-	int read_unknown(char *buf, std::size_t len);
+	int readUnknown(char *buf, std::size_t len);
 
 	/**
 	 * @brief Linux-specific write implementation using write().
 	 */
-	int write_linux(const char *data, std::size_t len);
+	int writeLinux(const char *data, std::size_t len);
 
 	/**
 	 * @brief Windows-specific write implementation using WriteFile().
 	 */
-	int write_windows(const char *data, std::size_t len);
+	int writeWindows(const char *data, std::size_t len);
 
 	/**
 	 * @brief Fallback implementation for unknown platforms.
 	 */
-	int write_unknown(const char *data, std::size_t len);
+	int writeUnknown(const char *data, std::size_t len);
 
 	/**
 	 * @brief Linux-specific resize implementation using TIOCSWINSZ ioctl.
 	 */
-	bool resize_linux(int cols, int rows);
+	bool resizeLinux(int cols, int rows);
 
 	/**
 	 * @brief Windows-specific resize implementation using ResizePseudoConsole.
 	 */
-	bool resize_windows(int cols, int rows);
+	bool resizeWindows(int cols, int rows);
 
 	/**
 	 * @brief Fallback implementation for unknown platforms.
 	 */
-	bool resize_unknown(int cols, int rows);
+	bool resizeUnknown(int cols, int rows);
 
 	/**
 	 * @brief Linux-specific close implementation using close() and waitpid().
 	 */
-	void close_linux();
+	void closeLinux();
 
 	/**
 	 * @brief Windows-specific close implementation using CloseHandle and
 	 * TerminateProcess.
 	 */
-	void close_windows();
+	void closeWindows();
 
 	/**
 	 * @brief Fallback implementation for unknown platforms.
 	 */
-	void close_unknown();
+	void closeUnknown();
 
 	/**
-	 * @brief Linux-specific is_alive implementation using waitpid(WNOHANG).
+	 * @brief Linux-specific isAlive implementation using waitpid(WNOHANG).
 	 */
-	bool is_alive_linux();
+	bool isAliveLinux();
 
 	/**
-	 * @brief Windows-specific is_alive implementation using WaitForSingleObject.
+	 * @brief Windows-specific isAlive implementation using WaitForSingleObject.
 	 */
-	bool is_alive_windows();
+	bool isAliveWindows();
 
 	/**
 	 * @brief Fallback implementation for unknown platforms.
 	 */
-	bool is_alive_unknown();
+	bool isAliveUnknown();
 
 #ifdef _WIN32
 	/**
@@ -261,14 +261,14 @@ class PtyHandler
 	 *
 	 * Handle to the write end of the pipe that feeds data to the ConPTY.
 	 */
-	void *pipe_in_ = nullptr;
+	void *pipeIn_ = nullptr;
 
 	/**
 	 * @brief Windows-specific: Pipe from ConPTY (output).
 	 *
 	 * Handle to the read end of the pipe that receives data from the ConPTY.
 	 */
-	void *pipe_out_ = nullptr;
+	void *pipeOut_ = nullptr;
 
 	/**
 	 * @brief Windows-specific: Handle to the shell process.
@@ -276,7 +276,7 @@ class PtyHandler
 	 * Process handle used to check if the shell is still running and
 	 * to terminate it during close().
 	 */
-	void *proc_handle_ = nullptr;
+	void *procHandle_ = nullptr;
 #else
 	/**
 	 * @brief Linux-specific: Master file descriptor for the PTY.
@@ -284,7 +284,7 @@ class PtyHandler
 	 * File descriptor returned by forkpty() for communicating with the
 	 * slave side of the pseudo-terminal.
 	 */
-	int master_fd_ = -1;
+	int masterFd_ = -1;
 
 	/**
 	 * @brief Linux-specific: PID of the shell process.
@@ -292,6 +292,6 @@ class PtyHandler
 	 * Process ID of the child process spawned by forkpty(). Used to
 	 * check if the shell is still running via waitpid().
 	 */
-	int child_pid_ = -1;
+	int childPid_ = -1;
 #endif
 };

@@ -1,5 +1,5 @@
 /**
- * @file pty_windows.cpp
+ * @file ptyWindows.cpp
  * @brief Windows-specific PTY implementation using ConPTY.
  *
  * Spawns a shell process via CreatePseudoConsole and provides
@@ -19,25 +19,25 @@
 
 #include <windows.h>
 
-bool PtyHandler::spawn_windows(int cols, int rows)
+bool PtyHandler::spawnWindows(int cols, int rows)
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
 	if (alive_)
 		return false;
 
-	HANDLE pipe_pty_in = INVALID_HANDLE_VALUE;
-	HANDLE pipe_pty_out = INVALID_HANDLE_VALUE;
-	HANDLE pipe_app_in = INVALID_HANDLE_VALUE;
-	HANDLE pipe_app_out = INVALID_HANDLE_VALUE;
+	HANDLE pipePtyIn = INVALID_HANDLE_VALUE;
+	HANDLE pipePtyOut = INVALID_HANDLE_VALUE;
+	HANDLE pipeAppIn = INVALID_HANDLE_VALUE;
+	HANDLE pipeAppOut = INVALID_HANDLE_VALUE;
 
-	// Create pipes: app writes to pipe_pty_in, reads from pipe_app_out
-	if (!CreatePipe(&pipe_pty_in, &pipe_app_in, nullptr, 0))
+	// Create pipes: app writes to pipePtyIn, reads from pipeAppOut
+	if (!CreatePipe(&pipePtyIn, &pipeAppIn, nullptr, 0))
 		return false;
 
-	if (!CreatePipe(&pipe_app_out, &pipe_pty_out, nullptr, 0)) {
-		CloseHandle(pipe_pty_in);
-		CloseHandle(pipe_app_in);
+	if (!CreatePipe(&pipeAppOut, &pipePtyOut, nullptr, 0)) {
+		CloseHandle(pipePtyIn);
+		CloseHandle(pipeAppIn);
 		return false;
 	}
 
@@ -47,59 +47,59 @@ bool PtyHandler::spawn_windows(int cols, int rows)
 	size.Y = static_cast<SHORT>(rows);
 
 	HPCON hpc = nullptr;
-	HRESULT hr = CreatePseudoConsole(size, pipe_pty_in, pipe_pty_out, 0, &hpc);
+	HRESULT hr = CreatePseudoConsole(size, pipePtyIn, pipePtyOut, 0, &hpc);
 
 	// Close the PTY-side pipe handles; ConPTY owns them now
-	CloseHandle(pipe_pty_in);
-	CloseHandle(pipe_pty_out);
+	CloseHandle(pipePtyIn);
+	CloseHandle(pipePtyOut);
 
 	if (FAILED(hr)) {
-		CloseHandle(pipe_app_in);
-		CloseHandle(pipe_app_out);
+		CloseHandle(pipeAppIn);
+		CloseHandle(pipeAppOut);
 		return false;
 	}
 
 	// Set up process attributes with the pseudo console
-	SIZE_T attr_size = 0;
-	InitializeProcThreadAttributeList(nullptr, 1, 0, &attr_size);
+	SIZE_T attrSize = 0;
+	InitializeProcThreadAttributeList(nullptr, 1, 0, &attrSize);
 
-	auto attr_list = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(
-		HeapAlloc(GetProcessHeap(), 0, attr_size));
+	auto attrList = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(
+		HeapAlloc(GetProcessHeap(), 0, attrSize));
 
-	if (!attr_list) {
+	if (!attrList) {
 		ClosePseudoConsole(hpc);
-		CloseHandle(pipe_app_in);
-		CloseHandle(pipe_app_out);
+		CloseHandle(pipeAppIn);
+		CloseHandle(pipeAppOut);
 		return false;
 	}
 
-	if (!InitializeProcThreadAttributeList(attr_list, 1, 0, &attr_size)) {
-		HeapFree(GetProcessHeap(), 0, attr_list);
+	if (!InitializeProcThreadAttributeList(attrList, 1, 0, &attrSize)) {
+		HeapFree(GetProcessHeap(), 0, attrList);
 		ClosePseudoConsole(hpc);
-		CloseHandle(pipe_app_in);
-		CloseHandle(pipe_app_out);
+		CloseHandle(pipeAppIn);
+		CloseHandle(pipeAppOut);
 		return false;
 	}
 
-	if (!UpdateProcThreadAttribute(attr_list,
+	if (!UpdateProcThreadAttribute(attrList,
 								   0,
 								   PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
 								   hpc,
 								   sizeof(HPCON),
 								   nullptr,
 								   nullptr)) {
-		DeleteProcThreadAttributeList(attr_list);
-		HeapFree(GetProcessHeap(), 0, attr_list);
+		DeleteProcThreadAttributeList(attrList);
+		HeapFree(GetProcessHeap(), 0, attrList);
 		ClosePseudoConsole(hpc);
-		CloseHandle(pipe_app_in);
-		CloseHandle(pipe_app_out);
+		CloseHandle(pipeAppIn);
+		CloseHandle(pipeAppOut);
 		return false;
 	}
 
 	// Launch the shell process
 	STARTUPINFOEXW si = {};
 	si.StartupInfo.cb = sizeof(STARTUPINFOEXW);
-	si.lpAttributeList = attr_list;
+	si.lpAttributeList = attrList;
 
 	PROCESS_INFORMATION pi = {};
 	wchar_t cmd[] = L"cmd.exe";
@@ -115,35 +115,35 @@ bool PtyHandler::spawn_windows(int cols, int rows)
 							 &si.StartupInfo,
 							 &pi);
 
-	DeleteProcThreadAttributeList(attr_list);
-	HeapFree(GetProcessHeap(), 0, attr_list);
+	DeleteProcThreadAttributeList(attrList);
+	HeapFree(GetProcessHeap(), 0, attrList);
 
 	if (!ok) {
 		ClosePseudoConsole(hpc);
-		CloseHandle(pipe_app_in);
-		CloseHandle(pipe_app_out);
+		CloseHandle(pipeAppIn);
+		CloseHandle(pipeAppOut);
 		return false;
 	}
 
 	CloseHandle(pi.hThread);
 
 	hpc_ = hpc;
-	pipe_in_ = pipe_app_in;
-	pipe_out_ = pipe_app_out;
-	proc_handle_ = pi.hProcess;
+	pipeIn_ = pipeAppIn;
+	pipeOut_ = pipeAppOut;
+	procHandle_ = pi.hProcess;
 	alive_ = true;
 	return true;
 }
 
-int PtyHandler::read_windows(char *buf, std::size_t len)
+int PtyHandler::readWindows(char *buf, std::size_t len)
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
-	if (!alive_ || pipe_out_ == nullptr)
+	if (!alive_ || pipeOut_ == nullptr)
 		return -1;
 
 	DWORD available = 0;
-	if (!PeekNamedPipe(static_cast<HANDLE>(pipe_out_),
+	if (!PeekNamedPipe(static_cast<HANDLE>(pipeOut_),
 					   nullptr,
 					   0,
 					   nullptr,
@@ -155,44 +155,44 @@ int PtyHandler::read_windows(char *buf, std::size_t len)
 	if (available == 0)
 		return 0;
 
-	DWORD to_read = (available < static_cast<DWORD>(len))
-						? available
-						: static_cast<DWORD>(len);
-	DWORD bytes_read = 0;
+	DWORD toRead = (available < static_cast<DWORD>(len))
+					   ? available
+					   : static_cast<DWORD>(len);
+	DWORD bytesRead = 0;
 
-	if (!ReadFile(static_cast<HANDLE>(pipe_out_),
+	if (!ReadFile(static_cast<HANDLE>(pipeOut_),
 				  buf,
-				  to_read,
-				  &bytes_read,
+				  toRead,
+				  &bytesRead,
 				  nullptr)) {
 		return -1;
 	}
 
-	return static_cast<int>(bytes_read);
+	return static_cast<int>(bytesRead);
 }
 
-int PtyHandler::write_windows(const char *data, std::size_t len)
+int PtyHandler::writeWindows(const char *data, std::size_t len)
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
-	if (!alive_ || pipe_in_ == nullptr)
+	if (!alive_ || pipeIn_ == nullptr)
 		return -1;
 
-	DWORD bytes_written = 0;
-	if (!WriteFile(static_cast<HANDLE>(pipe_in_),
+	DWORD bytesWritten = 0;
+	if (!WriteFile(static_cast<HANDLE>(pipeIn_),
 				   data,
 				   static_cast<DWORD>(len),
-				   &bytes_written,
+				   &bytesWritten,
 				   nullptr)) {
 		return -1;
 	}
 
-	return static_cast<int>(bytes_written);
+	return static_cast<int>(bytesWritten);
 }
 
-bool PtyHandler::resize_windows(int cols, int rows)
+bool PtyHandler::resizeWindows(int cols, int rows)
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
 	if (!alive_ || hpc_ == nullptr)
 		return false;
@@ -205,9 +205,9 @@ bool PtyHandler::resize_windows(int cols, int rows)
 	return SUCCEEDED(hr);
 }
 
-void PtyHandler::close_windows()
+void PtyHandler::closeWindows()
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
 	if (!alive_)
 		return;
@@ -217,37 +217,37 @@ void PtyHandler::close_windows()
 		hpc_ = nullptr;
 	}
 
-	if (proc_handle_) {
+	if (procHandle_) {
 		// Give the process a moment to exit gracefully
-		if (WaitForSingleObject(static_cast<HANDLE>(proc_handle_), 500) !=
+		if (WaitForSingleObject(static_cast<HANDLE>(procHandle_), 500) !=
 			WAIT_OBJECT_0) {
-			TerminateProcess(static_cast<HANDLE>(proc_handle_), 1);
+			TerminateProcess(static_cast<HANDLE>(procHandle_), 1);
 		}
-		CloseHandle(static_cast<HANDLE>(proc_handle_));
-		proc_handle_ = nullptr;
+		CloseHandle(static_cast<HANDLE>(procHandle_));
+		procHandle_ = nullptr;
 	}
 
-	if (pipe_in_) {
-		CloseHandle(static_cast<HANDLE>(pipe_in_));
-		pipe_in_ = nullptr;
+	if (pipeIn_) {
+		CloseHandle(static_cast<HANDLE>(pipeIn_));
+		pipeIn_ = nullptr;
 	}
 
-	if (pipe_out_) {
-		CloseHandle(static_cast<HANDLE>(pipe_out_));
-		pipe_out_ = nullptr;
+	if (pipeOut_) {
+		CloseHandle(static_cast<HANDLE>(pipeOut_));
+		pipeOut_ = nullptr;
 	}
 
 	alive_ = false;
 }
 
-bool PtyHandler::is_alive_windows()
+bool PtyHandler::isAliveWindows()
 {
-	std::lock_guard<std::mutex> lock(pty_mutex_);
+	std::lock_guard<std::mutex> lock(ptyMutex_);
 
-	if (!alive_ || proc_handle_ == nullptr)
+	if (!alive_ || procHandle_ == nullptr)
 		return false;
 
-	DWORD result = WaitForSingleObject(static_cast<HANDLE>(proc_handle_), 0);
+	DWORD result = WaitForSingleObject(static_cast<HANDLE>(procHandle_), 0);
 
 	if (result == WAIT_OBJECT_0) {
 		// Process has exited

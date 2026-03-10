@@ -4,19 +4,19 @@
  *
  * Provides the platform-dispatched update() method and implements
  * common accessor methods for CPU statistics. Platform-specific
- * implementations are in cpu_linux.cpp and cpu_windows.cpp.
+ * implementations are in cpuLinux.cpp and cpuWindows.cpp.
  */
 
 #include "cpu_monitor.h"
 
-ProcessorStats CpuMonitor::get_stats() const
+ProcessorStats CpuMonitor::getStats() const
 {
-	std::lock_guard<std::mutex> lock(stats_mutex_);
+	std::lock_guard<std::mutex> lock(statsMutex_);
 	return stats_;
 }
 
-std::optional<ProcessorStats> CpuMonitor::try_update()
+std::optional<ProcessorStats> CpuMonitor::tryUpdate()
 {
 	update();
-	return get_stats();
+	return getStats();
 }
