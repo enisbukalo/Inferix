@@ -7,7 +7,7 @@
  * preprocessor definitions.
  */
 
-#include "cpu_monitor.h"
+#include "cpuMonitor.h"
 
 void CpuMonitor::update()
 {

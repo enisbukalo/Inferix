@@ -1,8 +1,8 @@
 #pragma once
-#include "models/config/server_settings.h"
-#include "models/config/model_settings.h"
-#include "models/config/ui_settings.h"
-#include "models/config/user_settings.h"
+#include "models/config/serverSettings.h"
+#include "models/config/modelSettings.h"
+#include "models/config/uiSettings.h"
+#include "models/config/userSettings.h"
 #include <optional>
 #include <vector>
 #include "json.hpp"
@@ -31,10 +31,10 @@
  * @endcode
  *
  * @see ConfigManager for loading and saving configuration
- * @see server_settings.h for ServerSettings documentation
- * @see model_settings.h for LoadSettings and InferenceSettings documentation
- * @see ui_settings.h for UISettings documentation
- * @see user_settings.h for TerminalSettings documentation
+ * @see serverSettings.h for ServerSettings documentation
+ * @see modelSettings.h for LoadSettings and InferenceSettings documentation
+ * @see uiSettings.h for UISettings documentation
+ * @see userSettings.h for TerminalSettings documentation
  */
 namespace Config {
 
@@ -77,7 +77,7 @@ struct UserConfig
 	 * API keys, SSL certificates, and server behavior options.
 	 * These settings map directly to llama-server CLI parameters.
 	 *
-	 * @see server_settings.h for detailed field documentation
+	 * @see serverSettings.h for detailed field documentation
 	 */
 	ServerSettings server;
 
@@ -88,7 +88,7 @@ struct UserConfig
 	 * GPU configuration, context size, batching, KV cache,
 	 * and memory management options.
 	 *
-	 * @see model_settings.h for detailed field documentation
+	 * @see modelSettings.h for detailed field documentation
 	 */
 	LoadSettings load;
 
@@ -99,7 +99,7 @@ struct UserConfig
 	 * top-k/top-p sampling, penalties, grammar constraints, and
 	 * other sampling parameters.
 	 *
-	 * @see model_settings.h for detailed field documentation
+	 * @see modelSettings.h for detailed field documentation
 	 */
 	InferenceSettings inference;
 
@@ -109,7 +109,7 @@ struct UserConfig
 	 * Contains settings for the terminal UI including theme,
 	 * default tab, system panel visibility, and refresh rate.
 	 *
-	 * @see ui_settings.h for detailed field documentation
+	 * @see uiSettings.h for detailed field documentation
 	 */
 	UISettings ui;
 
@@ -120,7 +120,7 @@ struct UserConfig
 	 * default shell, initial command, working directory, and
 	 * default dimensions.
 	 *
-	 * @see user_settings.h for detailed field documentation
+	 * @see userSettings.h for detailed field documentation
 	 */
 	TerminalSettings terminal;
 
@@ -131,7 +131,7 @@ struct UserConfig
 	 * its associated inference settings. Allows users to quickly
 	 * switch between different model configurations.
 	 *
-	 * @see model_settings.h for ModelPreset documentation
+	 * @see modelSettings.h for ModelPreset documentation
 	 */
 	std::vector<ModelPreset> presets;
 };

@@ -1,0 +1,151 @@
+#pragma once
+#include "config.h"
+#include <string>
+#include <optional>
+
+/**
+ * @file configManager.h
+ * @brief Singleton class for loading and saving configuration.
+ *
+ * ConfigManager is a singleton that handles all configuration persistence
+ * using nlohmann/json for serialization. It provides cross-platform support
+ * for finding the config directory:
+ * - Linux/macOS: ~/.inferix/
+ * - Windows: %USERPROFILE%\.inferix\
+ *
+ * The manager automatically creates the config directory if it doesn't exist,
+ * and populates default values if the config file is missing or invalid.
+ *
+ * Usage:
+ * @code
+ *   // Load config (typically in main())
+ *   ConfigManager::Instance().Load();
+ *   
+ *   // Access config from anywhere
+ *   auto& config = ConfigManager::Instance().GetConfig();
+ *   std::cout << config.server.host << std::endl;
+ *   
+ *   // Modify and save
+ *   config.inference.temperature = 0.8f;
+ *   ConfigManager::Instance().Save();
+ * @endcode
+ *
+ * @note The Load() method should be called early in application startup,
+ *       before any panels or systems access configuration.
+ * @note The Save() method can be called at any time to persist changes.
+ */
+class ConfigManager {
+public:
+    /**
+     * @brief Get the singleton instance.
+     * 
+     * @return Reference to the single ConfigManager instance.
+     * @note Thread-safe; uses Meyers singleton pattern.
+     */
+    static ConfigManager& Instance();
+
+    /**
+     * @brief Load configuration from disk.
+     * 
+     * Attempts to read the config file from the standard location
+     * (~/.inferix/config.json). If the file doesn't exist or is
+     * invalid, populates all fields with default values.
+     * 
+     * Creates the config directory if it doesn't exist.
+     * 
+     * @return true if loaded successfully (from file or defaults)
+     * @return false if there was an unrecoverable error
+     * 
+     * @note Should be called once at application startup.
+     * @note Subsequent calls will overwrite current config.
+     */
+    bool Load();
+
+    /**
+     * @brief Save current configuration to disk.
+     * 
+     * Serializes the current config to JSON and writes it to
+     * the config file. The output is pretty-printed with
+     * indentation for human readability.
+     * 
+     * @return true if saved successfully
+     * @return false if there was an error writing the file
+     * 
+     * @note Creates parent directories if they don't exist.
+     * @note Can be called multiple times during application lifetime.
+     */
+    bool Save();
+
+    /**
+     * @brief Get the current configuration (const access).
+     * 
+     * @return Const reference to the current UserConfig.
+     * @use Use when you only need to read configuration values.
+     */
+    const Config::UserConfig& GetConfig() const;
+
+    /**
+     * @brief Get the current configuration (mutable access).
+     * 
+     * @return Mutable reference to the current UserConfig.
+     * @use Use when you need to modify configuration values.
+     * @note Changes are not persisted until Save() is called.
+     */
+    Config::UserConfig& GetConfig();
+
+    /**
+     * @brief Check if config has been loaded.
+     * 
+     * @return true if Load() has been called successfully.
+     */
+    bool IsLoaded() const;
+
+    /**
+     * @brief Get the config directory path (~/.inferix/).
+     * 
+     * @return The platform-appropriate config directory path.
+     * @note Does not create the directory; use Load() for that.
+     */
+    static std::string GetConfigDir();
+
+    /**
+     * @brief Get the full config file path.
+     * 
+     * @return The full path to config.json.
+     */
+    static std::string GetConfigFilePath();
+
+private:
+    /**
+     * @brief Default constructor - private for singleton pattern.
+     */
+    ConfigManager() = default;
+    
+    /**
+     * @brief Default destructor.
+     */
+    ~ConfigManager() = default;
+    
+    /**
+     * @brief Delete copy constructor - singleton cannot be copied.
+     */
+    ConfigManager(const ConfigManager&) = delete;
+    
+    /**
+     * @brief Delete copy assignment - singleton cannot be copied.
+     */
+    ConfigManager& operator=(const ConfigManager&) = delete;
+
+    /**
+     * @brief Delete move constructor - singleton cannot be moved.
+     */
+    ConfigManager(ConfigManager&&) = delete;
+    
+    /**
+     * @brief Delete move assignment - singleton cannot be moved.
+     */
+    ConfigManager& operator=(ConfigManager&&) = delete;
+
+    Config::UserConfig config_;
+    bool loaded_ = false;
+};

@@ -8,14 +8,14 @@
  */
 
 #include "app.h"
-#include "inference_settings_panel.h"
-#include "load_settings_panel.h"
-#include "model_presets_panel.h"
-#include "models_panel.h"
-#include "server_info_panel.h"
-#include "system_monitor_runner.h"
-#include "system_resources_panel.h"
-#include "terminal_panel.h"
+#include "inferenceSettingsPanel.h"
+#include "loadSettingsPanel.h"
+#include "modelPresetsPanel.h"
+#include "modelsPanel.h"
+#include "serverInfoPanel.h"
+#include "systemMonitorRunner.h"
+#include "systemResourcesPanel.h"
+#include "terminalPanel.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/event.hpp>

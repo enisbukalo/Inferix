@@ -6,7 +6,7 @@
  * unknown-platform implementation based on compile-time definitions.
  */
 
-#include "pty_handler.h"
+#include "ptyHandler.h"
 
 bool PtyHandler::spawn(int cols, int rows)
 {

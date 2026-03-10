@@ -7,7 +7,7 @@
  */
 
 #include "app.h"
-#include "config_manager.h"
+#include "configManager.h"
 
 /**
  * @brief Program entry point.
