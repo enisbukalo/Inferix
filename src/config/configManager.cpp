@@ -67,7 +67,7 @@ bool ConfigManager::Load()
 	 * 1. Create config directory if it doesn't exist
 	 * 2. Try to open and parse existing config file
 	 * 3. If file exists but is invalid JSON, fall back to defaults
-	 * 4. If file doesn't exist, use defaults and save them
+	 * 4. If file doesn't exist, use defaults and create config file
 	 *
 	 * This ensures the application always has valid configuration,
 	 * even if the config file is corrupted or missing.
@@ -83,6 +83,9 @@ bool ConfigManager::Load()
 		return true;
 	}
 
+	// Check if config file exists
+	bool fileExists = fs::exists(configFile);
+
 	// Try to read existing config file
 	std::ifstream file(configFile);
 	if (file.is_open()) {
@@ -94,9 +97,16 @@ bool ConfigManager::Load()
 			config_ = Config::UserConfig{};
 		}
 	} else {
-		// No config file, use defaults and save them
-		config_ = Config::UserConfig{};
-		Save();
+		// No config file, use defaults and create it
+		if (!fileExists) {
+			// Initialize with default values
+			config_ = Config::UserConfig{};
+			// Create default config file for the user
+			CreateDefaultConfig();
+		} else {
+			// File exists but couldn't be opened, use defaults
+			config_ = Config::UserConfig{};
+		}
 	}
 
 	loaded_ = true;
@@ -136,4 +146,17 @@ Config::UserConfig &ConfigManager::GetConfig()
 bool ConfigManager::IsLoaded() const
 {
 	return loaded_;
+}
+
+bool ConfigManager::CreateDefaultConfig()
+{
+	// This method creates a default config.json file with all default values
+	// It is called automatically when no config file exists during Load()
+	// It can also be called explicitly to reset the config to defaults
+
+	// Ensure config_ has default values
+	config_ = Config::UserConfig{};
+
+	// Save() will handle creating the directory and writing the file
+	return Save();
 }

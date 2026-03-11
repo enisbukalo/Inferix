@@ -115,6 +115,28 @@ public:
      */
     static std::string GetConfigFilePath();
 
+    /**
+     * @brief Create a default config.json file if one doesn't exist.
+     * 
+     * Initializes the configuration with all default values and writes
+     * them to the config file (~/.inferix/config.json). This method is
+     * called automatically by Load() when no config file exists, but can
+     * also be called explicitly to reset the configuration to defaults.
+     * 
+     * @return true if the default config was created successfully
+     * @return false if there was an error writing the file
+     * 
+     * @note This method overwrites any current configuration in memory
+     *       with default values before saving.
+     * @note The config directory is created if it doesn't exist.
+     * 
+     * @code
+     * // Explicitly create default config (e.g., from a "Reset to Defaults" button)
+     * ConfigManager::Instance().CreateDefaultConfig();
+     * @endcode
+     */
+    bool CreateDefaultConfig();
+
 private:
     /**
      * @brief Default constructor - private for singleton pattern.
