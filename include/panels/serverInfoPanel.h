@@ -34,7 +34,7 @@ class ServerInfoPanel
 	 *
 	 * @return An @c ftxui::Element containing the server status card.
 	 */
-	static ftxui::Element Render();
+	static ftxui::Element render();
 
   private:
 };

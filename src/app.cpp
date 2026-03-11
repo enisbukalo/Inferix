@@ -27,7 +27,7 @@
 
 using namespace ftxui;
 
-void App::Run()
+void App::run()
 {
 	auto screen = ScreenInteractive::Fullscreen();
 	SystemMonitorRunner runner(screen);
@@ -40,13 +40,13 @@ void App::Run()
 	auto settingsContent = Renderer([] {
 		return window(text(""),
 					  hbox({
-						  vbox({ ModelsPanel::Render(),
-								 ModelPresetsPanel::Render() }) |
+						  vbox({ ModelsPanel::render(),
+								 ModelPresetsPanel::render() }) |
 							  flex,
 						  filler(),
 						  // separatorEmpty(),
-						  vbox({ LoadSettingsPanel::Render(),
-								 InferenceSettingsPanel::Render() }) |
+						  vbox({ LoadSettingsPanel::render(),
+								 InferenceSettingsPanel::render() }) |
 							  flex,
 					  }),
 					  ftxui::EMPTY) |
@@ -57,10 +57,10 @@ void App::Run()
 		return hbox({ text("Some really long status about the server probably "
 						   "here."),
 					  filler(),
-					  ServerInfoPanel::Render() });
+					  ServerInfoPanel::render() });
 	});
 
-	auto terminalContent = terminalPanel.Component();
+	auto terminalContent = terminalPanel.component();
 
 	// Placeholder for when we implement reading live log outputs from llama.cpp
 	auto logOutputContent =
@@ -81,7 +81,7 @@ void App::Run()
 
 	{
 		auto panel = std::make_unique<TerminalPanel>(screen, "opencode");
-		auto component = panel->Component();
+		auto component = panel->component();
 		tabValues.push_back("Opencode");
 		tabContainer->Add(component);
 		int idx = static_cast<int>(tabValues.size()) - 1;
@@ -90,7 +90,7 @@ void App::Run()
 
 	{
 		auto panel = std::make_unique<TerminalPanel>(screen, "gitui");
-		auto component = panel->Component();
+		auto component = panel->component();
 		tabValues.push_back("GitUI");
 		tabContainer->Add(component);
 		int idx = static_cast<int>(tabValues.size()) - 1;
@@ -100,9 +100,9 @@ void App::Run()
 	auto interactive = Container::Vertical({ tabToggle, tabContainer }) | flex;
 
 	// Spawn all terminals eagerly so they're ready when the user switches tabs.
-	terminalPanel.Spawn();
+	terminalPanel.spawn();
 	for (auto &dt : dynamicTerminals) {
-		dt.panel->Spawn();
+		dt.panel->spawn();
 	}
 
 	int prevTab = selectedTab;
@@ -112,22 +112,22 @@ void App::Run()
 		if (selectedTab != prevTab) {
 			prevTab = selectedTab;
 			if (selectedTab == 2) {
-				terminalPanel.SetCapturing(true);
+				terminalPanel.setCapturing(true);
 			}
 			for (auto &dt : dynamicTerminals) {
 				if (selectedTab == dt.tabIndex) {
-					dt.panel->SetCapturing(true);
+					dt.panel->setCapturing(true);
 				}
 			}
 		}
 
 		// Check if any active terminal tab is capturing input.
 		bool anyCapturing = false;
-		if (selectedTab == 2 && terminalPanel.IsCapturing()) {
+		if (selectedTab == 2 && terminalPanel.isCapturing()) {
 			anyCapturing = true;
 		}
 		for (auto &dt : dynamicTerminals) {
-			if (selectedTab == dt.tabIndex && dt.panel->IsCapturing()) {
+			if (selectedTab == dt.tabIndex && dt.panel->isCapturing()) {
 				anyCapturing = true;
 			}
 		}
@@ -136,7 +136,7 @@ void App::Run()
 		if (anyCapturing)
 			panel = panel | color(Color::LightGreen);
 
-		return vbox({ SystemResourcesPanel::Render(),
+		return vbox({ SystemResourcesPanel::render(),
 					  separatorCharacter("*") | bold | color(Color::Orange3),
 					  panel,
 					  serverContent->Render() }) |
@@ -147,12 +147,12 @@ void App::Run()
 	// the Toggle component consumes them (e.g. arrow keys, Tab, chars).
 	auto root =
 		container | CatchEvent([&](Event event) {
-			if (selectedTab == 2 && terminalPanel.WantsEvent(event)) {
-				return terminalPanel.HandleEvent(event);
+			if (selectedTab == 2 && terminalPanel.wantsEvent(event)) {
+				return terminalPanel.handleEvent(event);
 			}
 			for (auto &dt : dynamicTerminals) {
-				if (selectedTab == dt.tabIndex && dt.panel->WantsEvent(event)) {
-					return dt.panel->HandleEvent(event);
+				if (selectedTab == dt.tabIndex && dt.panel->wantsEvent(event)) {
+					return dt.panel->handleEvent(event);
 				}
 			}
 			return false;

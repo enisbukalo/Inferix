@@ -97,10 +97,10 @@ class TerminalPanel
 	 * - Reflects its bounding box via the reflect() modifier
 	 *
 	 * @return An ftxui::Component that can be added to a container.
-	 * @note The component must be spawned (via Spawn()) before it
+	 * @note The component must be spawned (via spawn()) before it
 	 *       will render actual terminal content.
 	 */
-	ftxui::Component Component();
+	ftxui::Component component();
 
 	/**
 	 * @brief Spawns a shell process and initializes the terminal.
@@ -114,12 +114,12 @@ class TerminalPanel
 	 * Dimensions are taken from the reflected box if available,
 	 * otherwise defaults to 80x24.
 	 *
-	 * @note If Spawn() is called multiple times, only the first call
+	 * @note If spawn() is called multiple times, only the first call
 	 *       has any effect; subsequent calls are no-ops.
 	 * @note The initial command (if provided) is sent after the shell
 	 *       produces its first output, ensuring the prompt is ready.
 	 */
-	void Spawn();
+	void spawn();
 
 	/**
 	 * @brief Shuts down the terminal and releases all resources.
@@ -132,17 +132,17 @@ class TerminalPanel
 	 * 5. Frees the vterm structures
 	 *
 	 * @note Safe to call multiple times; subsequent calls are no-ops.
-	 * @see Spawn()
+	 * @see spawn()
 	 */
-	void Shutdown();
+	void shutdown();
 
 	/**
 	 * @brief Checks whether the terminal has been spawned.
 	 *
-	 * @return true if Spawn() has been called and the shell is running,
+	 * @return true if spawn() has been called and the shell is running,
 	 *         false otherwise.
 	 */
-	bool IsSpawned() const;
+	bool isSpawned() const;
 
 	/**
 	 * @brief Determines whether the terminal should intercept keyboard events.
@@ -157,9 +157,9 @@ class TerminalPanel
 	 *
 	 * @param event The event to check.
 	 * @return true if the terminal should handle this event, false otherwise.
-	 * @see HandleEvent()
+	 * @see handleEvent()
 	 */
-	bool WantsEvent(ftxui::Event event) const;
+	bool wantsEvent(ftxui::Event event) const;
 
 	/**
 	 * @brief Checks whether the terminal is in capture mode.
@@ -169,9 +169,9 @@ class TerminalPanel
 	 * tab navigation and other UI interactions.
 	 *
 	 * @return true if the terminal is capturing input, false otherwise.
-	 * @see SetCapturing()
+	 * @see setCapturing()
 	 */
-	bool IsCapturing() const;
+	bool isCapturing() const;
 
 	/**
 	 * @brief Sets the capture mode state.
@@ -180,9 +180,9 @@ class TerminalPanel
 	 *              input to the parent container.
 	 * @note Toggling between capture modes can be done via Ctrl+T
 	 *       from the terminal itself.
-	 * @see IsCapturing()
+	 * @see isCapturing()
 	 */
-	void SetCapturing(bool value);
+	void setCapturing(bool value);
 
 	/**
 	 * @brief Handles an FTXUI event and dispatches it to the PTY.
@@ -200,7 +200,7 @@ class TerminalPanel
 	 * @note This method assumes the terminal is spawned and the shell
 	 *       is still running.
 	 */
-	bool HandleEvent(ftxui::Event event);
+	bool handleEvent(ftxui::Event event);
 
 	friend void Vterm_output_cb(const char *s, size_t len, void *user);
 
@@ -233,17 +233,17 @@ class TerminalPanel
 	 *
 	 * @param new_cols The new column count (width).
 	 * @param new_rows The new row count (height).
-	 * @note This method is called from RenderScreen() when the bounding
+	 * @note This method is called from renderScreen() when the bounding
 	 *       box dimensions change.
 	 */
-	void Resize(int new_cols, int new_rows);
+	void resize(int new_cols, int new_rows);
 
 	/**
 	 * @brief Renders the vterm screen as FTXUI elements.
 	 *
 	 * This method:
 	 * 1. Checks if the terminal is spawned and the shell is alive
-	 * 2. Detects dimension changes and calls Resize() if needed
+	 * 2. Detects dimension changes and calls resize() if needed
 	 * 3. Iterates over all cells in the vterm screen
 	 * 4. Converts each cell's character and attributes to FTXUI elements
 	 * 5. Applies colors, bold, underline, and other attributes
@@ -251,9 +251,9 @@ class TerminalPanel
 	 *
 	 * @return An ftxui::Element representing the terminal screen.
 	 * @note This method is thread-safe; vtermMutex_ must be held by the caller.
-	 * @see RenderLoop()
+	 * @see renderLoop()
 	 */
-	ftxui::Element RenderScreen();
+	ftxui::Element renderScreen();
 
 	ftxui::ScreenInteractive &screen_;
 	VTerm *vt_ = nullptr;

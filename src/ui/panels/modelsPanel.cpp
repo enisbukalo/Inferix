@@ -12,7 +12,7 @@
 
 using namespace ftxui;
 
-Element ModelsPanel::Render()
+Element ModelsPanel::render()
 {
 	Elements model_entries;
 

@@ -13,7 +13,7 @@
 
 using namespace ftxui;
 
-Element ServerInfoPanel::Render()
+Element ServerInfoPanel::render()
 {
 	static int frame = 0;
 	frame++;

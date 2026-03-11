@@ -9,13 +9,13 @@
  * - Linux/macOS: ~/.inferix/config.json
  * - Windows: %USERPROFILE%\.inferix\config.json
  *
- * The Load() method uses graceful degradation:
+ * The load() method uses graceful degradation:
  * 1. Creates config directory if it doesn't exist
  * 2. Attempts to parse existing config file
  * 3. Falls back to default values if file is missing or invalid
  * 4. Saves default config if no file existed
  *
- * The Save() method serializes the current config to pretty-printed JSON
+ * The save() method serializes the current config to pretty-printed JSON
  * with 4-space indentation for human readability.
  *
  * @note Uses Meyers singleton pattern for thread-safe, lazy initialization.
@@ -34,13 +34,13 @@
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
-ConfigManager &ConfigManager::Instance()
+ConfigManager &ConfigManager::instance()
 {
 	static ConfigManager instance;
 	return instance;
 }
 
-std::string ConfigManager::GetConfigDir()
+std::string ConfigManager::getConfigDir()
 {
 #ifdef _WIN32
 	const char *home = std::getenv("USERPROFILE");
@@ -52,15 +52,15 @@ std::string ConfigManager::GetConfigDir()
 	return std::string(home) + "/.inferix";
 }
 
-std::string ConfigManager::GetConfigFilePath()
+std::string ConfigManager::getConfigFilePath()
 {
-	return GetConfigDir() + "/config.json";
+	return getConfigDir() + "/config.json";
 }
 
-bool ConfigManager::Load()
+bool ConfigManager::load()
 {
-	std::string configDir = GetConfigDir();
-	std::string configFile = GetConfigFilePath();
+	std::string configDir = getConfigDir();
+	std::string configFile = getConfigFilePath();
 
 	/*
 	 * Load algorithm:
@@ -102,7 +102,7 @@ bool ConfigManager::Load()
 			// Initialize with default values
 			config_ = Config::UserConfig{};
 			// Create default config file for the user
-			CreateDefaultConfig();
+			createDefaultConfig();
 		} else {
 			// File exists but couldn't be opened, use defaults
 			config_ = Config::UserConfig{};
@@ -113,10 +113,10 @@ bool ConfigManager::Load()
 	return true;
 }
 
-bool ConfigManager::Save()
+bool ConfigManager::save()
 {
-	std::string configDir = GetConfigDir();
-	std::string configFile = GetConfigFilePath();
+	std::string configDir = getConfigDir();
+	std::string configFile = getConfigFilePath();
 
 	try {
 		fs::create_directories(configDir);
@@ -133,30 +133,30 @@ bool ConfigManager::Save()
 	return true;
 }
 
-const Config::UserConfig &ConfigManager::GetConfig() const
+const Config::UserConfig &ConfigManager::getConfig() const
 {
 	return config_;
 }
 
-Config::UserConfig &ConfigManager::GetConfig()
+Config::UserConfig &ConfigManager::getConfig()
 {
 	return config_;
 }
 
-bool ConfigManager::IsLoaded() const
+bool ConfigManager::isLoaded() const
 {
 	return loaded_;
 }
 
-bool ConfigManager::CreateDefaultConfig()
+bool ConfigManager::createDefaultConfig()
 {
 	// This method creates a default config.json file with all default values
-	// It is called automatically when no config file exists during Load()
+	// It is called automatically when no config file exists during load()
 	// It can also be called explicitly to reset the config to defaults
 
 	// Ensure config_ has default values
 	config_ = Config::UserConfig{};
 
-	// Save() will handle creating the directory and writing the file
-	return Save();
+	// save() will handle creating the directory and writing the file
+	return save();
 }

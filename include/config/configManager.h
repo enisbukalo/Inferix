@@ -19,20 +19,20 @@
  * Usage:
  * @code
  *   // Load config (typically in main())
- *   ConfigManager::Instance().Load();
+ *   ConfigManager::instance().load();
  *   
  *   // Access config from anywhere
- *   auto& config = ConfigManager::Instance().GetConfig();
+ *   auto& config = ConfigManager::instance().getConfig();
  *   std::cout << config.server.host << std::endl;
  *   
  *   // Modify and save
  *   config.inference.temperature = 0.8f;
- *   ConfigManager::Instance().Save();
+ *   ConfigManager::instance().save();
  * @endcode
  *
- * @note The Load() method should be called early in application startup,
+ * @note The load() method should be called early in application startup,
  *       before any panels or systems access configuration.
- * @note The Save() method can be called at any time to persist changes.
+ * @note The save() method can be called at any time to persist changes.
  */
 class ConfigManager {
 public:
@@ -42,7 +42,7 @@ public:
      * @return Reference to the single ConfigManager instance.
      * @note Thread-safe; uses Meyers singleton pattern.
      */
-    static ConfigManager& Instance();
+    static ConfigManager& instance();
 
     /**
      * @brief Load configuration from disk.
@@ -59,7 +59,7 @@ public:
      * @note Should be called once at application startup.
      * @note Subsequent calls will overwrite current config.
      */
-    bool Load();
+    bool load();
 
     /**
      * @brief Save current configuration to disk.
@@ -74,7 +74,7 @@ public:
      * @note Creates parent directories if they don't exist.
      * @note Can be called multiple times during application lifetime.
      */
-    bool Save();
+    bool save();
 
     /**
      * @brief Get the current configuration (const access).
@@ -82,45 +82,45 @@ public:
      * @return Const reference to the current UserConfig.
      * @use Use when you only need to read configuration values.
      */
-    const Config::UserConfig& GetConfig() const;
+    const Config::UserConfig& getConfig() const;
 
     /**
      * @brief Get the current configuration (mutable access).
      * 
      * @return Mutable reference to the current UserConfig.
      * @use Use when you need to modify configuration values.
-     * @note Changes are not persisted until Save() is called.
+     * @note Changes are not persisted until save() is called.
      */
-    Config::UserConfig& GetConfig();
+    Config::UserConfig& getConfig();
 
     /**
      * @brief Check if config has been loaded.
      * 
-     * @return true if Load() has been called successfully.
+     * @return true if load() has been called successfully.
      */
-    bool IsLoaded() const;
+    bool isLoaded() const;
 
     /**
      * @brief Get the config directory path (~/.inferix/).
      * 
      * @return The platform-appropriate config directory path.
-     * @note Does not create the directory; use Load() for that.
+     * @note Does not create the directory; use load() for that.
      */
-    static std::string GetConfigDir();
+    static std::string getConfigDir();
 
     /**
      * @brief Get the full config file path.
      * 
      * @return The full path to config.json.
      */
-    static std::string GetConfigFilePath();
+    static std::string getConfigFilePath();
 
     /**
      * @brief Create a default config.json file if one doesn't exist.
      * 
      * Initializes the configuration with all default values and writes
      * them to the config file (~/.inferix/config.json). This method is
-     * called automatically by Load() when no config file exists, but can
+     * called automatically by load() when no config file exists, but can
      * also be called explicitly to reset the configuration to defaults.
      * 
      * @return true if the default config was created successfully
@@ -132,10 +132,10 @@ public:
      * 
      * @code
      * // Explicitly create default config (e.g., from a "Reset to Defaults" button)
-     * ConfigManager::Instance().CreateDefaultConfig();
+     * ConfigManager::instance().createDefaultConfig();
      * @endcode
      */
-    bool CreateDefaultConfig();
+    bool createDefaultConfig();
 
 private:
     /**

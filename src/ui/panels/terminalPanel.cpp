@@ -67,10 +67,10 @@ TerminalPanel::TerminalPanel(ScreenInteractive &screen,
 
 TerminalPanel::~TerminalPanel()
 {
-	Shutdown();
+	shutdown();
 }
 
-bool TerminalPanel::IsSpawned() const
+bool TerminalPanel::isSpawned() const
 {
 	return spawned_.load();
 }
@@ -79,7 +79,7 @@ bool TerminalPanel::IsSpawned() const
 // Spawn — create vterm, start PTY, launch read thread
 // ---------------------------------------------------------------------------
 
-void TerminalPanel::Spawn()
+void TerminalPanel::spawn()
 {
 	if (spawned_.load())
 		return;
@@ -119,7 +119,7 @@ void TerminalPanel::Spawn()
 // Shutdown — stop thread, close PTY, free vterm
 // ---------------------------------------------------------------------------
 
-void TerminalPanel::Shutdown()
+void TerminalPanel::shutdown()
 {
 	if (!spawned_.load())
 		return;
@@ -185,7 +185,7 @@ void TerminalPanel::ReadLoop()
 // Resize — update vterm + PTY dimensions (caller must hold vtermMutex_)
 // ---------------------------------------------------------------------------
 
-void TerminalPanel::Resize(int newCols, int newRows)
+void TerminalPanel::resize(int newCols, int newRows)
 {
 	vterm_set_size(vt_, newRows, newCols);
 	pty_.resize(newCols, newRows);
@@ -197,7 +197,7 @@ void TerminalPanel::Resize(int newCols, int newRows)
 // RenderScreen — read vterm cells → FTXUI elements
 // ---------------------------------------------------------------------------
 
-Element TerminalPanel::RenderScreen()
+Element TerminalPanel::renderScreen()
 {
 	if (!spawned_.load()) {
 		return window(text(""),
@@ -224,7 +224,7 @@ Element TerminalPanel::RenderScreen()
 		newRows = 1;
 	if (newCols > 0 && newRows > 0 && box_.x_max > 0 && box_.y_max > 0 &&
 		(newCols != cols_ || newRows != rows_)) {
-		Resize(newCols, newRows);
+		resize(newCols, newRows);
 	}
 
 	// Query cursor position
@@ -313,17 +313,17 @@ Element TerminalPanel::RenderScreen()
 // HandleEvent — keyboard input → vterm → PTY
 // ---------------------------------------------------------------------------
 
-bool TerminalPanel::IsCapturing() const
+bool TerminalPanel::isCapturing() const
 {
 	return capturing_.load();
 }
 
-void TerminalPanel::SetCapturing(bool value)
+void TerminalPanel::setCapturing(bool value)
 {
 	capturing_.store(value);
 }
 
-bool TerminalPanel::HandleEvent(Event event)
+bool TerminalPanel::handleEvent(Event event)
 {
 	if (!spawned_.load() || ptyDead_.load())
 		return false;
@@ -467,20 +467,20 @@ bool TerminalPanel::HandleEvent(Event event)
 // Component — combines Renderer + CatchEvent
 // ---------------------------------------------------------------------------
 
-Component TerminalPanel::Component()
+Component TerminalPanel::component()
 {
 	// The bool overload of Renderer makes this component focusable,
 	// so it receives keyboard events when selected in the tab container.
 	auto impl = Renderer([this](bool focused) {
-		auto elem = RenderScreen();
+		auto elem = renderScreen();
 		if (focused)
 			elem = elem | focus;
 		return elem | reflect(box_);
 	});
-	return impl | CatchEvent([this](Event e) { return HandleEvent(e); });
+	return impl | CatchEvent([this](Event e) { return handleEvent(e); });
 }
 
-bool TerminalPanel::WantsEvent(ftxui::Event event) const
+bool TerminalPanel::wantsEvent(ftxui::Event event) const
 {
 	if (!spawned_.load() || ptyDead_.load())
 		return false;

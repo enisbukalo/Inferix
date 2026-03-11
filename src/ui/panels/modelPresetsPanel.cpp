@@ -13,7 +13,7 @@
 
 using namespace ftxui;
 
-Element ModelPresetsPanel::Render()
+Element ModelPresetsPanel::render()
 {
 	// Header row
 	std::vector<Element> header = {

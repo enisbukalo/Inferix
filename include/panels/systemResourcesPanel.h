@@ -40,7 +40,7 @@ class SystemResourcesPanel
 	 *
 	 * @return An @c ftxui::Element containing the fully composed panel.
 	 */
-	static ftxui::Element Render();
+	static ftxui::Element render();
 
   private:
 	/**
@@ -51,7 +51,7 @@ class SystemResourcesPanel
 	 * widget.
 	 */
 	static std::vector<std::vector<ftxui::Element>>
-	BuildRamRows(const MemoryStats &stats);
+	buildRamRows(const MemoryStats &stats);
 
 	/**
 	 * @brief Builds table row data for each GPU's VRAM usage.
@@ -61,7 +61,7 @@ class SystemResourcesPanel
 	 * widget.
 	 */
 	static std::vector<std::vector<ftxui::Element>>
-	BuildGpuRows(const std::vector<MemoryStats> &stats);
+	buildGpuRows(const std::vector<MemoryStats> &stats);
 
 	/**
 	 * @brief Builds the column-header row for the memory table.
@@ -73,7 +73,7 @@ class SystemResourcesPanel
 	 * @return A vector of @c ftxui::Element column-header cells.
 	 */
 	static std::vector<ftxui::Element>
-	BuildHeaderRow(const std::vector<MemoryStats> &gpu_stats);
+	buildHeaderRow(const std::vector<MemoryStats> &gpu_stats);
 
 	/**
 	 * @brief Builds a vertical bar gauge representing CPU load.
@@ -81,7 +81,7 @@ class SystemResourcesPanel
 	 * @param stats The current @c ProcessorStats snapshot for the CPU.
 	 * @return An @c ftxui::Element containing the CPU load gauge.
 	 */
-	static ftxui::Element BuildCpuGauge(const ProcessorStats &stats);
+	static ftxui::Element buildCpuGauge(const ProcessorStats &stats);
 
 	/**
 	 * @brief Builds vertical bar gauges for each GPU's compute utilisation.
@@ -90,7 +90,7 @@ class SystemResourcesPanel
 	 * @return An @c ftxui::Element containing all GPU load gauges side by side.
 	 */
 	static ftxui::Element
-	BuildGpuGauges(const std::vector<ProcessorStats> &stats);
+	buildGpuGauges(const std::vector<ProcessorStats> &stats);
 
 	/**
 	 * @brief Builds the rightmost units column for the memory table.
@@ -99,7 +99,7 @@ class SystemResourcesPanel
 	 *
 	 * @return A vector of @c ftxui::Element unit-label cells.
 	 */
-	static std::vector<ftxui::Element> BuildUnitsColumn();
+	static std::vector<ftxui::Element> buildUnitsColumn();
 
 	/**
 	 * @brief Builds the total memory column (RAM + all GPUs aggregated).
@@ -113,6 +113,6 @@ class SystemResourcesPanel
 	 * Usage, Gauge).
 	 */
 	static std::vector<ftxui::Element>
-	BuildTotalMemoryColumn(const std::vector<MemoryStats> &gpuStats,
+	buildTotalMemoryColumn(const std::vector<MemoryStats> &gpuStats,
 						   const MemoryStats &ramStats);
 };

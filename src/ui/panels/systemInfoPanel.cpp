@@ -15,7 +15,7 @@
 
 using namespace ftxui;
 
-Element SystemInfoPanel::Render()
+Element SystemInfoPanel::render()
 {
 	SystemInfo::instance().update();
 	auto cpu = SystemInfo::instance().getCpu();

@@ -18,7 +18,7 @@
  */
 int main()
 {
-	ConfigManager::Instance().Load();
-	App::Run();
+	ConfigManager::instance().load();
+	App::run();
 	return 0;
 }

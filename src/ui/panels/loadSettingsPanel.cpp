@@ -13,7 +13,7 @@
 
 using namespace ftxui;
 
-Element LoadSettingsPanel::Render()
+Element LoadSettingsPanel::render()
 {
 	// Header row
 	std::vector<Element> header = {

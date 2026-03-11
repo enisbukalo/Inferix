@@ -32,7 +32,7 @@ class InferenceSettingsPanel
 	 *
 	 * @return An @c ftxui::Element containing the inference settings panel.
 	 */
-	static ftxui::Element Render();
+	static ftxui::Element render();
 
   private:
 };

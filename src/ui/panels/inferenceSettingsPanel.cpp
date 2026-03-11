@@ -12,7 +12,7 @@
 
 using namespace ftxui;
 
-Element InferenceSettingsPanel::Render()
+Element InferenceSettingsPanel::render()
 {
 	Elements settings;
 

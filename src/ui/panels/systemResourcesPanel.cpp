@@ -36,7 +36,7 @@ const ftxui::LinearGradient kMemoryGradient = ftxui::LinearGradient()
 } // namespace
 
 std::vector<std::vector<Element>>
-SystemResourcesPanel::BuildRamRows(const MemoryStats &ramStats)
+SystemResourcesPanel::buildRamRows(const MemoryStats &ramStats)
 {
 	std::ostringstream ossTotal, ossUsed, ossAvail, ossPct;
 	ossTotal << std::fixed << std::setprecision(2)
@@ -61,7 +61,7 @@ SystemResourcesPanel::BuildRamRows(const MemoryStats &ramStats)
 }
 
 std::vector<std::vector<Element>>
-SystemResourcesPanel::BuildGpuRows(const std::vector<MemoryStats> &gpuStats)
+SystemResourcesPanel::buildGpuRows(const std::vector<MemoryStats> &gpuStats)
 {
 	std::vector<std::vector<Element>> rows(5);
 	for (size_t i = 0; i < gpuStats.size(); ++i) {
@@ -86,7 +86,7 @@ SystemResourcesPanel::BuildGpuRows(const std::vector<MemoryStats> &gpuStats)
 	return rows;
 }
 
-Element SystemResourcesPanel::BuildCpuGauge(const ProcessorStats &processorStats)
+Element SystemResourcesPanel::buildCpuGauge(const ProcessorStats &processorStats)
 {
 	auto toReturn =
 		hbox({
@@ -99,7 +99,7 @@ Element SystemResourcesPanel::BuildCpuGauge(const ProcessorStats &processorStats
 	return toReturn;
 }
 
-ftxui::Element SystemResourcesPanel::BuildGpuGauges(
+ftxui::Element SystemResourcesPanel::buildGpuGauges(
 	const std::vector<ProcessorStats> &gpuLoadStats)
 {
 	if (gpuLoadStats.empty())
@@ -119,7 +119,7 @@ ftxui::Element SystemResourcesPanel::BuildGpuGauges(
 	return hbox(std::move(gauges));
 }
 
-std::vector<ftxui::Element> SystemResourcesPanel::BuildTotalMemoryColumn(
+std::vector<ftxui::Element> SystemResourcesPanel::buildTotalMemoryColumn(
 	const std::vector<MemoryStats> &gpuStats,
 	const MemoryStats &ramStats)
 {
@@ -161,7 +161,7 @@ std::vector<ftxui::Element> SystemResourcesPanel::BuildTotalMemoryColumn(
 }
 
 std::vector<Element>
-SystemResourcesPanel::BuildHeaderRow(const std::vector<MemoryStats> &gpuStats)
+SystemResourcesPanel::buildHeaderRow(const std::vector<MemoryStats> &gpuStats)
 {
 	std::vector<Element> header;
 	header.push_back(text("")); // Empty for label column
@@ -173,7 +173,7 @@ SystemResourcesPanel::BuildHeaderRow(const std::vector<MemoryStats> &gpuStats)
 	return header;
 }
 
-std::vector<Element> SystemResourcesPanel::BuildUnitsColumn()
+std::vector<Element> SystemResourcesPanel::buildUnitsColumn()
 {
 	return {
 		text(""),		   // Empty for label
@@ -185,20 +185,20 @@ std::vector<Element> SystemResourcesPanel::BuildUnitsColumn()
 	};
 }
 
-Element SystemResourcesPanel::Render()
+Element SystemResourcesPanel::render()
 {
 	auto ramStats = MemoryMonitor::instance().getStats();
 	auto gpuStats = GpuMonitor::instance().getStats();
 	auto processorStats = CpuMonitor::instance().getStats();
 	auto gpuLoadStats = GpuMonitor::instance().getLoadStats();
 
-	auto ramRows = BuildRamRows(ramStats);
-	auto gpuRows = BuildGpuRows(gpuStats);
-	auto headerRow = BuildHeaderRow(gpuStats);
-	auto unitsColumn = BuildUnitsColumn();
-	auto cpuLoadGauge = BuildCpuGauge(processorStats);
-	auto gpuLoadGauges = BuildGpuGauges(gpuLoadStats);
-	auto totalMemoryColumn = BuildTotalMemoryColumn(gpuStats, ramStats);
+	auto ramRows = buildRamRows(ramStats);
+	auto gpuRows = buildGpuRows(gpuStats);
+	auto headerRow = buildHeaderRow(gpuStats);
+	auto unitsColumn = buildUnitsColumn();
+	auto cpuLoadGauge = buildCpuGauge(processorStats);
+	auto gpuLoadGauges = buildGpuGauges(gpuLoadStats);
+	auto totalMemoryColumn = buildTotalMemoryColumn(gpuStats, ramStats);
 
 	// Insert header row at the beginning
 	ramRows.insert(ramRows.begin(), headerRow);
