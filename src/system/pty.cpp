@@ -6,71 +6,71 @@
  * unknown-platform implementation based on compile-time definitions.
  */
 
-#include "pty_handler.h"
+#include "ptyHandler.h"
 
 bool PtyHandler::spawn(int cols, int rows)
 {
 #ifdef _WIN32
-	return spawn_windows(cols, rows);
+	return spawnWindows(cols, rows);
 #elif __linux__
-	return spawn_linux(cols, rows);
+	return spawnLinux(cols, rows);
 #else
-	return spawn_unknown(cols, rows);
+	return spawnUnknown(cols, rows);
 #endif
 }
 
 int PtyHandler::read(char *buf, std::size_t len)
 {
 #ifdef _WIN32
-	return read_windows(buf, len);
+	return readWindows(buf, len);
 #elif __linux__
-	return read_linux(buf, len);
+	return readLinux(buf, len);
 #else
-	return read_unknown(buf, len);
+	return readUnknown(buf, len);
 #endif
 }
 
 int PtyHandler::write(const char *data, std::size_t len)
 {
 #ifdef _WIN32
-	return write_windows(data, len);
+	return writeWindows(data, len);
 #elif __linux__
-	return write_linux(data, len);
+	return writeLinux(data, len);
 #else
-	return write_unknown(data, len);
+	return writeUnknown(data, len);
 #endif
 }
 
 bool PtyHandler::resize(int cols, int rows)
 {
 #ifdef _WIN32
-	return resize_windows(cols, rows);
+	return resizeWindows(cols, rows);
 #elif __linux__
-	return resize_linux(cols, rows);
+	return resizeLinux(cols, rows);
 #else
-	return resize_unknown(cols, rows);
+	return resizeUnknown(cols, rows);
 #endif
 }
 
 void PtyHandler::close()
 {
 #ifdef _WIN32
-	close_windows();
+	closeWindows();
 #elif __linux__
-	close_linux();
+	closeLinux();
 #else
-	close_unknown();
+	closeUnknown();
 #endif
 }
 
-bool PtyHandler::is_alive()
+bool PtyHandler::isAlive()
 {
 #ifdef _WIN32
-	return is_alive_windows();
+	return isAliveWindows();
 #elif __linux__
-	return is_alive_linux();
+	return isAliveLinux();
 #else
-	return is_alive_unknown();
+	return isAliveUnknown();
 #endif
 }
 
@@ -80,35 +80,35 @@ PtyHandler::~PtyHandler()
 }
 
 // Unknown platform stubs
-bool PtyHandler::spawn_unknown([[maybe_unused]] int cols,
-							   [[maybe_unused]] int rows)
+bool PtyHandler::spawnUnknown([[maybe_unused]] int cols,
+							  [[maybe_unused]] int rows)
 {
 	return false;
 }
 
-int PtyHandler::read_unknown([[maybe_unused]] char *buf,
+int PtyHandler::readUnknown([[maybe_unused]] char *buf,
+							[[maybe_unused]] std::size_t len)
+{
+	return -1;
+}
+
+int PtyHandler::writeUnknown([[maybe_unused]] const char *data,
 							 [[maybe_unused]] std::size_t len)
 {
 	return -1;
 }
 
-int PtyHandler::write_unknown([[maybe_unused]] const char *data,
-							  [[maybe_unused]] std::size_t len)
-{
-	return -1;
-}
-
-bool PtyHandler::resize_unknown([[maybe_unused]] int cols,
-								[[maybe_unused]] int rows)
+bool PtyHandler::resizeUnknown([[maybe_unused]] int cols,
+							   [[maybe_unused]] int rows)
 {
 	return false;
 }
 
-void PtyHandler::close_unknown()
+void PtyHandler::closeUnknown()
 {
 }
 
-bool PtyHandler::is_alive_unknown()
+bool PtyHandler::isAliveUnknown()
 {
 	return false;
 }

@@ -25,6 +25,8 @@
  * @note The application uses a tabbed interface for the terminal
  *       functionality, supporting both static and dynamic terminal
  *       panels that can be spawned on demand.
+ *
+ * @note The application entry point is the static method App::run().
  */
 class App {
   public:
@@ -38,7 +40,7 @@ class App {
 	 * This is the primary entry point for the application and blocks
 	 * until the user exits the TUI.
 	 */
-	static void Run();
+	 static void run();
 
   private:
 	/**
@@ -46,7 +48,7 @@ class App {
 	 *
 	 * The App class uses only static methods and cannot be instantiated.
 	 * This enforces the static-only design pattern where all functionality
-	 * is accessed through App::Run().
+	 * is accessed through App::run().
 	 */
 	App() = default;
 };

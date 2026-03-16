@@ -36,30 +36,30 @@ file(GLOB_RECURSE ALL_SOURCES
 
 # Remove platform-specific files
 list(REMOVE_ITEM ALL_SOURCES
-    "${CMAKE_SOURCE_DIR}/src/system/ram_linux.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/ram_windows.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/cpu_linux.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/cpu_windows.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/system_info_linux.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/system_info_windows.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/pty_linux.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/pty_windows.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/ramLinux.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/ramWindows.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/cpuLinux.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/cpuWindows.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/systemInfoLinux.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/systemInfoWindows.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/ptyLinux.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/ptyWindows.cpp"
 )
 
 # Add back only the files for the current platform
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   list(APPEND ALL_SOURCES
-      "${CMAKE_SOURCE_DIR}/src/system/ram_windows.cpp"
-      "${CMAKE_SOURCE_DIR}/src/system/cpu_windows.cpp"
-      "${CMAKE_SOURCE_DIR}/src/system/system_info_windows.cpp"
-      "${CMAKE_SOURCE_DIR}/src/system/pty_windows.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/ramWindows.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/cpuWindows.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/systemInfoWindows.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/ptyWindows.cpp"
   )
 else()
   list(APPEND ALL_SOURCES
-      "${CMAKE_SOURCE_DIR}/src/system/ram_linux.cpp"
-      "${CMAKE_SOURCE_DIR}/src/system/cpu_linux.cpp"
-      "${CMAKE_SOURCE_DIR}/src/system/system_info_linux.cpp"
-      "${CMAKE_SOURCE_DIR}/src/system/pty_linux.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/ramLinux.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/cpuLinux.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/systemInfoLinux.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/ptyLinux.cpp"
   )
 endif()
 
