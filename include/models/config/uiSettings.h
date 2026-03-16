@@ -5,7 +5,7 @@ namespace Config {
 
 /**
  * @file uiSettings.h
- * @brief UI configuration settings for the Inferix terminal interface.
+ * @brief UI configuration settings for the Workbench terminal interface.
  *
  * This header defines the UISettings structure which controls the
  * appearance and behavior of the terminal user interface.

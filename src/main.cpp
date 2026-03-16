@@ -3,7 +3,7 @@
  * @brief Application entry point.
  *
  * Minimal main function that delegates all functionality to App::Run().
- * This file serves as the compilation entry point for the Inferix TUI.
+ * This file serves as the compilation entry point for the Workbench TUI.
  */
 
 #include "app.h"
@@ -12,7 +12,7 @@
 /**
  * @brief Program entry point.
  *
- * Loads user configuration and launches the Inferix terminal UI.
+ * Loads user configuration and launches the Workbench terminal UI.
  *
  * @return 0 on successful execution.
  */

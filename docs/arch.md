@@ -1,4 +1,4 @@
-# Inferix — Full Architecture & Design
+# Workbench — Full Architecture & Design
 ### A TUI for managing, configuring, and controlling llama.cpp server & models
 
 ---
@@ -103,7 +103,7 @@ Handles all hardware identity and static info — no polling needed, this data d
 ## Config Files (JSON via nlohmann)
 
 ```
-~/.inferix/
+~/.workbench/
 ├── models/
 │   ├── registry.json              # Index of all known models + active preset per model
 │   └── <model-id>/

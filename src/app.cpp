@@ -2,7 +2,7 @@
  * @file app.cpp
  * @brief Main application implementation.
  *
- * Implements the App class that orchestrates the Inferix TUI layout
+ * Implements the App class that orchestrates the Workbench TUI layout
  * and initializes the background monitoring system. Creates a grid
  * layout with system resources, models, and settings panels.
  */

@@ -5,7 +5,7 @@
 
 /**
  * @file app.h
- * @brief Main application orchestrator for the Inferix TUI.
+ * @brief Main application orchestrator for the Workbench TUI.
  *
  * Manages the application lifecycle and initializes the terminal UI
  * with all panels and the background monitoring system. The application

@@ -12,12 +12,12 @@
  * @brief UserConfig aggregate struct and JSON serialization declarations.
  *
  * This header serves as the central aggregation point for all configuration
- * structures in the Inferix application. It includes the domain-specific
+ * structures in the Workbench application. It includes the domain-specific
  * config headers and declares the to_json/from_json functions required for
  * nlohmann::json serialization.
  *
  * The UserConfig struct is the root configuration object that gets serialized
- * to the config file (~/.inferix/config.json). Its structure mirrors the
+ * to the config file (~/.workbench/config.json). Its structure mirrors the
  * JSON format:
  * @code
  * {

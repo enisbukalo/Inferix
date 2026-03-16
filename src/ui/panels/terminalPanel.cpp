@@ -4,7 +4,7 @@
  *
  * Wires together PtyHandler (platform PTY), libvterm (ANSI parser), and
  * FTXUI (TUI rendering) to provide an embedded terminal emulator inside
- * the Inferix application.
+ * the Workbench application.
  */
 
 #include "terminalPanel.h"

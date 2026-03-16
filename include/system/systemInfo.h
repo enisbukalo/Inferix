@@ -6,7 +6,7 @@
 
 /**
  * @file systemInfo.h
- * @brief Hardware detection and identification for Inferix.
+ * @brief Hardware detection and identification for Workbench.
  *
  * This header provides the core data structures for hardware identification,
  * including CPU and GPU detection. The SystemInfo singleton class uses

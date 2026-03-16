@@ -6,8 +6,8 @@
  * thread-safe singleton for loading and saving application configuration.
  *
  * The configuration is stored as JSON at:
- * - Linux/macOS: ~/.inferix/config.json
- * - Windows: %USERPROFILE%\.inferix\config.json
+ * - Linux/macOS: ~/.workbench/config.json
+ * - Windows: %USERPROFILE%\.workbench\config.json
  *
  * The load() method uses graceful degradation:
  * 1. Creates config directory if it doesn't exist
@@ -48,8 +48,8 @@ std::string ConfigManager::getConfigDir()
 	const char *home = std::getenv("HOME");
 #endif
 	if (!home)
-		return ".inferix";
-	return std::string(home) + "/.inferix";
+		return ".workbench";
+	return std::string(home) + "/.workbench";
 }
 
 std::string ConfigManager::getConfigFilePath()

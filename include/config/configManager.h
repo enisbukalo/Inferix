@@ -10,8 +10,8 @@
  * ConfigManager is a singleton that handles all configuration persistence
  * using nlohmann/json for serialization. It provides cross-platform support
  * for finding the config directory:
- * - Linux/macOS: ~/.inferix/
- * - Windows: %USERPROFILE%\.inferix\
+ * - Linux/macOS: ~/.workbench/
+ * - Windows: %USERPROFILE%\.workbench\
  *
  * The manager automatically creates the config directory if it doesn't exist,
  * and populates default values if the config file is missing or invalid.
@@ -47,8 +47,8 @@ public:
     /**
      * @brief Load configuration from disk.
      * 
-     * Attempts to read the config file from the standard location
-     * (~/.inferix/config.json). If the file doesn't exist or is
+* Attempts to read the config file from the standard location
+ * (~/.workbench/config.json). If the file doesn't exist or is
      * invalid, populates all fields with default values.
      * 
      * Creates the config directory if it doesn't exist.
@@ -101,7 +101,7 @@ public:
     bool isLoaded() const;
 
     /**
-     * @brief Get the config directory path (~/.inferix/).
+     * @brief Get the config directory path (~/.workbench/).
      * 
      * @return The platform-appropriate config directory path.
      * @note Does not create the directory; use load() for that.
@@ -119,7 +119,7 @@ public:
      * @brief Create a default config.json file if one doesn't exist.
      * 
      * Initializes the configuration with all default values and writes
-     * them to the config file (~/.inferix/config.json). This method is
+     * them to the config file (~/.workbench/config.json). This method is
      * called automatically by load() when no config file exists, but can
      * also be called explicitly to reset the configuration to defaults.
      * 
