@@ -1,4 +1,5 @@
 # Build
+/build
 /build_linux
 /build_win
 compile_commands.json
