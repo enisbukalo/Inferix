@@ -302,10 +302,10 @@ struct ServerSettings
 	 * Range: 0.0 to 1.0
 	 *
 	 * Corresponds to: `-sps VALUE`
-	 * @default 0.1f
+	 * @default 0.1
 	 * @range 0.0-1.0
 	 */
-	float slotPromptSimilarity = 0.1f;
+	double slotPromptSimilarity = 0.1;
 
 	/**
 	 * @brief Idle timeout before server sleeps.
