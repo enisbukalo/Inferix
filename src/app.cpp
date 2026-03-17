@@ -13,6 +13,7 @@
 #include "modelPresetsPanel.h"
 #include "modelsPanel.h"
 #include "serverInfoPanel.h"
+#include "settingsPanel.h"
 #include "systemMonitorRunner.h"
 #include "systemResourcesPanel.h"
 #include "terminalPanel.h"
@@ -33,18 +34,32 @@ void App::run()
 	SystemMonitorRunner runner(screen);
 	TerminalPanel terminalPanel(screen);
 
-	std::vector<std::string> tabValues{ "Model", "Server Log", "Terminal" };
+	std::vector<std::string> tabValues{ "Settings",
+										"Model",
+										"Server Log",
+										"Terminal" };
 	int selectedTab = 0;
 	auto tabToggle = Toggle(&tabValues, &selectedTab);
 
+	// Settings tab - displays all configuration settings
 	auto settingsContent = Renderer([] {
 		return window(text(""),
+					  flex(vbox({
+						  SettingsPanel::render(),
+					  }))) |
+			   flex;
+	});
+
+	// Model tab - displays models, presets, and model-related settings
+	auto modelContent = Renderer([] {
+		return window(text(""),
 					  hbox({
+						  // Left column: Models and Presets
 						  vbox({ ModelsPanel::render(),
 								 ModelPresetsPanel::render() }) |
 							  flex,
 						  filler(),
-						  // separatorEmpty(),
+						  // Right column: Load + Inference Settings
 						  vbox({ LoadSettingsPanel::render(),
 								 InferenceSettingsPanel::render() }) |
 							  flex,
@@ -66,9 +81,9 @@ void App::run()
 	auto logOutputContent =
 		Renderer([] { return window(text(""), text(""), ftxui::EMPTY) | flex; });
 
-	auto tabContainer =
-		Container::Tab({ settingsContent, logOutputContent, terminalContent },
-					   &selectedTab);
+	auto tabContainer = Container::Tab(
+		{ settingsContent, modelContent, logOutputContent, terminalContent },
+		&selectedTab);
 
 	// Dynamically added tabs (simulating loading from a config file).
 	// Store dynamic terminal panels so they survive until the event loop ends.
@@ -111,7 +126,7 @@ void App::run()
 		// Auto-capture when switching to a terminal tab.
 		if (selectedTab != prevTab) {
 			prevTab = selectedTab;
-			if (selectedTab == 2) {
+			if (selectedTab == 3) {
 				terminalPanel.setCapturing(true);
 			}
 			for (auto &dt : dynamicTerminals) {
@@ -123,7 +138,7 @@ void App::run()
 
 		// Check if any active terminal tab is capturing input.
 		bool anyCapturing = false;
-		if (selectedTab == 2 && terminalPanel.isCapturing()) {
+		if (selectedTab == 3 && terminalPanel.isCapturing()) {
 			anyCapturing = true;
 		}
 		for (auto &dt : dynamicTerminals) {
@@ -147,7 +162,7 @@ void App::run()
 	// the Toggle component consumes them (e.g. arrow keys, Tab, chars).
 	auto root =
 		container | CatchEvent([&](Event event) {
-			if (selectedTab == 2 && terminalPanel.wantsEvent(event)) {
+			if (selectedTab == 3 && terminalPanel.wantsEvent(event)) {
 				return terminalPanel.handleEvent(event);
 			}
 			for (auto &dt : dynamicTerminals) {

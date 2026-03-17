@@ -7,8 +7,9 @@ compile_commands.json
 .cache
 /logs
 
-# Claude
-/.claude
+# AI
+.plans
+.claude
 
 # Prerequisites
 *.d
