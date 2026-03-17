@@ -46,7 +46,8 @@ void App::run()
 		return window(text(""),
 					  flex(vbox({
 						  SettingsPanel::render(),
-					  }))) |
+					  })),
+					  ftxui::EMPTY) |
 			   flex;
 	});
 

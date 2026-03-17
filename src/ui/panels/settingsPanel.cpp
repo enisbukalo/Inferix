@@ -13,6 +13,9 @@
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
 
+#include <iomanip>
+#include <sstream>
+
 using namespace ftxui;
 
 /**
@@ -57,6 +60,22 @@ Element categoryHeader(const std::string &title)
 std::string boolToString(bool value)
 {
 	return value ? "Enabled" : "Disabled";
+}
+
+/**
+ * @brief Formats a double to exactly 2 decimal places.
+ *
+ * Ensures consistent display precision (e.g., "0.80" instead of "0.800000")
+ * matching the precision stored in the config file.
+ *
+ * @param value The double value to format
+ * @return String representation with exactly 2 decimal places
+ */
+std::string formatDouble(double value)
+{
+	std::ostringstream oss;
+	oss << std::fixed << std::setprecision(2) << value;
+	return oss.str();
 }
 
 Element SettingsPanel::render()
@@ -111,22 +130,19 @@ Element SettingsPanel::render()
 	// Inference Settings
 	settings.push_back(categoryHeader("Inference Settings"));
 	settings.push_back(
-		settingRow("Temperature", std::to_string(config.inference.temperature)));
-	settings.push_back(
-		settingRow("Top P", std::to_string(config.inference.topP)));
+		settingRow("Temperature", formatDouble(config.inference.temperature)));
+	settings.push_back(settingRow("Top P", formatDouble(config.inference.topP)));
 	settings.push_back(
 		settingRow("Top K", std::to_string(config.inference.topK)));
-	settings.push_back(
-		settingRow("Min P", std::to_string(config.inference.minP)));
-	settings.push_back(
-		settingRow("Repeat Penalty",
-				   std::to_string(config.inference.repeatPenalty)));
+	settings.push_back(settingRow("Min P", formatDouble(config.inference.minP)));
+	settings.push_back(settingRow("Repeat Penalty",
+								  formatDouble(config.inference.repeatPenalty)));
 	settings.push_back(
 		settingRow("Presence Penalty",
-				   std::to_string(config.inference.presencePenalty)));
+				   formatDouble(config.inference.presencePenalty)));
 	settings.push_back(
 		settingRow("Frequency Penalty",
-				   std::to_string(config.inference.frequencyPenalty)));
+				   formatDouble(config.inference.frequencyPenalty)));
 	settings.push_back(
 		settingRow("Max Tokens",
 				   config.inference.nPredict == -1
