@@ -33,7 +33,7 @@ void App::run()
 	SystemMonitorRunner runner(screen);
 	TerminalPanel terminalPanel(screen);
 
-	std::vector<std::string> tabValues{ "Settings", "Server Log", "Terminal" };
+	std::vector<std::string> tabValues{ "Model", "Server Log", "Terminal" };
 	int selectedTab = 0;
 	auto tabToggle = Toggle(&tabValues, &selectedTab);
 
