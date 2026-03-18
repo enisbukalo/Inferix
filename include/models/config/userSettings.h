@@ -13,6 +13,66 @@
 namespace Config {
 
 /**
+ * @brief Terminal preset configuration.
+ *
+ * A named terminal configuration that users can create, edit, and delete
+ * via the UI. Each preset appears as a dynamic top-level tab in the
+ * application window.
+ *
+ * @note Working directory defaults to the application's current working
+ *       directory if not specified.
+ * @note The name is used as the tab display name and must be unique.
+ *
+ * @code
+ * // Create an opencode terminal preset
+ * TerminalPreset opencodePreset;
+ * opencodePreset.name = "Opencode";
+ * opencodePreset.initialCommand = "opencode";
+ *
+ * // Create a gitui terminal preset
+ * TerminalPreset gituiPreset;
+ * gituiPreset.name = "GitUI";
+ * gituiPreset.initialCommand = "gitui";
+ * gituiPreset.cols = 120;
+ * gituiPreset.rows = 40;
+ * @endcode
+ */
+struct TerminalPreset
+{
+	/**
+	 * @brief Display name for the terminal tab.
+	 *
+	 * The name shown in the tab bar. Must be unique across all presets.
+	 *
+	 * @note Examples: "Opencode", "GitUI", "Neovim", "Dev Terminal"
+	 */
+	std::string name;
+
+	/**
+	 * @brief Command to execute when terminal opens.
+	 *
+	 * The program or command that runs when this terminal tab is created.
+	 *
+	 * @note Examples: "opencode", "gitui", "nvim", "htop"
+	 */
+	std::string initialCommand;
+
+	/**
+	 * @brief Terminal width in columns.
+	 *
+	 * @default 80
+	 */
+	int cols = 80;
+
+	/**
+	 * @brief Terminal height in rows.
+	 *
+	 * @default 24
+	 */
+	int rows = 24;
+};
+
+/**
  * @brief Terminal emulator settings.
  *
  * Configuration for a named terminal instance. Users can create

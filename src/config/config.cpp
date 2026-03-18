@@ -344,6 +344,26 @@ void from_json(const json &j, ModelPreset &v)
 }
 
 // ============================================================================
+// TerminalPreset serialization
+// ============================================================================
+
+void to_json(json &j, const TerminalPreset &v)
+{
+	j["name"] = v.name;
+	j["initialCommand"] = v.initialCommand;
+	j["cols"] = v.cols;
+	j["rows"] = v.rows;
+}
+
+void from_json(const json &j, TerminalPreset &v)
+{
+	v.name = j.value("name", std::string{});
+	v.initialCommand = j.value("initialCommand", std::string{});
+	v.cols = j.value("cols", 80);
+	v.rows = j.value("rows", 24);
+}
+
+// ============================================================================
 // UserConfig serialization (main container)
 // ============================================================================
 
@@ -355,6 +375,7 @@ void to_json(json &j, const UserConfig &v)
 	j["ui"] = v.ui;
 	j["terminal"] = v.terminal;
 	j["presets"] = v.presets;
+	j["terminalPresets"] = v.terminalPresets;
 }
 
 void from_json(const json &j, UserConfig &v)
@@ -371,6 +392,9 @@ void from_json(const json &j, UserConfig &v)
 		v.terminal = j["terminal"].get<TerminalSettings>();
 	if (j.contains("presets"))
 		v.presets = j["presets"].get<std::vector<ModelPreset>>();
+	if (j.contains("terminalPresets"))
+		v.terminalPresets =
+			j["terminalPresets"].get<std::vector<TerminalPreset>>();
 }
 
 } // namespace Config

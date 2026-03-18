@@ -8,6 +8,7 @@
  */
 
 #include "app.h"
+#include "configManager.h"
 #include "inferenceSettingsPanel.h"
 #include "loadSettingsPanel.h"
 #include "modelPresetsPanel.h"
@@ -17,6 +18,7 @@
 #include "systemMonitorRunner.h"
 #include "systemResourcesPanel.h"
 #include "terminalPanel.h"
+#include "terminalPresetsPanel.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/event.hpp>
@@ -46,6 +48,7 @@ void App::run()
 		return window(text(""),
 					  flex(vbox({
 						  SettingsPanel::render(),
+						  TerminalPresetsPanel::render(), // NEW
 					  })),
 					  ftxui::EMPTY) |
 			   flex;
@@ -86,31 +89,26 @@ void App::run()
 		{ settingsContent, modelContent, logOutputContent, terminalContent },
 		&selectedTab);
 
-	// Dynamically added tabs (simulating loading from a config file).
+	// Dynamically added tabs - loaded from config.
 	// Store dynamic terminal panels so they survive until the event loop ends.
 	struct DynamicTerminal
 	{
 		std::unique_ptr<TerminalPanel> panel;
 		int tabIndex;
+		std::string presetName; // Track which preset this is
 	};
 	std::vector<DynamicTerminal> dynamicTerminals;
 
-	{
-		auto panel = std::make_unique<TerminalPanel>(screen, "opencode");
+	// Load terminals from config
+	auto &config = ConfigManager::instance().getConfig();
+	for (const auto &preset : config.terminalPresets) {
+		auto panel =
+			std::make_unique<TerminalPanel>(screen, preset.initialCommand);
 		auto component = panel->component();
-		tabValues.push_back("Opencode");
+		tabValues.push_back(preset.name);
 		tabContainer->Add(component);
 		int idx = static_cast<int>(tabValues.size()) - 1;
-		dynamicTerminals.push_back({ std::move(panel), idx });
-	}
-
-	{
-		auto panel = std::make_unique<TerminalPanel>(screen, "gitui");
-		auto component = panel->component();
-		tabValues.push_back("GitUI");
-		tabContainer->Add(component);
-		int idx = static_cast<int>(tabValues.size()) - 1;
-		dynamicTerminals.push_back({ std::move(panel), idx });
+		dynamicTerminals.push_back({ std::move(panel), idx, preset.name });
 	}
 
 	auto interactive = Container::Vertical({ tabToggle, tabContainer }) | flex;
