@@ -37,11 +37,11 @@ static Element numberRow(const std::string &label,
 {
 	return hbox({ text(label) | color(Color::MagentaLight) | vcenter,
 				  filler(),
-				  minusBtn | border,
-				  text(" ") | vcenter,
-				  inputRender | size(WIDTH, EQUAL, 8) | border,
-				  text(" ") | vcenter,
-				  plusBtn | border }) |
+				  minusBtn,
+				  separatorLight(),
+				  inputRender | size(WIDTH, EQUAL, 8),
+				  separatorLight(),
+				  plusBtn }) |
 		   xflex;
 }
 
@@ -205,19 +205,22 @@ Component SettingsPanel::component()
 	// -----------------------------------------------------------------------
 	// Shared options
 	// -----------------------------------------------------------------------
+	auto toggleOnColor = Color::CyanLight;
+	auto toggleOffColor = Color::Cyan;
+
 	InputOption inputOpt;
 	inputOpt.on_change = onChange;
 	inputOpt.multiline = false;
-	inputOpt.transform = [](InputState state) {
+	inputOpt.transform = [=](InputState state) {
 		auto e = state.element | align_right;
 		if (state.is_placeholder)
-			return e | color(Color::NavyBlue);
-		return e | color(Color::CyanLight);
+			return e | color(toggleOffColor);
+		return e | color(toggleOnColor);
 	};
 
 	auto btnStyle = ButtonOption::Animated();
-	btnStyle.transform = [](const EntryState &s) {
-		auto e = text(s.label) | color(Color::CyanLight);
+	btnStyle.transform = [=](const EntryState &s) {
+		auto e = text(s.label) | color(toggleOnColor);
 		if (s.focused)
 			e |= bold;
 		return e | center;
@@ -225,15 +228,28 @@ Component SettingsPanel::component()
 
 	CheckboxOption cbOpt;
 	cbOpt.on_change = onChange;
-	cbOpt.transform = [](const EntryState &s) {
+	cbOpt.transform = [=](const EntryState &s) {
 		auto label = s.state ? text("[X]") : text("[ ]");
 		if (s.state)
-			label |= color(Color::CyanLight);
+			label |= color(toggleOnColor);
 		else
-			label |= color(Color::NavyBlue);
+			label |= color(toggleOffColor);
 		if (s.focused)
 			label |= bold;
 		return label;
+	};
+
+	auto toggleOpt = MenuOption::Toggle();
+	toggleOpt.on_change = onChange;
+	toggleOpt.entries_option.transform = [=](const EntryState &s) {
+		auto e = text(s.label);
+		if (s.active)
+			e |= color(toggleOnColor);
+		else
+			e |= color(toggleOffColor);
+		if (s.focused)
+			e |= bold;
+		return e;
 	};
 
 	// Helper: create [-] [input] [+] for an int field
@@ -260,8 +276,11 @@ Component SettingsPanel::component()
 				},
 				btnStyle);
 			InputOption numInputOpt = inputOpt;
-			numInputOpt.transform = [](InputState state) {
-				return state.element | center;
+			numInputOpt.transform = [=](InputState state) {
+				auto e = state.element | center;
+				if (state.is_placeholder)
+					return e | color(toggleOffColor);
+				return e | color(toggleOnColor);
 			};
 			numInputOpt.on_change = [&value, &str, minVal, maxVal, onChange] {
 				try {
@@ -302,8 +321,11 @@ Component SettingsPanel::component()
 			},
 			btnStyle);
 		InputOption numInputOpt = inputOpt;
-		numInputOpt.transform = [](InputState state) {
-			return state.element | center;
+		numInputOpt.transform = [=](InputState state) {
+			auto e = state.element | center;
+			if (state.is_placeholder)
+				return e | color(toggleOffColor);
+			return e | color(toggleOnColor);
 		};
 		numInputOpt.on_change = [&value, &str, minVal, maxVal, onChange] {
 			try {
@@ -348,7 +370,10 @@ Component SettingsPanel::component()
 	auto [batchSizeMinus, batchSizeInput, batchSizePlus] =
 		makeIntControls(m_batchSize, m_batchSizeStr, 32, 8192, 32);
 
-	auto flashAttnToggle = Toggle(&m_flashAttnOptions, &m_flashAttnIdx);
+	auto flashAttnOpt = toggleOpt;
+	flashAttnOpt.entries = &m_flashAttnOptions;
+	flashAttnOpt.selected = &m_flashAttnIdx;
+	auto flashAttnToggle = Menu(flashAttnOpt);
 	auto mmapCb = Checkbox("", &m_mmap, cbOpt);
 	auto mlockCb = Checkbox("", &m_mlock, cbOpt);
 	auto fitCb = Checkbox("", &m_fit, cbOpt);
@@ -388,8 +413,15 @@ Component SettingsPanel::component()
 	// -----------------------------------------------------------------------
 	// UI components
 	// -----------------------------------------------------------------------
-	auto themeToggle = Toggle(&m_themeOptions, &m_themeIdx);
-	auto defaultTabToggle = Toggle(&m_tabOptions, &m_defaultTabIdx);
+	auto themeOpt = toggleOpt;
+	themeOpt.entries = &m_themeOptions;
+	themeOpt.selected = &m_themeIdx;
+	auto themeToggle = Menu(themeOpt);
+
+	auto defaultTabOpt = toggleOpt;
+	defaultTabOpt.entries = &m_tabOptions;
+	defaultTabOpt.selected = &m_defaultTabIdx;
+	auto defaultTabToggle = Menu(defaultTabOpt);
 	auto showSysPanelCb = Checkbox("", &m_showSystemPanel, cbOpt);
 
 	auto [refreshMinus, refreshInput, refreshPlus] =
@@ -461,7 +493,7 @@ Component SettingsPanel::component()
 			rows.push_back(checkboxRow("Cache Prompt", cachePromptCb->Render()));
 			rows.push_back(checkboxRow("Metrics", metricsCb->Render()));
 			leftElements.push_back(
-				window(text("Server Settings") | bold,
+				window(text("Server Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
@@ -479,7 +511,7 @@ Component SettingsPanel::component()
 									 refreshInput->Render(),
 									 refreshPlus->Render()));
 			leftElements.push_back(
-				window(text("UI Settings") | bold,
+				window(text("UI Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
@@ -502,7 +534,7 @@ Component SettingsPanel::component()
 									 rowsInput->Render(),
 									 rowsPlus->Render()));
 			leftElements.push_back(
-				window(text("Terminal Settings") | bold,
+				window(text("Terminal Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
@@ -529,7 +561,7 @@ Component SettingsPanel::component()
 			rows.push_back(checkboxRow("Memory Lock", mlockCb->Render()));
 			rows.push_back(checkboxRow("Fit to Memory", fitCb->Render()));
 			rightElements.push_back(
-				window(text("Load Settings") | bold,
+				window(text("Load Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
@@ -568,13 +600,13 @@ Component SettingsPanel::component()
 			rows.push_back(
 				settingRowComponent("Max Tokens", nPredictInput->Render()));
 			rightElements.push_back(
-				window(text("Inference Settings") | bold,
+				window(text("Inference Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
 
-		auto leftCol = vbox(std::move(leftElements)) | borderDashed | flex;
-		auto rightCol = vbox(std::move(rightElements)) | borderDashed | flex;
+		auto leftCol = vbox(std::move(leftElements)) | flex;
+		auto rightCol = vbox(std::move(rightElements)) | flex;
 
 		return hbox({ leftCol, separatorLight(), rightCol });
 	});
