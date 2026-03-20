@@ -35,6 +35,7 @@ void App::run()
 	auto screen = ScreenInteractive::Fullscreen();
 	SystemMonitorRunner runner(screen);
 	TerminalPanel terminalPanel(screen);
+	SettingsPanel settingsPanel;
 
 	std::vector<std::string> tabValues{ "Settings",
 										"Model",
@@ -43,12 +44,15 @@ void App::run()
 	int selectedTab = 0;
 	auto tabToggle = Toggle(&tabValues, &selectedTab);
 
-	// Settings tab - displays all configuration settings
-	auto settingsContent = Renderer([] {
+	// Settings tab - interactive configuration components + terminal presets
+	auto settingsInner = Container::Vertical({
+		settingsPanel.component(),
+	});
+	auto settingsContent = Renderer(settingsInner, [&] {
 		return window(text(""),
 					  flex(vbox({
-						  SettingsPanel::render(),
-						  TerminalPresetsPanel::render(), // NEW
+						  settingsInner->Render(),
+						  TerminalPresetsPanel::render(),
 					  })),
 					  ftxui::EMPTY) |
 			   flex;

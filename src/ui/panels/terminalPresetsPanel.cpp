@@ -80,7 +80,6 @@ Element TerminalPresetsPanel::render()
 	table.SelectRows(0, 1).DecorateCells(color(Color::White));
 
 	return window(text("Terminal Presets") | bold,
-				  vbox({
-					  table.Render(),
-				  }));
+				  hbox({ text("    "), vbox({ table.Render() }) }),
+				  ftxui::EMPTY);
 }
