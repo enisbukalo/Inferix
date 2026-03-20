@@ -79,7 +79,7 @@ Element TerminalPresetsPanel::render()
 	table.SelectRows(0, 1).DecorateCells(bgcolor(Color::Black));
 	table.SelectRows(0, 1).DecorateCells(color(Color::White));
 
-	return window(text("Terminal Presets") | bold,
+	return window(text("Terminal Presets") | bold | color(Color::Yellow),
 				  hbox({ text("    "), vbox({ table.Render() }) }),
 				  ftxui::EMPTY);
 }

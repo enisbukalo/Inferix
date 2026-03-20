@@ -444,18 +444,15 @@ Component SettingsPanel::component()
 	// -----------------------------------------------------------------------
 	auto container = Container::Horizontal({
 		Container::Vertical({
-			// Left column: Server, UI, Terminal
+			// Left column: Server, UI
 			hostInput,		 portInput,	   apiKeyInput,		 timeoutMinus,
 			timeoutInput,	 timeoutPlus,  threadsHttpMinus, threadsHttpInput,
 			threadsHttpPlus, webuiCb,	   embeddingCb,		 contBatchCb,
 			cachePromptCb,	 metricsCb,	   themeToggle,		 defaultTabToggle,
 			showSysPanelCb,	 refreshMinus, refreshInput,	 refreshPlus,
-			shellInput,		 initCmdInput, workDirInput,	 colsMinus,
-			colsInput,		 colsPlus,	   rowsMinus,		 rowsInput,
-			rowsPlus,
 		}),
 		Container::Vertical({
-			// Right column: Load, Inference
+			// Middle column: Load, Inference
 			modelPathInput, gpuLayersInput, ctxSizeInput,	 batchSizeMinus,
 			batchSizeInput, batchSizePlus,	flashAttnToggle, mmapCb,
 			mlockCb,		fitCb,			tempMinus,		 tempInput,
@@ -464,6 +461,18 @@ Component SettingsPanel::component()
 			minPInput,		minPPlus,		repeatPenMinus,	 repeatPenInput,
 			repeatPenPlus,	presPenMinus,	presPenInput,	 presPenPlus,
 			freqPenMinus,	freqPenInput,	freqPenPlus,	 nPredictInput,
+		}),
+		Container::Vertical({
+			// Right column: Terminal
+			shellInput,
+			initCmdInput,
+			workDirInput,
+			colsMinus,
+			colsInput,
+			colsPlus,
+			rowsMinus,
+			rowsInput,
+			rowsPlus,
 		}),
 	});
 
@@ -516,31 +525,8 @@ Component SettingsPanel::component()
 					   ftxui::EMPTY));
 		}
 
-		// Terminal Settings
-		{
-			Elements rows;
-			rows.push_back(
-				settingRowComponent("Default Shell", shellInput->Render()));
-			rows.push_back(
-				settingRowComponent("Initial Command", initCmdInput->Render()));
-			rows.push_back(settingRowComponent("Working Directory",
-											   workDirInput->Render()));
-			rows.push_back(numberRow("Default Cols",
-									 colsMinus->Render(),
-									 colsInput->Render(),
-									 colsPlus->Render()));
-			rows.push_back(numberRow("Default Rows",
-									 rowsMinus->Render(),
-									 rowsInput->Render(),
-									 rowsPlus->Render()));
-			leftElements.push_back(
-				window(text("Terminal Settings") | bold | color(Color::Yellow),
-					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
-					   ftxui::EMPTY));
-		}
-
-		// === Right column: Load, Inference ===
-		Elements rightElements;
+		// === Middle column: Load, Inference ===
+		Elements middleElements;
 
 		// Load Settings
 		{
@@ -560,7 +546,7 @@ Component SettingsPanel::component()
 			rows.push_back(checkboxRow("Memory Map", mmapCb->Render()));
 			rows.push_back(checkboxRow("Memory Lock", mlockCb->Render()));
 			rows.push_back(checkboxRow("Fit to Memory", fitCb->Render()));
-			rightElements.push_back(
+			middleElements.push_back(
 				window(text("Load Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
@@ -599,16 +585,46 @@ Component SettingsPanel::component()
 									 freqPenPlus->Render()));
 			rows.push_back(
 				settingRowComponent("Max Tokens", nPredictInput->Render()));
-			rightElements.push_back(
+			middleElements.push_back(
 				window(text("Inference Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
 
+		// === Right column: Terminal ===
+		Elements rightElements;
+		{
+			Elements rows;
+			rows.push_back(
+				settingRowComponent("Default Shell", shellInput->Render()));
+			rows.push_back(
+				settingRowComponent("Initial Command", initCmdInput->Render()));
+			rows.push_back(settingRowComponent("Working Directory",
+											   workDirInput->Render()));
+			rows.push_back(numberRow("Default Cols",
+									 colsMinus->Render(),
+									 colsInput->Render(),
+									 colsPlus->Render()));
+			rows.push_back(numberRow("Default Rows",
+									 rowsMinus->Render(),
+									 rowsInput->Render(),
+									 rowsPlus->Render()));
+			rightElements.push_back(
+				window(text("Terminal Settings") | bold | color(Color::Yellow),
+					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
+					   ftxui::EMPTY));
+		}
+		rightElements.push_back(TerminalPresetsPanel::render());
+
 		auto leftCol = vbox(std::move(leftElements)) | flex;
+		auto middleCol = vbox(std::move(middleElements)) | flex;
 		auto rightCol = vbox(std::move(rightElements)) | flex;
 
-		return hbox({ leftCol, separatorLight(), rightCol });
+		return hbox({ leftCol,
+					  separatorLight(),
+					  middleCol,
+					  separatorLight(),
+					  rightCol });
 	});
 
 	return m_component;

@@ -49,12 +49,7 @@ void App::run()
 		settingsPanel.component(),
 	});
 	auto settingsContent = Renderer(settingsInner, [&] {
-		return window(text(""),
-					  flex(vbox({
-						  settingsInner->Render(),
-						  TerminalPresetsPanel::render(),
-					  })),
-					  ftxui::EMPTY) |
+		return window(text(""), flex(settingsInner->Render()), ftxui::EMPTY) |
 			   flex;
 	});
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "terminalPresetsPanel.h"
+
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <string>
