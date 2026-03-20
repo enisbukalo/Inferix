@@ -36,6 +36,7 @@ void App::run()
 	SystemMonitorRunner runner(screen);
 	TerminalPanel terminalPanel(screen);
 	SettingsPanel settingsPanel;
+	ModelsPanel modelsPanel;
 
 	std::vector<std::string> tabValues{ "Settings",
 										"Model",
@@ -54,11 +55,16 @@ void App::run()
 	});
 
 	// Model tab - displays models, presets, and model-related settings
-	auto modelContent = Renderer([] {
+	// ModelsPanel is now a stateful component (like SettingsPanel), so we need
+	// to wrap it in a Container and use Renderer for proper rendering.
+	auto modelInner = Container::Vertical({
+		modelsPanel.component(),
+	});
+	auto modelContent = Renderer(modelInner, [&] {
 		return window(text(""),
 					  hbox({
-						  // Left column: Models and Presets
-						  vbox({ ModelsPanel::render(),
+						  // Left column: Models panel + Presets
+						  vbox({ flex(modelInner->Render()),
 								 ModelPresetsPanel::render() }) |
 							  flex,
 						  filler(),
