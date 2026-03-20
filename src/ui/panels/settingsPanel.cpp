@@ -208,13 +208,32 @@ Component SettingsPanel::component()
 	InputOption inputOpt;
 	inputOpt.on_change = onChange;
 	inputOpt.multiline = false;
+	inputOpt.transform = [](InputState state) {
+		auto e = state.element | align_right;
+		if (state.is_placeholder)
+			return e | color(Color::NavyBlue);
+		return e | color(Color::CyanLight);
+	};
 
 	auto btnStyle = ButtonOption::Animated();
 	btnStyle.transform = [](const EntryState &s) {
-		auto e = text(s.label);
+		auto e = text(s.label) | color(Color::CyanLight);
 		if (s.focused)
 			e |= bold;
 		return e | center;
+	};
+
+	CheckboxOption cbOpt;
+	cbOpt.on_change = onChange;
+	cbOpt.transform = [](const EntryState &s) {
+		auto label = s.state ? text("[X]") : text("[ ]");
+		if (s.state)
+			label |= color(Color::CyanLight);
+		else
+			label |= color(Color::NavyBlue);
+		if (s.focused)
+			label |= bold;
+		return label;
 	};
 
 	// Helper: create [-] [input] [+] for an int field
@@ -241,6 +260,9 @@ Component SettingsPanel::component()
 				},
 				btnStyle);
 			InputOption numInputOpt = inputOpt;
+			numInputOpt.transform = [](InputState state) {
+				return state.element | center;
+			};
 			numInputOpt.on_change = [&value, &str, minVal, maxVal, onChange] {
 				try {
 					int v = std::stoi(str);
@@ -280,6 +302,9 @@ Component SettingsPanel::component()
 			},
 			btnStyle);
 		InputOption numInputOpt = inputOpt;
+		numInputOpt.transform = [](InputState state) {
+			return state.element | center;
+		};
 		numInputOpt.on_change = [&value, &str, minVal, maxVal, onChange] {
 			try {
 				float v = std::stof(str);
@@ -307,8 +332,6 @@ Component SettingsPanel::component()
 	auto [threadsHttpMinus, threadsHttpInput, threadsHttpPlus] =
 		makeIntControls(m_threadsHttp, m_threadsHttpStr, -1, 64, 1);
 
-	CheckboxOption cbOpt;
-	cbOpt.on_change = onChange;
 	auto webuiCb = Checkbox("", &m_webui, cbOpt);
 	auto embeddingCb = Checkbox("", &m_embedding, cbOpt);
 	auto contBatchCb = Checkbox("", &m_contBatching, cbOpt);
