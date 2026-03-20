@@ -20,31 +20,38 @@ static std::string formatFloat(float value, int precision = 2)
 }
 
 /// Helper: renders a labelled row for text inputs.
-/// Label fixed left, input stretches middle-to-right.
 static Element settingRowComponent(const std::string &label,
 								   Element componentRender)
 {
-	return hbox(
-		{ text(label) | color(Color::MagentaLight), componentRender });
+	return hbox({ text(label) | color(Color::MagentaLight),
+				  filler(),
+				  componentRender }) |
+		   xflex;
 }
 
-/// Helper: slider row — label fixed left, slider in the middle, value right.
-static Element sliderRow(const std::string &label,
-						 Component slider,
-						 const std::string &valueStr)
+/// Helper: renders a labelled row with [-] [input] [+] controls.
+static Element numberRow(const std::string &label,
+						 Element minusBtn,
+						 Element inputRender,
+						 Element plusBtn)
+{
+	return hbox({ text(label) | color(Color::MagentaLight) | vcenter,
+				  filler(),
+				  minusBtn | border,
+				  text(" ") | vcenter,
+				  inputRender | size(WIDTH, EQUAL, 8) | border,
+				  text(" ") | vcenter,
+				  plusBtn | border }) |
+		   xflex;
+}
+
+/// Helper: checkbox/toggle row — magenta label left, component right.
+static Element checkboxRow(const std::string &label, Element componentRender)
 {
 	return hbox({ text(label) | color(Color::MagentaLight),
-				  hbox({ slider->Render(),
-						 text(valueStr) | color(Color::CyanLight) }) });
-}
-
-/// Helper: toggle/checkbox row — label left, toggle pushed right.
-static Element toggleRow(const std::string &label, Element componentRender)
-{
-	return hbox({
-		text(label) | color(Color::MagentaLight),
-		componentRender,
-	});
+				  filler(),
+				  componentRender }) |
+		   xflex;
 }
 
 // ---------------------------------------------------------------------------
@@ -63,7 +70,9 @@ void SettingsPanel::loadFromConfig()
 	m_port = std::to_string(cfg.server.port);
 	m_apiKey = cfg.server.apiKey;
 	m_timeout = cfg.server.timeout;
+	m_timeoutStr = std::to_string(m_timeout);
 	m_threadsHttp = cfg.server.threadsHttp;
+	m_threadsHttpStr = std::to_string(m_threadsHttp);
 	m_webui = cfg.server.webui;
 	m_embedding = cfg.server.embedding;
 	m_contBatching = cfg.server.contBatching;
@@ -75,6 +84,7 @@ void SettingsPanel::loadFromConfig()
 	m_ngpuLayers = cfg.load.ngpuLayers;
 	m_ctxSize = cfg.load.ctxSize == 0 ? "" : std::to_string(cfg.load.ctxSize);
 	m_batchSize = cfg.load.batchSize;
+	m_batchSizeStr = std::to_string(m_batchSize);
 	// Flash attention dropdown index
 	if (cfg.load.flashAttn == "on")
 		m_flashAttnIdx = 1;
@@ -88,12 +98,19 @@ void SettingsPanel::loadFromConfig()
 
 	// Inference
 	m_temperature = static_cast<float>(cfg.inference.temperature);
+	m_temperatureStr = formatFloat(m_temperature);
 	m_topP = static_cast<float>(cfg.inference.topP);
+	m_topPStr = formatFloat(m_topP);
 	m_topK = cfg.inference.topK;
+	m_topKStr = std::to_string(m_topK);
 	m_minP = static_cast<float>(cfg.inference.minP);
+	m_minPStr = formatFloat(m_minP);
 	m_repeatPenalty = static_cast<float>(cfg.inference.repeatPenalty);
+	m_repeatPenaltyStr = formatFloat(m_repeatPenalty);
 	m_presencePenalty = static_cast<float>(cfg.inference.presencePenalty);
+	m_presencePenaltyStr = formatFloat(m_presencePenalty);
 	m_frequencyPenalty = static_cast<float>(cfg.inference.frequencyPenalty);
+	m_frequencyPenaltyStr = formatFloat(m_frequencyPenalty);
 	m_nPredict = std::to_string(cfg.inference.nPredict);
 
 	// UI
@@ -105,13 +122,16 @@ void SettingsPanel::loadFromConfig()
 	m_defaultTabIdx = std::clamp(cfg.ui.defaultTab, 0, 2);
 	m_showSystemPanel = cfg.ui.showSystemPanel;
 	m_refreshRateMs = cfg.ui.refreshRateMs;
+	m_refreshRateMsStr = std::to_string(m_refreshRateMs);
 
 	// Terminal
 	m_defaultShell = cfg.terminal.defaultShell;
 	m_initialCommand = cfg.terminal.initialCommand;
 	m_workingDirectory = cfg.terminal.workingDirectory;
 	m_defaultCols = cfg.terminal.defaultCols;
+	m_defaultColsStr = std::to_string(m_defaultCols);
 	m_defaultRows = cfg.terminal.defaultRows;
+	m_defaultRowsStr = std::to_string(m_defaultRows);
 }
 
 void SettingsPanel::saveConfig()
@@ -183,12 +203,98 @@ Component SettingsPanel::component()
 	auto onChange = [this] { saveConfig(); };
 
 	// -----------------------------------------------------------------------
-	// Server components
+	// Shared options
 	// -----------------------------------------------------------------------
 	InputOption inputOpt;
 	inputOpt.on_change = onChange;
 	inputOpt.multiline = false;
 
+	auto btnStyle = ButtonOption::Animated();
+	btnStyle.transform = [](const EntryState &s) {
+		auto e = text(s.label);
+		if (s.focused)
+			e |= bold;
+		return e | center;
+	};
+
+	// Helper: create [-] [input] [+] for an int field
+	auto makeIntControls =
+		[&](int &value, std::string &str, int minVal, int maxVal, int step) {
+			struct Controls
+			{
+				Component minus, input, plus;
+			};
+			auto minus = Button(
+				"-",
+				[&value, &str, minVal, step, onChange] {
+					value = std::max(minVal, value - step);
+					str = std::to_string(value);
+					onChange();
+				},
+				btnStyle);
+			auto plus = Button(
+				"+",
+				[&value, &str, maxVal, step, onChange] {
+					value = std::min(maxVal, value + step);
+					str = std::to_string(value);
+					onChange();
+				},
+				btnStyle);
+			InputOption numInputOpt = inputOpt;
+			numInputOpt.on_change = [&value, &str, minVal, maxVal, onChange] {
+				try {
+					int v = std::stoi(str);
+					value = std::clamp(v, minVal, maxVal);
+				} catch (...) {
+				}
+				onChange();
+			};
+			auto inp = Input(&str, "", numInputOpt);
+			return Controls{ minus, inp, plus };
+		};
+
+	// Helper: create [-] [input] [+] for a float field
+	auto makeFloatControls = [&](float &value,
+								 std::string &str,
+								 float minVal,
+								 float maxVal,
+								 float step) {
+		struct Controls
+		{
+			Component minus, input, plus;
+		};
+		auto minus = Button(
+			"-",
+			[&value, &str, minVal, step, onChange] {
+				value = std::max(minVal, value - step);
+				str = formatFloat(value);
+				onChange();
+			},
+			btnStyle);
+		auto plus = Button(
+			"+",
+			[&value, &str, maxVal, step, onChange] {
+				value = std::min(maxVal, value + step);
+				str = formatFloat(value);
+				onChange();
+			},
+			btnStyle);
+		InputOption numInputOpt = inputOpt;
+		numInputOpt.on_change = [&value, &str, minVal, maxVal, onChange] {
+			try {
+				float v = std::stof(str);
+				value = std::clamp(v, minVal, maxVal);
+			} catch (...) {
+			}
+			onChange();
+		};
+		auto inp = Input(&str, "", numInputOpt);
+		return Controls{ minus, inp, plus };
+	};
+
+	// -----------------------------------------------------------------------
+	// Server components
+	// -----------------------------------------------------------------------
 	auto hostInput = Input(&m_host, "127.0.0.1", inputOpt);
 	auto portInput = Input(&m_port, "8080", inputOpt);
 
@@ -196,37 +302,18 @@ Component SettingsPanel::component()
 	apiKeyOpt.password = true;
 	auto apiKeyInput = Input(&m_apiKey, "API Key", apiKeyOpt);
 
-	SliderOption<int> timeoutOpt;
-	timeoutOpt.value = &m_timeout;
-	timeoutOpt.min = 1;
-	timeoutOpt.max = 3600;
-	timeoutOpt.increment = 10;
-	timeoutOpt.on_change = onChange;
-	auto timeoutSlider = Slider(timeoutOpt);
+	auto [timeoutMinus, timeoutInput, timeoutPlus] =
+		makeIntControls(m_timeout, m_timeoutStr, 1, 3600, 10);
+	auto [threadsHttpMinus, threadsHttpInput, threadsHttpPlus] =
+		makeIntControls(m_threadsHttp, m_threadsHttpStr, -1, 64, 1);
 
-	SliderOption<int> threadsHttpOpt;
-	threadsHttpOpt.value = &m_threadsHttp;
-	threadsHttpOpt.min = -1;
-	threadsHttpOpt.max = 64;
-	threadsHttpOpt.increment = 1;
-	threadsHttpOpt.on_change = onChange;
-	auto threadsHttpSlider = Slider(threadsHttpOpt);
-
-	auto webuiCb = Checkbox("Web UI", &m_webui);
-	auto embeddingCb = Checkbox("Embedding Mode", &m_embedding);
-	auto contBatchCb = Checkbox("Continuous Batching", &m_contBatching);
-	auto cachePromptCb = Checkbox("Cache Prompt", &m_cachePrompt);
-	auto metricsCb = Checkbox("Metrics", &m_metrics);
-
-	// Checkbox on_change: use CatchEvent wrapper
-	// Actually, simpler: use CheckboxOption
 	CheckboxOption cbOpt;
 	cbOpt.on_change = onChange;
-	webuiCb = Checkbox("Web UI", &m_webui, cbOpt);
-	embeddingCb = Checkbox("Embedding Mode", &m_embedding, cbOpt);
-	contBatchCb = Checkbox("Continuous Batching", &m_contBatching, cbOpt);
-	cachePromptCb = Checkbox("Cache Prompt", &m_cachePrompt, cbOpt);
-	metricsCb = Checkbox("Metrics", &m_metrics, cbOpt);
+	auto webuiCb = Checkbox("", &m_webui, cbOpt);
+	auto embeddingCb = Checkbox("", &m_embedding, cbOpt);
+	auto contBatchCb = Checkbox("", &m_contBatching, cbOpt);
+	auto cachePromptCb = Checkbox("", &m_cachePrompt, cbOpt);
+	auto metricsCb = Checkbox("", &m_metrics, cbOpt);
 
 	// -----------------------------------------------------------------------
 	// Load components
@@ -235,78 +322,43 @@ Component SettingsPanel::component()
 	auto gpuLayersInput = Input(&m_ngpuLayers, "auto", inputOpt);
 	auto ctxSizeInput = Input(&m_ctxSize, "0 = default", inputOpt);
 
-	SliderOption<int> batchSizeOpt;
-	batchSizeOpt.value = &m_batchSize;
-	batchSizeOpt.min = 32;
-	batchSizeOpt.max = 8192;
-	batchSizeOpt.increment = 32;
-	batchSizeOpt.on_change = onChange;
-	auto batchSizeSlider = Slider(batchSizeOpt);
+	auto [batchSizeMinus, batchSizeInput, batchSizePlus] =
+		makeIntControls(m_batchSize, m_batchSizeStr, 32, 8192, 32);
 
 	auto flashAttnToggle = Toggle(&m_flashAttnOptions, &m_flashAttnIdx);
-
-	auto mmapCb = Checkbox("Memory Map", &m_mmap, cbOpt);
-	auto mlockCb = Checkbox("Memory Lock", &m_mlock, cbOpt);
-	auto fitCb = Checkbox("Fit to Memory", &m_fit, cbOpt);
+	auto mmapCb = Checkbox("", &m_mmap, cbOpt);
+	auto mlockCb = Checkbox("", &m_mlock, cbOpt);
+	auto fitCb = Checkbox("", &m_fit, cbOpt);
 
 	// -----------------------------------------------------------------------
 	// Inference components
 	// -----------------------------------------------------------------------
-	SliderOption<float> tempOpt;
-	tempOpt.value = &m_temperature;
-	tempOpt.min = 0.0f;
-	tempOpt.max = 2.0f;
-	tempOpt.increment = 0.01f;
-	tempOpt.on_change = onChange;
-	auto tempSlider = Slider(tempOpt);
-
-	SliderOption<float> topPOpt;
-	topPOpt.value = &m_topP;
-	topPOpt.min = 0.0f;
-	topPOpt.max = 1.0f;
-	topPOpt.increment = 0.01f;
-	topPOpt.on_change = onChange;
-	auto topPSlider = Slider(topPOpt);
-
-	SliderOption<int> topKOpt;
-	topKOpt.value = &m_topK;
-	topKOpt.min = 0;
-	topKOpt.max = 200;
-	topKOpt.increment = 1;
-	topKOpt.on_change = onChange;
-	auto topKSlider = Slider(topKOpt);
-
-	SliderOption<float> minPOpt;
-	minPOpt.value = &m_minP;
-	minPOpt.min = 0.0f;
-	minPOpt.max = 1.0f;
-	minPOpt.increment = 0.01f;
-	minPOpt.on_change = onChange;
-	auto minPSlider = Slider(minPOpt);
-
-	SliderOption<float> repeatPenOpt;
-	repeatPenOpt.value = &m_repeatPenalty;
-	repeatPenOpt.min = 1.0f;
-	repeatPenOpt.max = 2.0f;
-	repeatPenOpt.increment = 0.01f;
-	repeatPenOpt.on_change = onChange;
-	auto repeatPenSlider = Slider(repeatPenOpt);
-
-	SliderOption<float> presPenOpt;
-	presPenOpt.value = &m_presencePenalty;
-	presPenOpt.min = -2.0f;
-	presPenOpt.max = 2.0f;
-	presPenOpt.increment = 0.01f;
-	presPenOpt.on_change = onChange;
-	auto presPenSlider = Slider(presPenOpt);
-
-	SliderOption<float> freqPenOpt;
-	freqPenOpt.value = &m_frequencyPenalty;
-	freqPenOpt.min = -2.0f;
-	freqPenOpt.max = 2.0f;
-	freqPenOpt.increment = 0.01f;
-	freqPenOpt.on_change = onChange;
-	auto freqPenSlider = Slider(freqPenOpt);
+	auto [tempMinus, tempInput, tempPlus] =
+		makeFloatControls(m_temperature, m_temperatureStr, 0.0f, 2.0f, 0.01f);
+	auto [topPMinus, topPInput, topPPlus] =
+		makeFloatControls(m_topP, m_topPStr, 0.0f, 1.0f, 0.01f);
+	auto [topKMinus, topKInput, topKPlus] =
+		makeIntControls(m_topK, m_topKStr, 0, 200, 1);
+	auto [minPMinus, minPInput, minPPlus] =
+		makeFloatControls(m_minP, m_minPStr, 0.0f, 1.0f, 0.01f);
+	auto [repeatPenMinus, repeatPenInput, repeatPenPlus] =
+		makeFloatControls(m_repeatPenalty,
+						  m_repeatPenaltyStr,
+						  1.0f,
+						  2.0f,
+						  0.01f);
+	auto [presPenMinus, presPenInput, presPenPlus] =
+		makeFloatControls(m_presencePenalty,
+						  m_presencePenaltyStr,
+						  -2.0f,
+						  2.0f,
+						  0.01f);
+	auto [freqPenMinus, freqPenInput, freqPenPlus] =
+		makeFloatControls(m_frequencyPenalty,
+						  m_frequencyPenaltyStr,
+						  -2.0f,
+						  2.0f,
+						  0.01f);
 
 	auto nPredictInput = Input(&m_nPredict, "-1 = unlimited", inputOpt);
 
@@ -315,16 +367,10 @@ Component SettingsPanel::component()
 	// -----------------------------------------------------------------------
 	auto themeToggle = Toggle(&m_themeOptions, &m_themeIdx);
 	auto defaultTabToggle = Toggle(&m_tabOptions, &m_defaultTabIdx);
-	auto showSysPanelCb =
-		Checkbox("Show System Panel", &m_showSystemPanel, cbOpt);
+	auto showSysPanelCb = Checkbox("", &m_showSystemPanel, cbOpt);
 
-	SliderOption<int> refreshOpt;
-	refreshOpt.value = &m_refreshRateMs;
-	refreshOpt.min = 50;
-	refreshOpt.max = 1000;
-	refreshOpt.increment = 10;
-	refreshOpt.on_change = onChange;
-	auto refreshSlider = Slider(refreshOpt);
+	auto [refreshMinus, refreshInput, refreshPlus] =
+		makeIntControls(m_refreshRateMs, m_refreshRateMsStr, 50, 1000, 10);
 
 	// -----------------------------------------------------------------------
 	// Terminal components
@@ -333,21 +379,10 @@ Component SettingsPanel::component()
 	auto initCmdInput = Input(&m_initialCommand, "none", inputOpt);
 	auto workDirInput = Input(&m_workingDirectory, "current", inputOpt);
 
-	SliderOption<int> colsOpt;
-	colsOpt.value = &m_defaultCols;
-	colsOpt.min = 16;
-	colsOpt.max = 300;
-	colsOpt.increment = 1;
-	colsOpt.on_change = onChange;
-	auto colsSlider = Slider(colsOpt);
-
-	SliderOption<int> rowsOpt;
-	rowsOpt.value = &m_defaultRows;
-	rowsOpt.min = 8;
-	rowsOpt.max = 100;
-	rowsOpt.increment = 1;
-	rowsOpt.on_change = onChange;
-	auto rowsSlider = Slider(rowsOpt);
+	auto [colsMinus, colsInput, colsPlus] =
+		makeIntControls(m_defaultCols, m_defaultColsStr, 16, 300, 1);
+	auto [rowsMinus, rowsInput, rowsPlus] =
+		makeIntControls(m_defaultRows, m_defaultRowsStr, 8, 100, 1);
 
 	// -----------------------------------------------------------------------
 	// Container — two-column layout
@@ -355,30 +390,25 @@ Component SettingsPanel::component()
 	auto container = Container::Horizontal({
 		Container::Vertical({
 			// Left column: Server, UI, Terminal
-			hostInput,		   portInput,	  apiKeyInput, timeoutSlider,
-			threadsHttpSlider, webuiCb,		  embeddingCb, contBatchCb,
-			cachePromptCb,	   metricsCb,	  themeToggle, defaultTabToggle,
-			showSysPanelCb,	   refreshSlider, shellInput,  initCmdInput,
-			workDirInput,	   colsSlider,	  rowsSlider,
+			hostInput,		 portInput,	   apiKeyInput,		 timeoutMinus,
+			timeoutInput,	 timeoutPlus,  threadsHttpMinus, threadsHttpInput,
+			threadsHttpPlus, webuiCb,	   embeddingCb,		 contBatchCb,
+			cachePromptCb,	 metricsCb,	   themeToggle,		 defaultTabToggle,
+			showSysPanelCb,	 refreshMinus, refreshInput,	 refreshPlus,
+			shellInput,		 initCmdInput, workDirInput,	 colsMinus,
+			colsInput,		 colsPlus,	   rowsMinus,		 rowsInput,
+			rowsPlus,
 		}),
 		Container::Vertical({
 			// Right column: Load, Inference
-			modelPathInput,
-			gpuLayersInput,
-			ctxSizeInput,
-			batchSizeSlider,
-			flashAttnToggle,
-			mmapCb,
-			mlockCb,
-			fitCb,
-			tempSlider,
-			topPSlider,
-			topKSlider,
-			minPSlider,
-			repeatPenSlider,
-			presPenSlider,
-			freqPenSlider,
-			nPredictInput,
+			modelPathInput, gpuLayersInput, ctxSizeInput,	 batchSizeMinus,
+			batchSizeInput, batchSizePlus,	flashAttnToggle, mmapCb,
+			mlockCb,		fitCb,			tempMinus,		 tempInput,
+			tempPlus,		topPMinus,		topPInput,		 topPPlus,
+			topKMinus,		topKInput,		topKPlus,		 minPMinus,
+			minPInput,		minPPlus,		repeatPenMinus,	 repeatPenInput,
+			repeatPenPlus,	presPenMinus,	presPenInput,	 presPenPlus,
+			freqPenMinus,	freqPenInput,	freqPenPlus,	 nPredictInput,
 		}),
 	});
 
@@ -393,36 +423,41 @@ Component SettingsPanel::component()
 			rows.push_back(settingRowComponent("Port", portInput->Render()));
 			rows.push_back(
 				settingRowComponent("API Key", apiKeyInput->Render()));
-			rows.push_back(sliderRow("Timeout",
-									 timeoutSlider,
-									 std::to_string(m_timeout) + "s"));
-			rows.push_back(sliderRow(
-				"HTTP Threads",
-				threadsHttpSlider,
-				m_threadsHttp == -1 ? "auto" : std::to_string(m_threadsHttp)));
-			rows.push_back(toggleRow("", webuiCb->Render()));
-			rows.push_back(toggleRow("", embeddingCb->Render()));
-			rows.push_back(toggleRow("", contBatchCb->Render()));
-			rows.push_back(toggleRow("", cachePromptCb->Render()));
-			rows.push_back(toggleRow("", metricsCb->Render()));
+			rows.push_back(numberRow("Timeout",
+									 timeoutMinus->Render(),
+									 timeoutInput->Render(),
+									 timeoutPlus->Render()));
+			rows.push_back(numberRow("HTTP Threads",
+									 threadsHttpMinus->Render(),
+									 threadsHttpInput->Render(),
+									 threadsHttpPlus->Render()));
+			rows.push_back(checkboxRow("Web UI", webuiCb->Render()));
+			rows.push_back(checkboxRow("Embedding Mode", embeddingCb->Render()));
+			rows.push_back(
+				checkboxRow("Continuous Batching", contBatchCb->Render()));
+			rows.push_back(checkboxRow("Cache Prompt", cachePromptCb->Render()));
+			rows.push_back(checkboxRow("Metrics", metricsCb->Render()));
 			leftElements.push_back(
 				window(text("Server Settings") | bold,
-					   hbox({ text("    "), vbox(std::move(rows)) }) | flex,
+					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
 
 		// UI Settings
 		{
 			Elements rows;
-			rows.push_back(toggleRow("Theme", themeToggle->Render()));
-			rows.push_back(toggleRow("Default Tab", defaultTabToggle->Render()));
-			rows.push_back(toggleRow("", showSysPanelCb->Render()));
-			rows.push_back(sliderRow("Refresh Rate",
-									 refreshSlider,
-									 std::to_string(m_refreshRateMs) + "ms"));
+			rows.push_back(checkboxRow("Theme", themeToggle->Render()));
+			rows.push_back(
+				checkboxRow("Default Tab", defaultTabToggle->Render()));
+			rows.push_back(
+				checkboxRow("Show System Panel", showSysPanelCb->Render()));
+			rows.push_back(numberRow("Refresh Rate",
+									 refreshMinus->Render(),
+									 refreshInput->Render(),
+									 refreshPlus->Render()));
 			leftElements.push_back(
 				window(text("UI Settings") | bold,
-					   hbox({ text("    "), vbox(std::move(rows)) }) | flex,
+					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
 
@@ -435,16 +470,17 @@ Component SettingsPanel::component()
 				settingRowComponent("Initial Command", initCmdInput->Render()));
 			rows.push_back(settingRowComponent("Working Directory",
 											   workDirInput->Render()));
-			rows.push_back(sliderRow("Default Cols",
-									 colsSlider,
-									 std::to_string(m_defaultCols)));
-			rows.push_back(sliderRow("Default Rows",
-									 rowsSlider,
-									 std::to_string(m_defaultRows)));
-		filler(),
+			rows.push_back(numberRow("Default Cols",
+									 colsMinus->Render(),
+									 colsInput->Render(),
+									 colsPlus->Render()));
+			rows.push_back(numberRow("Default Rows",
+									 rowsMinus->Render(),
+									 rowsInput->Render(),
+									 rowsPlus->Render()));
 			leftElements.push_back(
 				window(text("Terminal Settings") | bold,
-					   hbox({ text("    "), vbox(std::move(rows)) }) | flex,
+					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
 
@@ -460,53 +496,62 @@ Component SettingsPanel::component()
 				settingRowComponent("GPU Layers", gpuLayersInput->Render()));
 			rows.push_back(
 				settingRowComponent("Context Size", ctxSizeInput->Render()));
-			rows.push_back(sliderRow("Batch Size",
-									 batchSizeSlider,
-									 std::to_string(m_batchSize)));
+			rows.push_back(numberRow("Batch Size",
+									 batchSizeMinus->Render(),
+									 batchSizeInput->Render(),
+									 batchSizePlus->Render()));
 			rows.push_back(
-				toggleRow("Flash Attention", flashAttnToggle->Render()));
-			rows.push_back(toggleRow("", mmapCb->Render()));
-			rows.push_back(toggleRow("", mlockCb->Render()));
-			rows.push_back(toggleRow("", fitCb->Render()));
+				checkboxRow("Flash Attention", flashAttnToggle->Render()));
+			rows.push_back(checkboxRow("Memory Map", mmapCb->Render()));
+			rows.push_back(checkboxRow("Memory Lock", mlockCb->Render()));
+			rows.push_back(checkboxRow("Fit to Memory", fitCb->Render()));
 			rightElements.push_back(
 				window(text("Load Settings") | bold,
-					   hbox({ text("    "), vbox(std::move(rows)) }) | flex,
+					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
 
 		// Inference Settings
 		{
 			Elements rows;
-			rows.push_back(sliderRow("Temperature",
-									 tempSlider,
-									 formatFloat(m_temperature)));
-			rows.push_back(sliderRow("Top P", topPSlider, formatFloat(m_topP)));
-			rows.push_back(
-				sliderRow("Top K", topKSlider, std::to_string(m_topK)));
-			rows.push_back(sliderRow("Min P", minPSlider, formatFloat(m_minP)));
-			rows.push_back(sliderRow("Repeat Penalty",
-									 repeatPenSlider,
-									 formatFloat(m_repeatPenalty)));
-			rows.push_back(sliderRow("Presence Penalty",
-									 presPenSlider,
-									 formatFloat(m_presencePenalty)));
-			rows.push_back(sliderRow("Frequency Penalty",
-									 freqPenSlider,
-									 formatFloat(m_frequencyPenalty)));
+			rows.push_back(numberRow("Temperature",
+									 tempMinus->Render(),
+									 tempInput->Render(),
+									 tempPlus->Render()));
+			rows.push_back(numberRow("Top P",
+									 topPMinus->Render(),
+									 topPInput->Render(),
+									 topPPlus->Render()));
+			rows.push_back(numberRow("Top K",
+									 topKMinus->Render(),
+									 topKInput->Render(),
+									 topKPlus->Render()));
+			rows.push_back(numberRow("Min P",
+									 minPMinus->Render(),
+									 minPInput->Render(),
+									 minPPlus->Render()));
+			rows.push_back(numberRow("Repeat Penalty",
+									 repeatPenMinus->Render(),
+									 repeatPenInput->Render(),
+									 repeatPenPlus->Render()));
+			rows.push_back(numberRow("Presence Penalty",
+									 presPenMinus->Render(),
+									 presPenInput->Render(),
+									 presPenPlus->Render()));
+			rows.push_back(numberRow("Frequency Penalty",
+									 freqPenMinus->Render(),
+									 freqPenInput->Render(),
+									 freqPenPlus->Render()));
 			rows.push_back(
 				settingRowComponent("Max Tokens", nPredictInput->Render()));
 			rightElements.push_back(
 				window(text("Inference Settings") | bold,
-					   hbox({ text("    "), vbox(std::move(rows)) }) | flex,
+					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
 
-		FlexboxConfig colCfg;
-		colCfg.direction = FlexboxConfig::Direction::Row;
-		colCfg.justify_content = FlexboxConfig::JustifyContent::SpaceBetween;
-
-		auto leftCol = vbox(std::move(leftElements)) | flex;
-		auto rightCol = vbox(std::move(rightElements)) | flex;
+		auto leftCol = vbox(std::move(leftElements)) | borderDashed | flex;
+		auto rightCol = vbox(std::move(rightElements)) | borderDashed | flex;
 
 		return hbox({ leftCol, separatorLight(), rightCol });
 	});
