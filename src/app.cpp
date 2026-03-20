@@ -10,8 +10,6 @@
 #include "app.h"
 #include "configManager.h"
 #include "inferenceSettingsPanel.h"
-#include "loadSettingsPanel.h"
-#include "modelPresetsPanel.h"
 #include "modelsPanel.h"
 #include "serverInfoPanel.h"
 #include "settingsPanel.h"
@@ -38,8 +36,8 @@ void App::run()
 	SettingsPanel settingsPanel;
 	ModelsPanel modelsPanel;
 
-	std::vector<std::string> tabValues{ "Settings",
-										"Model",
+	std::vector<std::string> tabValues{ "App Settings",
+										"Model Settings",
 										"Server Log",
 										"Terminal" };
 	int selectedTab = 0;
@@ -54,27 +52,12 @@ void App::run()
 			   flex;
 	});
 
-	// Model tab - displays models, presets, and model-related settings
-	// ModelsPanel is now a stateful component (like SettingsPanel), so we need
-	// to wrap it in a Container and use Renderer for proper rendering.
+	// Model tab - interactive configuration components
 	auto modelInner = Container::Vertical({
 		modelsPanel.component(),
 	});
 	auto modelContent = Renderer(modelInner, [&] {
-		return window(text(""),
-					  hbox({
-						  // Left column: Models panel + Presets
-						  vbox({ flex(modelInner->Render()),
-								 ModelPresetsPanel::render() }) |
-							  flex,
-						  filler(),
-						  // Right column: Load + Inference Settings
-						  vbox({ LoadSettingsPanel::render(),
-								 InferenceSettingsPanel::render() }) |
-							  flex,
-					  }),
-					  ftxui::EMPTY) |
-			   flex;
+		return window(text(""), flex(modelInner->Render()), ftxui::EMPTY) | flex;
 	});
 
 	auto serverContent = Renderer([] {

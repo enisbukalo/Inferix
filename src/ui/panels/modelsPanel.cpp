@@ -340,23 +340,36 @@ Component ModelsPanel::component()
 	auto nPredictInput = Input(&m_nPredict, "-1 = unlimited", inputOpt);
 
 	// -----------------------------------------------------------------------
-	// Container — single vertical column for all components
+	// Container — two-column layout: Load Settings (left), Inference (right)
 	// -----------------------------------------------------------------------
-	auto container = Container::Vertical({
-		modelPathInput, gpuLayersInput, ctxSizeInput,	 batchSizeMinus,
-		batchSizeInput, batchSizePlus,	flashAttnToggle, mmapCb,
-		mlockCb,		fitCb,			tempMinus,		 tempInput,
-		tempPlus,		topPMinus,		topPInput,		 topPPlus,
-		topKMinus,		topKInput,		topKPlus,		 minPMinus,
-		minPInput,		minPPlus,		repeatPenMinus,	 repeatPenInput,
-		repeatPenPlus,	presPenMinus,	presPenInput,	 presPenPlus,
-		freqPenMinus,	freqPenInput,	freqPenPlus,	 nPredictInput,
+	auto container = Container::Horizontal({
+		Container::Vertical({
+			// Left column: Load Settings
+			modelPathInput,
+			gpuLayersInput,
+			ctxSizeInput,
+			batchSizeMinus,
+			batchSizeInput,
+			batchSizePlus,
+			flashAttnToggle,
+			mmapCb,
+			mlockCb,
+			fitCb,
+		}),
+		Container::Vertical({
+			// Right column: Inference Settings
+			tempMinus,		tempInput,		tempPlus,	   topPMinus,
+			topPInput,		topPPlus,		topKMinus,	   topKInput,
+			topKPlus,		minPMinus,		minPInput,	   minPPlus,
+			repeatPenMinus, repeatPenInput, repeatPenPlus, presPenMinus,
+			presPenInput,	presPenPlus,	freqPenMinus,  freqPenInput,
+			freqPenPlus,	nPredictInput,
+		}),
 	});
 
 	m_component = Renderer(container, [=, this] {
-		Elements elements;
-
-		// Load Settings window
+		// === Left column: Load Settings ===
+		Elements leftElements;
 		{
 			Elements rows;
 			rows.push_back(
@@ -374,13 +387,14 @@ Component ModelsPanel::component()
 			rows.push_back(checkboxRow("Memory Map", mmapCb->Render()));
 			rows.push_back(checkboxRow("Memory Lock", mlockCb->Render()));
 			rows.push_back(checkboxRow("Fit to Memory", fitCb->Render()));
-			elements.push_back(
+			leftElements.push_back(
 				window(text("Load Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
 
-		// Inference Settings window
+		// === Right column: Inference Settings ===
+		Elements rightElements;
 		{
 			Elements rows;
 			rows.push_back(numberRow("Temperature",
@@ -413,13 +427,16 @@ Component ModelsPanel::component()
 									 freqPenPlus->Render()));
 			rows.push_back(
 				settingRowComponent("Max Tokens", nPredictInput->Render()));
-			elements.push_back(
+			rightElements.push_back(
 				window(text("Inference Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
 
-		return vbox(std::move(elements)) | flex;
+		auto leftCol = vbox(std::move(leftElements)) | flex;
+		auto rightCol = vbox(std::move(rightElements)) | flex;
+
+		return hbox({ leftCol, separatorLight(), rightCol });
 	});
 
 	return m_component;

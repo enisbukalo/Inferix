@@ -361,56 +361,6 @@ Component SettingsPanel::component()
 	auto metricsCb = Checkbox("", &m_metrics, cbOpt);
 
 	// -----------------------------------------------------------------------
-	// Load components
-	// -----------------------------------------------------------------------
-	auto modelPathInput = Input(&m_modelPath, "path/to/model.gguf", inputOpt);
-	auto gpuLayersInput = Input(&m_ngpuLayers, "auto", inputOpt);
-	auto ctxSizeInput = Input(&m_ctxSize, "0 = default", inputOpt);
-
-	auto [batchSizeMinus, batchSizeInput, batchSizePlus] =
-		makeIntControls(m_batchSize, m_batchSizeStr, 32, 8192, 32);
-
-	auto flashAttnOpt = toggleOpt;
-	flashAttnOpt.entries = &m_flashAttnOptions;
-	flashAttnOpt.selected = &m_flashAttnIdx;
-	auto flashAttnToggle = Menu(flashAttnOpt);
-	auto mmapCb = Checkbox("", &m_mmap, cbOpt);
-	auto mlockCb = Checkbox("", &m_mlock, cbOpt);
-	auto fitCb = Checkbox("", &m_fit, cbOpt);
-
-	// -----------------------------------------------------------------------
-	// Inference components
-	// -----------------------------------------------------------------------
-	auto [tempMinus, tempInput, tempPlus] =
-		makeFloatControls(m_temperature, m_temperatureStr, 0.0f, 2.0f, 0.01f);
-	auto [topPMinus, topPInput, topPPlus] =
-		makeFloatControls(m_topP, m_topPStr, 0.0f, 1.0f, 0.01f);
-	auto [topKMinus, topKInput, topKPlus] =
-		makeIntControls(m_topK, m_topKStr, 0, 200, 1);
-	auto [minPMinus, minPInput, minPPlus] =
-		makeFloatControls(m_minP, m_minPStr, 0.0f, 1.0f, 0.01f);
-	auto [repeatPenMinus, repeatPenInput, repeatPenPlus] =
-		makeFloatControls(m_repeatPenalty,
-						  m_repeatPenaltyStr,
-						  1.0f,
-						  2.0f,
-						  0.01f);
-	auto [presPenMinus, presPenInput, presPenPlus] =
-		makeFloatControls(m_presencePenalty,
-						  m_presencePenaltyStr,
-						  -2.0f,
-						  2.0f,
-						  0.01f);
-	auto [freqPenMinus, freqPenInput, freqPenPlus] =
-		makeFloatControls(m_frequencyPenalty,
-						  m_frequencyPenaltyStr,
-						  -2.0f,
-						  2.0f,
-						  0.01f);
-
-	auto nPredictInput = Input(&m_nPredict, "-1 = unlimited", inputOpt);
-
-	// -----------------------------------------------------------------------
 	// UI components
 	// -----------------------------------------------------------------------
 	auto themeOpt = toggleOpt;
@@ -440,7 +390,7 @@ Component SettingsPanel::component()
 		makeIntControls(m_defaultRows, m_defaultRowsStr, 8, 100, 1);
 
 	// -----------------------------------------------------------------------
-	// Container — two-column layout
+	// Container — two-column layout (Server/UI left, Terminal right)
 	// -----------------------------------------------------------------------
 	auto container = Container::Horizontal({
 		Container::Vertical({
@@ -450,17 +400,6 @@ Component SettingsPanel::component()
 			threadsHttpPlus, webuiCb,	   embeddingCb,		 contBatchCb,
 			cachePromptCb,	 metricsCb,	   themeToggle,		 defaultTabToggle,
 			showSysPanelCb,	 refreshMinus, refreshInput,	 refreshPlus,
-		}),
-		Container::Vertical({
-			// Middle column: Load, Inference
-			modelPathInput, gpuLayersInput, ctxSizeInput,	 batchSizeMinus,
-			batchSizeInput, batchSizePlus,	flashAttnToggle, mmapCb,
-			mlockCb,		fitCb,			tempMinus,		 tempInput,
-			tempPlus,		topPMinus,		topPInput,		 topPPlus,
-			topKMinus,		topKInput,		topKPlus,		 minPMinus,
-			minPInput,		minPPlus,		repeatPenMinus,	 repeatPenInput,
-			repeatPenPlus,	presPenMinus,	presPenInput,	 presPenPlus,
-			freqPenMinus,	freqPenInput,	freqPenPlus,	 nPredictInput,
 		}),
 		Container::Vertical({
 			// Right column: Terminal
@@ -525,72 +464,6 @@ Component SettingsPanel::component()
 					   ftxui::EMPTY));
 		}
 
-		// === Middle column: Load, Inference ===
-		Elements middleElements;
-
-		// Load Settings
-		{
-			Elements rows;
-			rows.push_back(
-				settingRowComponent("Model Path", modelPathInput->Render()));
-			rows.push_back(
-				settingRowComponent("GPU Layers", gpuLayersInput->Render()));
-			rows.push_back(
-				settingRowComponent("Context Size", ctxSizeInput->Render()));
-			rows.push_back(numberRow("Batch Size",
-									 batchSizeMinus->Render(),
-									 batchSizeInput->Render(),
-									 batchSizePlus->Render()));
-			rows.push_back(
-				checkboxRow("Flash Attention", flashAttnToggle->Render()));
-			rows.push_back(checkboxRow("Memory Map", mmapCb->Render()));
-			rows.push_back(checkboxRow("Memory Lock", mlockCb->Render()));
-			rows.push_back(checkboxRow("Fit to Memory", fitCb->Render()));
-			middleElements.push_back(
-				window(text("Load Settings") | bold | color(Color::Yellow),
-					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
-					   ftxui::EMPTY));
-		}
-
-		// Inference Settings
-		{
-			Elements rows;
-			rows.push_back(numberRow("Temperature",
-									 tempMinus->Render(),
-									 tempInput->Render(),
-									 tempPlus->Render()));
-			rows.push_back(numberRow("Top P",
-									 topPMinus->Render(),
-									 topPInput->Render(),
-									 topPPlus->Render()));
-			rows.push_back(numberRow("Top K",
-									 topKMinus->Render(),
-									 topKInput->Render(),
-									 topKPlus->Render()));
-			rows.push_back(numberRow("Min P",
-									 minPMinus->Render(),
-									 minPInput->Render(),
-									 minPPlus->Render()));
-			rows.push_back(numberRow("Repeat Penalty",
-									 repeatPenMinus->Render(),
-									 repeatPenInput->Render(),
-									 repeatPenPlus->Render()));
-			rows.push_back(numberRow("Presence Penalty",
-									 presPenMinus->Render(),
-									 presPenInput->Render(),
-									 presPenPlus->Render()));
-			rows.push_back(numberRow("Frequency Penalty",
-									 freqPenMinus->Render(),
-									 freqPenInput->Render(),
-									 freqPenPlus->Render()));
-			rows.push_back(
-				settingRowComponent("Max Tokens", nPredictInput->Render()));
-			middleElements.push_back(
-				window(text("Inference Settings") | bold | color(Color::Yellow),
-					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
-					   ftxui::EMPTY));
-		}
-
 		// === Right column: Terminal ===
 		Elements rightElements;
 		{
@@ -617,14 +490,9 @@ Component SettingsPanel::component()
 		rightElements.push_back(TerminalPresetsPanel::render());
 
 		auto leftCol = vbox(std::move(leftElements)) | flex;
-		auto middleCol = vbox(std::move(middleElements)) | flex;
 		auto rightCol = vbox(std::move(rightElements)) | flex;
 
-		return hbox({ leftCol,
-					  separatorLight(),
-					  middleCol,
-					  separatorLight(),
-					  rightCol });
+		return hbox({ leftCol, separatorLight(), rightCol });
 	});
 
 	return m_component;
