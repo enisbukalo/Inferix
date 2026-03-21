@@ -6,6 +6,47 @@
 #include <ftxui/dom/elements.hpp>
 #include <string>
 
+/**
+ * @file settingsPanel.h
+ * @brief Comprehensive stateful settings panel for all application configuration.
+ *
+ * This is the main configuration hub for Workbench, providing a unified interface
+ * to manage all aspects of the application. Unlike ModelsPanel which focuses only
+ * on Load+Inference parameters, this panel covers five major sections:
+ *
+ * **Server Settings** - Network and HTTP server behavior:
+ *   Host/port binding, API key authentication, request timeout (60-3600s),
+ *   HTTP worker threads (-1=auto or 1-64), feature flags for Web UI,
+ *   embedding mode, continuous batching, prompt caching, metrics collection.
+ *
+ * **Load Settings** - Model loading parameters (partially duplicated from
+ *   ModelsPanel):
+ *   Model path, GPU layer offloading (-1=auto or 0-N), context size and batch
+ *   size controls, flash attention toggle (auto/on/off), memory mapping/locking.
+ *
+ * **Inference Settings** - Token generation parameters (partially duplicated from
+ *   ModelsPanel):
+ *   Temperature, top-P/top-K sampling, min-P filtering, repeat/presence/frequency
+ *   penalties, max tokens prediction (-1=unlimited).
+ *
+ * **UI Settings** - Application appearance and behavior:
+ *   Theme selection (default/dark/light/monokai), default startup tab,
+ *   system panel visibility toggle, refresh rate control (50-1000ms).
+ *
+ * **Terminal Settings** - Embedded terminal emulator defaults:
+ *   Default shell command, initial command to execute on spawn, working
+ *   directory, terminal dimensions (cols: 16-300, rows: 8-100).
+ *
+ * The panel uses a two-column layout with Server/UI settings stacked vertically
+ * on the left, and Terminal settings plus an embedded TerminalPresetsPanel on
+ * the right. It is stateful - member variables are loaded from ConfigManager in
+ * the constructor and persisted immediately via onChange callbacks whenever any
+ * setting changes.
+ *
+ * @note There is intentional duplication with ModelsPanel for Load+Inference
+ *       sections, allowing both panels to exist independently without tight
+ *       coupling. Future refactoring may consolidate these into a single source.
+ */
 class SettingsPanel
 {
   public:
