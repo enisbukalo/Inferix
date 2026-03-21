@@ -22,9 +22,10 @@
  */
 class ServerInfoPanel
 {
-	public:
+  public:
 	/**
-	 * @brief Builds and returns an FTXUI element with animated pulsing indicator.
+	 * @brief Builds and returns an FTXUI element with animated pulsing
+	 * indicator.
 	 *
 	 * Uses a static frame counter to alternate between green (connected) and red
 	 * (disconnected) colors every 8 frames. The animation creates a simple
