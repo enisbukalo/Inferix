@@ -28,6 +28,7 @@
 
 #include "configManager.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 
@@ -159,4 +160,67 @@ bool ConfigManager::createDefaultConfig()
 
 	// save() will handle creating the directory and writing the file
 	return save();
+}
+
+// ============================================================================
+// TerminalPreset Access Methods
+// ============================================================================
+
+const std::vector<Config::TerminalPreset> &
+ConfigManager::getTerminalPresets() const
+{
+	return config_.terminalPresets;
+}
+
+std::vector<Config::TerminalPreset> &ConfigManager::getTerminalPresets()
+{
+	return config_.terminalPresets;
+}
+
+std::optional<Config::TerminalPreset>
+ConfigManager::findTerminalPreset(const std::string &name) const
+{
+	for (const auto &preset : config_.terminalPresets) {
+		if (preset.name == name)
+			return preset;
+	}
+	return std::nullopt;
+}
+
+bool ConfigManager::addTerminalPreset(Config::TerminalPreset preset)
+{
+	// Check for duplicate name
+	for (const auto &existing : config_.terminalPresets) {
+		if (existing.name == preset.name)
+			return false;
+	}
+	config_.terminalPresets.push_back(std::move(preset));
+	return true;
+}
+
+bool ConfigManager::removeTerminalPreset(const std::string &name)
+{
+	auto it = std::find_if(
+		config_.terminalPresets.begin(),
+		config_.terminalPresets.end(),
+		[&](const Config::TerminalPreset &p) { return p.name == name; });
+	if (it != config_.terminalPresets.end()) {
+		config_.terminalPresets.erase(it);
+		return true;
+	}
+	return false;
+}
+
+bool ConfigManager::updateTerminalPreset(const std::string &oldName,
+										 Config::TerminalPreset preset)
+{
+	auto it = std::find_if(
+		config_.terminalPresets.begin(),
+		config_.terminalPresets.end(),
+		[&](const Config::TerminalPreset &p) { return p.name == oldName; });
+	if (it != config_.terminalPresets.end()) {
+		*it = std::move(preset);
+		return true;
+	}
+	return false;
 }

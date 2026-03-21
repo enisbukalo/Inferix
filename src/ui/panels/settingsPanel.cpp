@@ -1,4 +1,4 @@
-#include "modelsPanel.h"
+#include "settingsPanel.h"
 #include "configManager.h"
 
 #include <ftxui/component/component.hpp>
@@ -11,10 +11,6 @@
 #include <sstream>
 
 using namespace ftxui;
-
-// =========================================================================
-// Helper Functions
-// =========================================================================
 
 static std::string formatFloat(float value, int precision = 2)
 {
@@ -58,26 +54,37 @@ static Element checkboxRow(const std::string &label, Element componentRender)
 		   xflex;
 }
 
-// =========================================================================
-// Constructor and Config Methods
-// =========================================================================
+// ---------------------------------------------------------------------------
 
-ModelsPanel::ModelsPanel()
+SettingsPanel::SettingsPanel()
 {
 	loadFromConfig();
 }
 
-void ModelsPanel::loadFromConfig()
+void SettingsPanel::loadFromConfig()
 {
 	auto &cfg = ConfigManager::instance().getConfig();
 
-	// Load settings
+	// Server
+	m_host = cfg.server.host;
+	m_port = std::to_string(cfg.server.port);
+	m_apiKey = cfg.server.apiKey;
+	m_timeout = cfg.server.timeout;
+	m_timeoutStr = std::to_string(m_timeout);
+	m_threadsHttp = cfg.server.threadsHttp;
+	m_threadsHttpStr = std::to_string(m_threadsHttp);
+	m_webui = cfg.server.webui;
+	m_embedding = cfg.server.embedding;
+	m_contBatching = cfg.server.contBatching;
+	m_cachePrompt = cfg.server.cachePrompt;
+	m_metrics = cfg.server.metrics;
+
+	// Load
 	m_modelPath = cfg.load.modelPath;
 	m_ngpuLayers = cfg.load.ngpuLayers;
 	m_ctxSize = cfg.load.ctxSize == 0 ? "" : std::to_string(cfg.load.ctxSize);
 	m_batchSize = cfg.load.batchSize;
 	m_batchSizeStr = std::to_string(m_batchSize);
-
 	// Flash attention dropdown index
 	if (cfg.load.flashAttn == "on")
 		m_flashAttnIdx = 1;
@@ -85,12 +92,11 @@ void ModelsPanel::loadFromConfig()
 		m_flashAttnIdx = 2;
 	else
 		m_flashAttnIdx = 0;
-
 	m_mmap = cfg.load.mmap;
 	m_mlock = cfg.load.mlock;
 	m_fit = cfg.load.fit;
 
-	// Inference settings
+	// Inference
 	m_temperature = static_cast<float>(cfg.inference.temperature);
 	m_temperatureStr = formatFloat(m_temperature);
 	m_topP = static_cast<float>(cfg.inference.topP);
@@ -106,13 +112,48 @@ void ModelsPanel::loadFromConfig()
 	m_frequencyPenalty = static_cast<float>(cfg.inference.frequencyPenalty);
 	m_frequencyPenaltyStr = formatFloat(m_frequencyPenalty);
 	m_nPredict = std::to_string(cfg.inference.nPredict);
+
+	// UI
+	auto themeIt =
+		std::find(m_themeOptions.begin(), m_themeOptions.end(), cfg.ui.theme);
+	m_themeIdx = (themeIt != m_themeOptions.end())
+					 ? static_cast<int>(themeIt - m_themeOptions.begin())
+					 : 0;
+	m_defaultTabIdx = std::clamp(cfg.ui.defaultTab, 0, 2);
+	m_showSystemPanel = cfg.ui.showSystemPanel;
+	m_refreshRateMs = cfg.ui.refreshRateMs;
+	m_refreshRateMsStr = std::to_string(m_refreshRateMs);
+
+	// Terminal
+	m_defaultShell = cfg.terminal.defaultShell;
+	m_initialCommand = cfg.terminal.initialCommand;
+	m_workingDirectory = cfg.terminal.workingDirectory;
+	m_defaultCols = cfg.terminal.defaultCols;
+	m_defaultColsStr = std::to_string(m_defaultCols);
+	m_defaultRows = cfg.terminal.defaultRows;
+	m_defaultRowsStr = std::to_string(m_defaultRows);
 }
 
-void ModelsPanel::saveConfig()
+void SettingsPanel::saveConfig()
 {
 	auto &cfg = ConfigManager::instance().getConfig();
 
-	// Load settings
+	// Server
+	cfg.server.host = m_host;
+	try {
+		cfg.server.port = std::stoi(m_port);
+	} catch (...) {
+	}
+	cfg.server.apiKey = m_apiKey;
+	cfg.server.timeout = m_timeout;
+	cfg.server.threadsHttp = m_threadsHttp;
+	cfg.server.webui = m_webui;
+	cfg.server.embedding = m_embedding;
+	cfg.server.contBatching = m_contBatching;
+	cfg.server.cachePrompt = m_cachePrompt;
+	cfg.server.metrics = m_metrics;
+
+	// Load
 	cfg.load.modelPath = m_modelPath;
 	cfg.load.ngpuLayers = m_ngpuLayers;
 	try {
@@ -125,7 +166,7 @@ void ModelsPanel::saveConfig()
 	cfg.load.mlock = m_mlock;
 	cfg.load.fit = m_fit;
 
-	// Inference settings
+	// Inference
 	cfg.inference.temperature = static_cast<double>(m_temperature);
 	cfg.inference.topP = static_cast<double>(m_topP);
 	cfg.inference.topK = m_topK;
@@ -138,14 +179,23 @@ void ModelsPanel::saveConfig()
 	} catch (...) {
 	}
 
+	// UI
+	cfg.ui.theme = m_themeOptions[static_cast<size_t>(m_themeIdx)];
+	cfg.ui.defaultTab = m_defaultTabIdx;
+	cfg.ui.showSystemPanel = m_showSystemPanel;
+	cfg.ui.refreshRateMs = m_refreshRateMs;
+
+	// Terminal
+	cfg.terminal.defaultShell = m_defaultShell;
+	cfg.terminal.initialCommand = m_initialCommand;
+	cfg.terminal.workingDirectory = m_workingDirectory;
+	cfg.terminal.defaultCols = m_defaultCols;
+	cfg.terminal.defaultRows = m_defaultRows;
+
 	ConfigManager::instance().save();
 }
 
-// =========================================================================
-// Component Method
-// =========================================================================
-
-Component ModelsPanel::component()
+Component SettingsPanel::component()
 {
 	if (m_component)
 		return m_component;
@@ -290,148 +340,154 @@ Component ModelsPanel::component()
 	};
 
 	// -----------------------------------------------------------------------
-	// Load components
+	// Server components
 	// -----------------------------------------------------------------------
-	auto modelPathInput = Input(&m_modelPath, "path/to/model.gguf", inputOpt);
-	auto gpuLayersInput = Input(&m_ngpuLayers, "auto", inputOpt);
-	auto ctxSizeInput = Input(&m_ctxSize, "0 = default", inputOpt);
+	auto hostInput = Input(&m_host, "127.0.0.1", inputOpt);
+	auto portInput = Input(&m_port, "8080", inputOpt);
 
-	auto [batchSizeMinus, batchSizeInput, batchSizePlus] =
-		makeIntControls(m_batchSize, m_batchSizeStr, 32, 8192, 32);
+	InputOption apiKeyOpt = inputOpt;
+	apiKeyOpt.password = true;
+	auto apiKeyInput = Input(&m_apiKey, "API Key", apiKeyOpt);
 
-	auto flashAttnOpt = toggleOpt;
-	flashAttnOpt.entries = &m_flashAttnOptions;
-	flashAttnOpt.selected = &m_flashAttnIdx;
-	auto flashAttnToggle = Menu(flashAttnOpt);
-	auto mmapCb = Checkbox("", &m_mmap, cbOpt);
-	auto mlockCb = Checkbox("", &m_mlock, cbOpt);
-	auto fitCb = Checkbox("", &m_fit, cbOpt);
+	auto [timeoutMinus, timeoutInput, timeoutPlus] =
+		makeIntControls(m_timeout, m_timeoutStr, 1, 3600, 10);
+	auto [threadsHttpMinus, threadsHttpInput, threadsHttpPlus] =
+		makeIntControls(m_threadsHttp, m_threadsHttpStr, -1, 64, 1);
 
-	// -----------------------------------------------------------------------
-	// Inference components
-	// -----------------------------------------------------------------------
-	auto [tempMinus, tempInput, tempPlus] =
-		makeFloatControls(m_temperature, m_temperatureStr, 0.0f, 2.0f, 0.01f);
-	auto [topPMinus, topPInput, topPPlus] =
-		makeFloatControls(m_topP, m_topPStr, 0.0f, 1.0f, 0.01f);
-	auto [topKMinus, topKInput, topKPlus] =
-		makeIntControls(m_topK, m_topKStr, 0, 200, 1);
-	auto [minPMinus, minPInput, minPPlus] =
-		makeFloatControls(m_minP, m_minPStr, 0.0f, 1.0f, 0.01f);
-	auto [repeatPenMinus, repeatPenInput, repeatPenPlus] =
-		makeFloatControls(m_repeatPenalty,
-						  m_repeatPenaltyStr,
-						  1.0f,
-						  2.0f,
-						  0.01f);
-	auto [presPenMinus, presPenInput, presPenPlus] =
-		makeFloatControls(m_presencePenalty,
-						  m_presencePenaltyStr,
-						  -2.0f,
-						  2.0f,
-						  0.01f);
-	auto [freqPenMinus, freqPenInput, freqPenPlus] =
-		makeFloatControls(m_frequencyPenalty,
-						  m_frequencyPenaltyStr,
-						  -2.0f,
-						  2.0f,
-						  0.01f);
-
-	auto nPredictInput = Input(&m_nPredict, "-1 = unlimited", inputOpt);
+	auto webuiCb = Checkbox("", &m_webui, cbOpt);
+	auto embeddingCb = Checkbox("", &m_embedding, cbOpt);
+	auto contBatchCb = Checkbox("", &m_contBatching, cbOpt);
+	auto cachePromptCb = Checkbox("", &m_cachePrompt, cbOpt);
+	auto metricsCb = Checkbox("", &m_metrics, cbOpt);
 
 	// -----------------------------------------------------------------------
-	// Container — two-column layout: Load Settings (left), Inference (right)
+	// UI components
+	// -----------------------------------------------------------------------
+	auto themeOpt = toggleOpt;
+	themeOpt.entries = &m_themeOptions;
+	themeOpt.selected = &m_themeIdx;
+	auto themeToggle = Menu(themeOpt);
+
+	auto defaultTabOpt = toggleOpt;
+	defaultTabOpt.entries = &m_tabOptions;
+	defaultTabOpt.selected = &m_defaultTabIdx;
+	auto defaultTabToggle = Menu(defaultTabOpt);
+	auto showSysPanelCb = Checkbox("", &m_showSystemPanel, cbOpt);
+
+	auto [refreshMinus, refreshInput, refreshPlus] =
+		makeIntControls(m_refreshRateMs, m_refreshRateMsStr, 50, 1000, 10);
+
+	// -----------------------------------------------------------------------
+	// Terminal components
+	// -----------------------------------------------------------------------
+	auto shellInput = Input(&m_defaultShell, "system default", inputOpt);
+	auto initCmdInput = Input(&m_initialCommand, "none", inputOpt);
+	auto workDirInput = Input(&m_workingDirectory, "current", inputOpt);
+
+	auto [colsMinus, colsInput, colsPlus] =
+		makeIntControls(m_defaultCols, m_defaultColsStr, 16, 300, 1);
+	auto [rowsMinus, rowsInput, rowsPlus] =
+		makeIntControls(m_defaultRows, m_defaultRowsStr, 8, 100, 1);
+
+	// -----------------------------------------------------------------------
+	// Container — two-column layout (Server/UI left, Terminal right)
 	// -----------------------------------------------------------------------
 	auto container = Container::Horizontal({
 		Container::Vertical({
-			// Left column: Load Settings
-			modelPathInput,
-			gpuLayersInput,
-			ctxSizeInput,
-			batchSizeMinus,
-			batchSizeInput,
-			batchSizePlus,
-			flashAttnToggle,
-			mmapCb,
-			mlockCb,
-			fitCb,
+			// Left column: Server, UI
+			hostInput,		 portInput,	   apiKeyInput,		 timeoutMinus,
+			timeoutInput,	 timeoutPlus,  threadsHttpMinus, threadsHttpInput,
+			threadsHttpPlus, webuiCb,	   embeddingCb,		 contBatchCb,
+			cachePromptCb,	 metricsCb,	   themeToggle,		 defaultTabToggle,
+			showSysPanelCb,	 refreshMinus, refreshInput,	 refreshPlus,
 		}),
 		Container::Vertical({
-			// Right column: Inference Settings
-			tempMinus,		tempInput,		tempPlus,	   topPMinus,
-			topPInput,		topPPlus,		topKMinus,	   topKInput,
-			topKPlus,		minPMinus,		minPInput,	   minPPlus,
-			repeatPenMinus, repeatPenInput, repeatPenPlus, presPenMinus,
-			presPenInput,	presPenPlus,	freqPenMinus,  freqPenInput,
-			freqPenPlus,	nPredictInput,
+			// Right column: Terminal
+			shellInput,
+			initCmdInput,
+			workDirInput,
+			colsMinus,
+			colsInput,
+			colsPlus,
+			rowsMinus,
+			rowsInput,
+			rowsPlus,
 		}),
 	});
 
 	m_component = Renderer(container, [=, this] {
-		// === Left column: Load Settings ===
+		// === Left column: Server, UI, Terminal ===
 		Elements leftElements;
+
+		// Server Settings
 		{
 			Elements rows;
+			rows.push_back(settingRowComponent("Host", hostInput->Render()));
+			rows.push_back(settingRowComponent("Port", portInput->Render()));
 			rows.push_back(
-				settingRowComponent("Model Path", modelPathInput->Render()));
+				settingRowComponent("API Key", apiKeyInput->Render()));
+			rows.push_back(numberRow("Timeout",
+									 timeoutMinus->Render(),
+									 timeoutInput->Render(),
+									 timeoutPlus->Render()));
+			rows.push_back(numberRow("HTTP Threads",
+									 threadsHttpMinus->Render(),
+									 threadsHttpInput->Render(),
+									 threadsHttpPlus->Render()));
+			rows.push_back(checkboxRow("Web UI", webuiCb->Render()));
+			rows.push_back(checkboxRow("Embedding Mode", embeddingCb->Render()));
 			rows.push_back(
-				settingRowComponent("GPU Layers", gpuLayersInput->Render()));
-			rows.push_back(
-				settingRowComponent("Context Size", ctxSizeInput->Render()));
-			rows.push_back(numberRow("Batch Size",
-									 batchSizeMinus->Render(),
-									 batchSizeInput->Render(),
-									 batchSizePlus->Render()));
-			rows.push_back(
-				checkboxRow("Flash Attention", flashAttnToggle->Render()));
-			rows.push_back(checkboxRow("Memory Map", mmapCb->Render()));
-			rows.push_back(checkboxRow("Memory Lock", mlockCb->Render()));
-			rows.push_back(checkboxRow("Fit to Memory", fitCb->Render()));
+				checkboxRow("Continuous Batching", contBatchCb->Render()));
+			rows.push_back(checkboxRow("Cache Prompt", cachePromptCb->Render()));
+			rows.push_back(checkboxRow("Metrics", metricsCb->Render()));
 			leftElements.push_back(
-				window(text("Load Settings") | bold | color(Color::Yellow),
+				window(text("Server Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
 
-		// === Right column: Inference Settings ===
-		Elements rightElements;
+		// UI Settings
 		{
 			Elements rows;
-			rows.push_back(numberRow("Temperature",
-									 tempMinus->Render(),
-									 tempInput->Render(),
-									 tempPlus->Render()));
-			rows.push_back(numberRow("Top P",
-									 topPMinus->Render(),
-									 topPInput->Render(),
-									 topPPlus->Render()));
-			rows.push_back(numberRow("Top K",
-									 topKMinus->Render(),
-									 topKInput->Render(),
-									 topKPlus->Render()));
-			rows.push_back(numberRow("Min P",
-									 minPMinus->Render(),
-									 minPInput->Render(),
-									 minPPlus->Render()));
-			rows.push_back(numberRow("Repeat Penalty",
-									 repeatPenMinus->Render(),
-									 repeatPenInput->Render(),
-									 repeatPenPlus->Render()));
-			rows.push_back(numberRow("Presence Penalty",
-									 presPenMinus->Render(),
-									 presPenInput->Render(),
-									 presPenPlus->Render()));
-			rows.push_back(numberRow("Frequency Penalty",
-									 freqPenMinus->Render(),
-									 freqPenInput->Render(),
-									 freqPenPlus->Render()));
+			rows.push_back(checkboxRow("Theme", themeToggle->Render()));
 			rows.push_back(
-				settingRowComponent("Max Tokens", nPredictInput->Render()));
-			rightElements.push_back(
-				window(text("Inference Settings") | bold | color(Color::Yellow),
+				checkboxRow("Default Tab", defaultTabToggle->Render()));
+			rows.push_back(
+				checkboxRow("Show System Panel", showSysPanelCb->Render()));
+			rows.push_back(numberRow("Refresh Rate",
+									 refreshMinus->Render(),
+									 refreshInput->Render(),
+									 refreshPlus->Render()));
+			leftElements.push_back(
+				window(text("UI Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
+
+		// === Right column: Terminal ===
+		Elements rightElements;
+		{
+			Elements rows;
+			rows.push_back(
+				settingRowComponent("Default Shell", shellInput->Render()));
+			rows.push_back(
+				settingRowComponent("Initial Command", initCmdInput->Render()));
+			rows.push_back(settingRowComponent("Working Directory",
+											   workDirInput->Render()));
+			rows.push_back(numberRow("Default Cols",
+									 colsMinus->Render(),
+									 colsInput->Render(),
+									 colsPlus->Render()));
+			rows.push_back(numberRow("Default Rows",
+									 rowsMinus->Render(),
+									 rowsInput->Render(),
+									 rowsPlus->Render()));
+			rightElements.push_back(
+				window(text("Terminal Settings") | bold | color(Color::Yellow),
+					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
+					   ftxui::EMPTY));
+		}
+		rightElements.push_back(TerminalPresetsPanel::render());
 
 		auto leftCol = vbox(std::move(leftElements)) | flex;
 		auto rightCol = vbox(std::move(rightElements)) | flex;

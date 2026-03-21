@@ -137,6 +137,57 @@ public:
      */
     bool createDefaultConfig();
 
+    // ========================================================================
+    // TerminalPreset Access Methods
+    // ========================================================================
+
+    /**
+     * @brief Get all terminal presets (const access).
+     * 
+     * @return Const reference to the vector of terminal presets.
+     */
+    const std::vector<Config::TerminalPreset>& getTerminalPresets() const;
+
+    /**
+     * @brief Get all terminal presets (mutable access).
+     * 
+     * @return Mutable reference to the vector of terminal presets.
+     */
+    std::vector<Config::TerminalPreset>& getTerminalPresets();
+
+    /**
+     * @brief Find a terminal preset by name.
+     * 
+     * @param name The name of the preset to find.
+     * @return The preset if found, std::nullopt otherwise.
+     */
+    std::optional<Config::TerminalPreset> findTerminalPreset(const std::string& name) const;
+
+    /**
+     * @brief Add a new terminal preset.
+     * 
+     * @param preset The preset to add.
+     * @return true if added successfully, false if a preset with the same name exists.
+     */
+    bool addTerminalPreset(Config::TerminalPreset preset);
+
+    /**
+     * @brief Remove a terminal preset by name.
+     * 
+     * @param name The name of the preset to remove.
+     * @return true if found and removed, false otherwise.
+     */
+    bool removeTerminalPreset(const std::string& name);
+
+    /**
+     * @brief Update an existing terminal preset.
+     * 
+     * @param oldName The name of the preset to update.
+     * @param preset The new preset values.
+     * @return true if found and updated, false otherwise.
+     */
+    bool updateTerminalPreset(const std::string& oldName, Config::TerminalPreset preset);
+
 private:
     /**
      * @brief Default constructor - private for singleton pattern.

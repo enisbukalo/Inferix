@@ -1,9 +1,10 @@
 /**
  * @file serverInfoPanel.cpp
- * @brief Server status panel implementation.
+ * @brief Animated presence indicator implementation for server display.
  *
- * Implements an animated status indicator that pulses between colors
- * to show server connection state.
+ * This is a placeholder animation that alternates between green and red
+ * every 8 frames (~2 seconds at ~4fps) to create a simple pulsing effect.
+ * No actual server health monitoring is performed.
  */
 
 #include "serverInfoPanel.h"

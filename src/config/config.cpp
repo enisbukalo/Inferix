@@ -21,9 +21,25 @@
 
 #include "config.h"
 
+#include <cmath>
+
 using json = nlohmann::json;
 
 namespace Config {
+
+/**
+ * @brief Round a double value to exactly 2 decimal places.
+ *
+ * This ensures clean JSON output (e.g., 0.00 instead of 0.00000 etc..)
+ * and matches the precision that consuming code will use.
+ *
+ * @param value The double value to round
+ * @return The value rounded to 2 decimal places
+ */
+static double roundToTwoDecimals(double value)
+{
+	return std::round(value * 100.0) / 100.0;
+}
 
 // ============================================================================
 // ServerSettings serialization
@@ -56,7 +72,7 @@ void to_json(json &j, const ServerSettings &v)
 	j["warmup"] = v.warmup;
 	j["jinja"] = v.jinja;
 	j["prefillAssistant"] = v.prefillAssistant;
-	j["slotPromptSimilarity"] = v.slotPromptSimilarity;
+	j["slotPromptSimilarity"] = roundToTwoDecimals(v.slotPromptSimilarity);
 	j["sleepIdleSeconds"] = v.sleepIdleSeconds;
 
 	j["metrics"] = v.metrics;
@@ -198,32 +214,32 @@ void to_json(json &j, const InferenceSettings &v)
 	j["samplers"] = v.samplers;
 
 	j["seed"] = v.seed;
-	j["temperature"] = v.temperature;
+	j["temperature"] = roundToTwoDecimals(v.temperature);
 	j["topK"] = v.topK;
-	j["topP"] = v.topP;
-	j["minP"] = v.minP;
-	j["topNsigma"] = v.topNsigma;
-	j["typicalP"] = v.typicalP;
+	j["topP"] = roundToTwoDecimals(v.topP);
+	j["minP"] = roundToTwoDecimals(v.minP);
+	j["topNsigma"] = roundToTwoDecimals(v.topNsigma);
+	j["typicalP"] = roundToTwoDecimals(v.typicalP);
 
-	j["xtcProbability"] = v.xtcProbability;
-	j["xtcThreshold"] = v.xtcThreshold;
+	j["xtcProbability"] = roundToTwoDecimals(v.xtcProbability);
+	j["xtcThreshold"] = roundToTwoDecimals(v.xtcThreshold);
 
 	j["repeatLastN"] = v.repeatLastN;
-	j["repeatPenalty"] = v.repeatPenalty;
-	j["presencePenalty"] = v.presencePenalty;
-	j["frequencyPenalty"] = v.frequencyPenalty;
+	j["repeatPenalty"] = roundToTwoDecimals(v.repeatPenalty);
+	j["presencePenalty"] = roundToTwoDecimals(v.presencePenalty);
+	j["frequencyPenalty"] = roundToTwoDecimals(v.frequencyPenalty);
 
-	j["dryMultiplier"] = v.dryMultiplier;
-	j["dryBase"] = v.dryBase;
+	j["dryMultiplier"] = roundToTwoDecimals(v.dryMultiplier);
+	j["dryBase"] = roundToTwoDecimals(v.dryBase);
 	j["dryAllowedLength"] = v.dryAllowedLength;
 	j["dryPenaltyLastN"] = v.dryPenaltyLastN;
 
-	j["dynatempRange"] = v.dynatempRange;
-	j["dynatempExp"] = v.dynatempExp;
+	j["dynatempRange"] = roundToTwoDecimals(v.dynatempRange);
+	j["dynatempExp"] = roundToTwoDecimals(v.dynatempExp);
 
 	j["mirostat"] = v.mirostat;
-	j["mirostatLr"] = v.mirostatLr;
-	j["mirostatEnt"] = v.mirostatEnt;
+	j["mirostatLr"] = roundToTwoDecimals(v.mirostatLr);
+	j["mirostatEnt"] = roundToTwoDecimals(v.mirostatEnt);
 
 	j["grammar"] = v.grammar;
 	j["jsonSchema"] = v.jsonSchema;
@@ -328,6 +344,26 @@ void from_json(const json &j, ModelPreset &v)
 }
 
 // ============================================================================
+// TerminalPreset serialization
+// ============================================================================
+
+void to_json(json &j, const TerminalPreset &v)
+{
+	j["name"] = v.name;
+	j["initialCommand"] = v.initialCommand;
+	j["cols"] = v.cols;
+	j["rows"] = v.rows;
+}
+
+void from_json(const json &j, TerminalPreset &v)
+{
+	v.name = j.value("name", std::string{});
+	v.initialCommand = j.value("initialCommand", std::string{});
+	v.cols = j.value("cols", 80);
+	v.rows = j.value("rows", 24);
+}
+
+// ============================================================================
 // UserConfig serialization (main container)
 // ============================================================================
 
@@ -339,6 +375,7 @@ void to_json(json &j, const UserConfig &v)
 	j["ui"] = v.ui;
 	j["terminal"] = v.terminal;
 	j["presets"] = v.presets;
+	j["terminalPresets"] = v.terminalPresets;
 }
 
 void from_json(const json &j, UserConfig &v)
@@ -355,6 +392,9 @@ void from_json(const json &j, UserConfig &v)
 		v.terminal = j["terminal"].get<TerminalSettings>();
 	if (j.contains("presets"))
 		v.presets = j["presets"].get<std::vector<ModelPreset>>();
+	if (j.contains("terminalPresets"))
+		v.terminalPresets =
+			j["terminalPresets"].get<std::vector<TerminalPreset>>();
 }
 
 } // namespace Config

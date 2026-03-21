@@ -8,14 +8,15 @@
  */
 
 #include "app.h"
+#include "configManager.h"
 #include "inferenceSettingsPanel.h"
-#include "loadSettingsPanel.h"
-#include "modelPresetsPanel.h"
 #include "modelsPanel.h"
 #include "serverInfoPanel.h"
+#include "settingsPanel.h"
 #include "systemMonitorRunner.h"
 #include "systemResourcesPanel.h"
 #include "terminalPanel.h"
+#include "terminalPresetsPanel.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/event.hpp>
@@ -32,25 +33,31 @@ void App::run()
 	auto screen = ScreenInteractive::Fullscreen();
 	SystemMonitorRunner runner(screen);
 	TerminalPanel terminalPanel(screen);
+	SettingsPanel settingsPanel;
+	ModelsPanel modelsPanel;
 
-	std::vector<std::string> tabValues{ "Settings", "Server Log", "Terminal" };
+	std::vector<std::string> tabValues{ "App Settings",
+										"Model Settings",
+										"Server Log",
+										"Terminal" };
 	int selectedTab = 0;
 	auto tabToggle = Toggle(&tabValues, &selectedTab);
 
-	auto settingsContent = Renderer([] {
-		return window(text(""),
-					  hbox({
-						  vbox({ ModelsPanel::render(),
-								 ModelPresetsPanel::render() }) |
-							  flex,
-						  filler(),
-						  // separatorEmpty(),
-						  vbox({ LoadSettingsPanel::render(),
-								 InferenceSettingsPanel::render() }) |
-							  flex,
-					  }),
-					  ftxui::EMPTY) |
+	// Settings tab - interactive configuration components + terminal presets
+	auto settingsInner = Container::Vertical({
+		settingsPanel.component(),
+	});
+	auto settingsContent = Renderer(settingsInner, [&] {
+		return window(text(""), flex(settingsInner->Render()), ftxui::EMPTY) |
 			   flex;
+	});
+
+	// Model tab - interactive configuration components
+	auto modelInner = Container::Vertical({
+		modelsPanel.component(),
+	});
+	auto modelContent = Renderer(modelInner, [&] {
+		return window(text(""), flex(modelInner->Render()), ftxui::EMPTY) | flex;
 	});
 
 	auto serverContent = Renderer([] {
@@ -66,35 +73,30 @@ void App::run()
 	auto logOutputContent =
 		Renderer([] { return window(text(""), text(""), ftxui::EMPTY) | flex; });
 
-	auto tabContainer =
-		Container::Tab({ settingsContent, logOutputContent, terminalContent },
-					   &selectedTab);
+	auto tabContainer = Container::Tab(
+		{ settingsContent, modelContent, logOutputContent, terminalContent },
+		&selectedTab);
 
-	// Dynamically added tabs (simulating loading from a config file).
+	// Dynamically added tabs - loaded from config.
 	// Store dynamic terminal panels so they survive until the event loop ends.
 	struct DynamicTerminal
 	{
 		std::unique_ptr<TerminalPanel> panel;
 		int tabIndex;
+		std::string presetName; // Track which preset this is
 	};
 	std::vector<DynamicTerminal> dynamicTerminals;
 
-	{
-		auto panel = std::make_unique<TerminalPanel>(screen, "opencode");
+	// Load terminals from config
+	auto &config = ConfigManager::instance().getConfig();
+	for (const auto &preset : config.terminalPresets) {
+		auto panel =
+			std::make_unique<TerminalPanel>(screen, preset.initialCommand);
 		auto component = panel->component();
-		tabValues.push_back("Opencode");
+		tabValues.push_back(preset.name);
 		tabContainer->Add(component);
 		int idx = static_cast<int>(tabValues.size()) - 1;
-		dynamicTerminals.push_back({ std::move(panel), idx });
-	}
-
-	{
-		auto panel = std::make_unique<TerminalPanel>(screen, "gitui");
-		auto component = panel->component();
-		tabValues.push_back("GitUI");
-		tabContainer->Add(component);
-		int idx = static_cast<int>(tabValues.size()) - 1;
-		dynamicTerminals.push_back({ std::move(panel), idx });
+		dynamicTerminals.push_back({ std::move(panel), idx, preset.name });
 	}
 
 	auto interactive = Container::Vertical({ tabToggle, tabContainer }) | flex;
@@ -111,7 +113,7 @@ void App::run()
 		// Auto-capture when switching to a terminal tab.
 		if (selectedTab != prevTab) {
 			prevTab = selectedTab;
-			if (selectedTab == 2) {
+			if (selectedTab == 3) {
 				terminalPanel.setCapturing(true);
 			}
 			for (auto &dt : dynamicTerminals) {
@@ -123,7 +125,7 @@ void App::run()
 
 		// Check if any active terminal tab is capturing input.
 		bool anyCapturing = false;
-		if (selectedTab == 2 && terminalPanel.isCapturing()) {
+		if (selectedTab == 3 && terminalPanel.isCapturing()) {
 			anyCapturing = true;
 		}
 		for (auto &dt : dynamicTerminals) {
@@ -147,7 +149,7 @@ void App::run()
 	// the Toggle component consumes them (e.g. arrow keys, Tab, chars).
 	auto root =
 		container | CatchEvent([&](Event event) {
-			if (selectedTab == 2 && terminalPanel.wantsEvent(event)) {
+			if (selectedTab == 3 && terminalPanel.wantsEvent(event)) {
 				return terminalPanel.handleEvent(event);
 			}
 			for (auto &dt : dynamicTerminals) {

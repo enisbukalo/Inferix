@@ -530,11 +530,11 @@ struct InferenceSettings
 	 * - Higher (1.0+): More creative, unpredictable outputs
 	 *
 	 * Corresponds to: `--temp VALUE`
-	 * @default 0.8f
+	 * @default 0.8
 	 * @range 0.0 to ~2.0 (higher values possible but rarely useful)
 	 * @note 0.0 would be completely deterministic (argmax).
 	 */
-	float temperature = 0.8f;
+	double temperature = 0.8;
 
 	/**
 	 * @brief Top-K sampling limit.
@@ -556,11 +556,11 @@ struct InferenceSettings
 	 * probability exceeds P. Higher values allow more unlikely tokens.
 	 *
 	 * Corresponds to: `--top-p VALUE`
-	 * @default 0.95f
+	 * @default 0.95
 	 * @range 0.0 to 1.0
 	 * @note 1.0 disables the filter (all tokens considered).
 	 */
-	float topP = 0.95f;
+	double topP = 0.95;
 
 	/**
 	 * @brief Minimum probability threshold for tokens.
@@ -569,11 +569,11 @@ struct InferenceSettings
 	 * Provides an alternative to topK/topP.
 	 *
 	 * Corresponds to: `--min-p VALUE`
-	 * @default 0.05f
+	 * @default 0.05
 	 * @range 0.0 (disabled) to 1.0
 	 * @note Useful when you want a relative threshold rather than absolute.
 	 */
-	float minP = 0.05f;
+	double minP = 0.05;
 
 	/**
 	 * @brief Top N-sigma sampling threshold.
@@ -582,11 +582,11 @@ struct InferenceSettings
 	 * Statistical approach to diversity control.
 	 *
 	 * Corresponds to: `--top-nsigma VALUE`
-	 * @default -1.0f (disabled)
+	 * @default -1.0 (disabled)
 	 * @range -1.0 (disabled) to ~4.0
 	 * @note Alternative to topK/topP with statistical interpretation.
 	 */
-	float topNsigma = -1.0f;
+	double topNsigma = -1.0;
 
 	/**
 	 * @brief Typical sampling parameter.
@@ -595,11 +595,11 @@ struct InferenceSettings
 	 * 1.0 produce "typical" text; lower values produce more surprising text.
 	 *
 	 * Corresponds to: `--typical VALUE`
-	 * @default 1.0f (disabled)
+	 * @default 1.0 (disabled)
 	 * @range 0.0 to 1.0
 	 * @note Based on "locally typical sampling" research.
 	 */
-	float typicalP = 1.0f;
+	double typicalP = 1.0;
 
 	/**
 	 * @name XTC Sampling
@@ -614,10 +614,10 @@ struct InferenceSettings
 	 * Higher values = more diverse but potentially incoherent output.
 	 *
 	 * Corresponds to: `--xtc-probability VALUE`
-	 * @default 0.0f (disabled)
+	 * @default 0.0 (disabled)
 	 * @range 0.0 to 1.0
 	 */
-	float xtcProbability = 0.0f;
+	double xtcProbability = 0.0;
 
 	/**
 	 * @brief XTC sampling threshold.
@@ -625,10 +625,10 @@ struct InferenceSettings
 	 * Threshold for XTC's exclusive sampling decision.
 	 *
 	 * Corresponds to: `--xtc-threshold VALUE`
-	 * @default 0.1f
+	 * @default 0.1
 	 * @range 0.0 to 1.0
 	 */
-	float xtcThreshold = 0.1f;
+	double xtcThreshold = 0.1;
 
 	/**
 	 * @name Repetition Penalties
@@ -655,11 +655,11 @@ struct InferenceSettings
 	 * strongly discourage repetition; lower values allow it.
 	 *
 	 * Corresponds to: `--repeat-penalty VALUE`
-	 * @default 1.0f (disabled)
+	 * @default 1.0 (disabled)
 	 * @range 1.0 to ~2.0
 	 * @note >1.0 penalizes repetition; <1.0 encourages it.
 	 */
-	float repeatPenalty = 1.0f;
+	double repeatPenalty = 1.0;
 
 	/**
 	 * @brief Presence penalty.
@@ -668,11 +668,11 @@ struct InferenceSettings
 	 * regardless of frequency. Encourages topic diversity.
 	 *
 	 * Corresponds to: `--presence-penalty VALUE`
-	 * @default 0.0f (disabled)
+	 * @default 0.0 (disabled)
 	 * @range -2.0 to 2.0
 	 * @note Positive values discourage new topics; negative encourage them.
 	 */
-	float presencePenalty = 0.0f;
+	double presencePenalty = 0.0;
 
 	/**
 	 * @brief Frequency penalty.
@@ -681,11 +681,11 @@ struct InferenceSettings
 	 * Discourages repetitive phrasing.
 	 *
 	 * Corresponds to: `--frequency-penalty VALUE`
-	 * @default 0.0f (disabled)
+	 * @default 0.0 (disabled)
 	 * @range -2.0 to 2.0
 	 * @note Similar to OpenAI's frequencyPenalty parameter.
 	 */
-	float frequencyPenalty = 0.0f;
+	double frequencyPenalty = 0.0;
 
 	/**
 	 * @name DRY Sampling
@@ -700,10 +700,10 @@ struct InferenceSettings
 	 * penalize repetitive sequences.
 	 *
 	 * Corresponds to: `--dry-multiplier VALUE`
-	 * @default 0.0f (disabled)
+	 * @default 0.0 (disabled)
 	 * @range 0.0 to ~5.0
 	 */
-	float dryMultiplier = 0.0f;
+	double dryMultiplier = 0.0;
 
 	/**
 	 * @brief DRY penalty base value.
@@ -711,9 +711,9 @@ struct InferenceSettings
 	 * Base value for DRY penalty calculation.
 	 *
 	 * Corresponds to: `--dry-base VALUE`
-	 * @default 1.75f
+	 * @default 1.75
 	 */
-	float dryBase = 1.75f;
+	double dryBase = 1.75;
 
 	/**
 	 * @brief DRY allowed repetition length.
@@ -748,10 +748,10 @@ struct InferenceSettings
 	 * Higher values allow more variation.
 	 *
 	 * Corresponds to: `--dynatemp-range VALUE`
-	 * @default 0.0f (disabled)
+	 * @default 0.0 (disabled)
 	 * @range 0.0 to ~2.0
 	 */
-	float dynatempRange = 0.0f;
+	double dynatempRange = 0.0;
 
 	/**
 	 * @brief Dynamic temperature exponent.
@@ -759,9 +759,9 @@ struct InferenceSettings
 	 * Exponent for the dynamic temperature adjustment formula.
 	 *
 	 * Corresponds to: `--dynatemp-exp VALUE`
-	 * @default 1.0f
+	 * @default 1.0
 	 */
-	float dynatempExp = 1.0f;
+	double dynatempExp = 1.0;
 
 	/**
 	 * @name Mirostat Sampling
@@ -791,10 +791,10 @@ struct InferenceSettings
 	 * Lower = slower, more stable; Higher = faster adaptation.
 	 *
 	 * Corresponds to: `--mirostat-lr VALUE`
-	 * @default 0.1f
+	 * @default 0.1
 	 * @range 0.0 to ~1.0
 	 */
-	float mirostatLr = 0.1f;
+	double mirostatLr = 0.1;
 
 	/**
 	 * @brief Mirostat target entropy (tau).
@@ -803,10 +803,10 @@ struct InferenceSettings
 	 * and diverse output; Lower = more predictable output.
 	 *
 	 * Corresponds to: `--mirostat-ent VALUE`
-	 * @default 5.0f
+	 * @default 5.0
 	 * @range ~1.0 to ~10.0
 	 */
-	float mirostatEnt = 5.0f;
+	double mirostatEnt = 5.0;
 
 	/**
 	 * @name Constrained Generation

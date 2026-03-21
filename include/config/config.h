@@ -26,7 +26,8 @@
  *   "inference": { ... },   // InferenceSettings
  *   "ui": { ... },          // UISettings
  *   "terminal": { ... },    // TerminalSettings
- *   "presets": [ ... ]      // vector<ModelPreset>
+ *   "presets": [ ... ],     // vector<ModelPreset>
+ *   "terminalPresets": [ .. ] // vector<TerminalPreset>
  * }
  * @endcode
  *
@@ -64,6 +65,7 @@ namespace Config {
  *     InferenceSettings{.temperature = 0.7f},
  *     UISettings{},
  *     TerminalSettings{},
+ *     {},
  *     {}
  * };
  * @endcode
@@ -134,6 +136,17 @@ struct UserConfig
 	 * @see modelSettings.h for ModelPreset documentation
 	 */
 	std::vector<ModelPreset> presets;
+
+	/**
+	 * @brief Named terminal presets.
+	 *
+	 * A list of named terminal configurations that appear as
+	 * dynamic top-level tabs in the application. Each preset
+	 * defines a command to run and optional dimensions.
+	 *
+	 * @see userSettings.h for TerminalPreset documentation
+	 */
+	std::vector<TerminalPreset> terminalPresets;
 };
 
 /**
@@ -182,6 +195,11 @@ void from_json(const nlohmann::json &j, TerminalSettings &v);
 void to_json(nlohmann::json &j, const ModelPreset &v);
 /** @brief Deserialize ModelPreset from JSON. */
 void from_json(const nlohmann::json &j, ModelPreset &v);
+
+/** @brief Serialize TerminalPreset to JSON. */
+void to_json(nlohmann::json &j, const TerminalPreset &v);
+/** @brief Deserialize TerminalPreset from JSON. */
+void from_json(const nlohmann::json &j, TerminalPreset &v);
 
 /** @brief Serialize UserConfig to JSON. */
 void to_json(nlohmann::json &j, const UserConfig &v);

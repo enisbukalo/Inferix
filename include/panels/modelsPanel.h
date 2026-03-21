@@ -1,36 +1,106 @@
 #pragma once
 
+#include "configManager.h"
+
+#include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
+
+#include <algorithm>
+#include <iomanip>
+#include <sstream>
 
 /**
  * @file modelsPanel.h
- * @brief Panel that displays the list of available AI/ML models for inference.
+ * @brief Panel containing Load and Inference configuration settings.
  *
- * This panel provides a scrollable list view of available model files
- * that can be loaded for inference. Each entry includes:
- * - Selection checkbox: For selecting the model
- * - Model filename: The GGUF or other model file name
+ * This panel provides interactive controls for configuring model loading
+ * parameters and inference behavior. It is a stateful component that
+ * reads from and writes to the ConfigManager on change.
  *
- * The panel uses a vbox layout with flex modifier to enable scrolling
- * when the model list exceeds the available vertical space. Each row
- * is styled with a window border for clear visual separation.
- *
- * @note Currently displays placeholder content; future implementations
- *       will populate this with actual model metadata from the filesystem.
+ * Sections:
+ * - Load Settings: Model path, GPU layers, context size, batch size,
+ *   flash attention, memory mapping options
+ * - Inference Settings: Temperature, top-P, top-K, min-P, penalties,
+ *   and max tokens prediction
  */
 class ModelsPanel
 {
   public:
 	/**
-	 * @brief Builds and returns an FTXUI element showing available models.
+	 * @brief Constructs the ModelsPanel and loads current configuration.
 	 *
-	 * Renders a scrollable list of model entries with window border styling.
-	 * Currently displays placeholder content ready for future model data
-	 * integration.
-	 *
-	 * @return An @c ftxui::Element containing the models list panel.
+	 * Initializes all member variables from ConfigManager::getConfig().
 	 */
-	static ftxui::Element render();
+	ModelsPanel();
+
+	/**
+	 * @brief Returns the FTXUI component for this panel.
+	 *
+	 * The component is cached after first creation and reused on
+	 * subsequent calls.
+	 *
+	 * @return An @c ftxui::Component containing the Load and Inference
+	 *         settings controls.
+	 */
+	ftxui::Component component();
 
   private:
+	/**
+	 * @brief Loads current configuration values into member variables.
+	 *
+	 * Called from constructor to initialize state. Reads Load and
+	 * Inference sections from ConfigManager.
+	 */
+	void loadFromConfig();
+
+	/**
+	 * @brief Saves current member variable values to configuration.
+	 *
+	 * Called whenever a setting is changed (via onChange callbacks).
+	 * Writes Load and Inference sections to ConfigManager and persists
+	 * to disk.
+	 */
+	void saveConfig();
+
+	// =========================================================================
+	// Member component
+	// =========================================================================
+	ftxui::Component m_component;
+
+	// =========================================================================
+	// Load Settings State
+	// =========================================================================
+	std::string m_modelPath;
+	std::string m_ngpuLayers;
+	std::string m_ctxSize;
+	int m_batchSize = 2048;
+	std::string m_batchSizeStr = "2048";
+	int m_flashAttnIdx = 0; // 0=auto, 1=on, 2=off
+	bool m_mmap = true;
+	bool m_mlock = false;
+	bool m_fit = true;
+
+	// =========================================================================
+	// Inference Settings State
+	// =========================================================================
+	float m_temperature = 0.8f;
+	std::string m_temperatureStr;
+	float m_topP = 0.95f;
+	std::string m_topPStr;
+	int m_topK = 40;
+	std::string m_topKStr = "40";
+	float m_minP = 0.05f;
+	std::string m_minPStr;
+	float m_repeatPenalty = 1.0f;
+	std::string m_repeatPenaltyStr;
+	float m_presencePenalty = 0.0f;
+	std::string m_presencePenaltyStr;
+	float m_frequencyPenalty = 0.0f;
+	std::string m_frequencyPenaltyStr;
+	std::string m_nPredict;
+
+	// =========================================================================
+	// Dropdown Options
+	// =========================================================================
+	std::vector<std::string> m_flashAttnOptions = { "auto", "on", "off" };
 };
