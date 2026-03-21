@@ -1,5 +1,6 @@
 #include "modelsPanel.h"
 #include "configManager.h"
+#include "utility/ui_utils.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -11,52 +12,6 @@
 #include <sstream>
 
 using namespace ftxui;
-
-// =========================================================================
-// Helper Functions
-// =========================================================================
-
-static std::string formatFloat(float value, int precision = 2)
-{
-	std::ostringstream oss;
-	oss << std::fixed << std::setprecision(precision) << value;
-	return oss.str();
-}
-
-/// Helper: renders a labelled row for text inputs.
-static Element settingRowComponent(const std::string &label,
-								   Element componentRender)
-{
-	return hbox({ text(label) | color(Color::MagentaLight),
-				  filler(),
-				  componentRender }) |
-		   xflex;
-}
-
-/// Helper: renders a labelled row with [-] [input] [+] controls.
-static Element numberRow(const std::string &label,
-						 Element minusBtn,
-						 Element inputRender,
-						 Element plusBtn)
-{
-	return hbox({ text(label) | color(Color::MagentaLight) | vcenter,
-				  filler(),
-				  minusBtn,
-				  separatorLight(),
-				  inputRender | size(WIDTH, EQUAL, 8),
-				  separatorLight(),
-				  plusBtn }) |
-		   xflex;
-}
-
-/// Helper: checkbox/toggle row — magenta label left, component right.
-static Element checkboxRow(const std::string &label, Element componentRender)
-{
-	return hbox({ text(label) | color(Color::MagentaLight),
-				  filler(),
-				  componentRender }) |
-		   xflex;
-}
 
 // =========================================================================
 // Constructor and Config Methods
@@ -92,19 +47,19 @@ void ModelsPanel::loadFromConfig()
 
 	// Inference settings
 	m_temperature = static_cast<float>(cfg.inference.temperature);
-	m_temperatureStr = formatFloat(m_temperature);
+	m_temperatureStr = ui_utils::formatFloat(m_temperature);
 	m_topP = static_cast<float>(cfg.inference.topP);
-	m_topPStr = formatFloat(m_topP);
+	m_topPStr = ui_utils::formatFloat(m_topP);
 	m_topK = cfg.inference.topK;
 	m_topKStr = std::to_string(m_topK);
 	m_minP = static_cast<float>(cfg.inference.minP);
-	m_minPStr = formatFloat(m_minP);
+	m_minPStr = ui_utils::formatFloat(m_minP);
 	m_repeatPenalty = static_cast<float>(cfg.inference.repeatPenalty);
-	m_repeatPenaltyStr = formatFloat(m_repeatPenalty);
+	m_repeatPenaltyStr = ui_utils::formatFloat(m_repeatPenalty);
 	m_presencePenalty = static_cast<float>(cfg.inference.presencePenalty);
-	m_presencePenaltyStr = formatFloat(m_presencePenalty);
+	m_presencePenaltyStr = ui_utils::formatFloat(m_presencePenalty);
 	m_frequencyPenalty = static_cast<float>(cfg.inference.frequencyPenalty);
-	m_frequencyPenaltyStr = formatFloat(m_frequencyPenalty);
+	m_frequencyPenaltyStr = ui_utils::formatFloat(m_frequencyPenalty);
 	m_nPredict = std::to_string(cfg.inference.nPredict);
 }
 
@@ -258,7 +213,7 @@ Component ModelsPanel::component()
 			"-",
 			[&value, &str, minVal, step, onChange] {
 				value = std::max(minVal, value - step);
-				str = formatFloat(value);
+				str = ui_utils::formatFloat(value);
 				onChange();
 			},
 			btnStyle);
@@ -266,7 +221,7 @@ Component ModelsPanel::component()
 			"+",
 			[&value, &str, maxVal, step, onChange] {
 				value = std::min(maxVal, value + step);
-				str = formatFloat(value);
+				str = ui_utils::formatFloat(value);
 				onChange();
 			},
 			btnStyle);
@@ -373,20 +328,26 @@ Component ModelsPanel::component()
 		{
 			Elements rows;
 			rows.push_back(
-				settingRowComponent("Model Path", modelPathInput->Render()));
+				ui_utils::settingRowComponent("Model Path",
+											  modelPathInput->Render()));
 			rows.push_back(
-				settingRowComponent("GPU Layers", gpuLayersInput->Render()));
+				ui_utils::settingRowComponent("GPU Layers",
+											  gpuLayersInput->Render()));
 			rows.push_back(
-				settingRowComponent("Context Size", ctxSizeInput->Render()));
-			rows.push_back(numberRow("Batch Size",
-									 batchSizeMinus->Render(),
-									 batchSizeInput->Render(),
-									 batchSizePlus->Render()));
+				ui_utils::settingRowComponent("Context Size",
+											  ctxSizeInput->Render()));
+			rows.push_back(ui_utils::numberRow("Batch Size",
+											   batchSizeMinus->Render(),
+											   batchSizeInput->Render(),
+											   batchSizePlus->Render()));
+			rows.push_back(ui_utils::checkboxRow("Flash Attention",
+												 flashAttnToggle->Render()));
 			rows.push_back(
-				checkboxRow("Flash Attention", flashAttnToggle->Render()));
-			rows.push_back(checkboxRow("Memory Map", mmapCb->Render()));
-			rows.push_back(checkboxRow("Memory Lock", mlockCb->Render()));
-			rows.push_back(checkboxRow("Fit to Memory", fitCb->Render()));
+				ui_utils::checkboxRow("Memory Map", mmapCb->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("Memory Lock", mlockCb->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("Fit to Memory", fitCb->Render()));
 			leftElements.push_back(
 				window(text("Load Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
@@ -397,36 +358,37 @@ Component ModelsPanel::component()
 		Elements rightElements;
 		{
 			Elements rows;
-			rows.push_back(numberRow("Temperature",
-									 tempMinus->Render(),
-									 tempInput->Render(),
-									 tempPlus->Render()));
-			rows.push_back(numberRow("Top P",
-									 topPMinus->Render(),
-									 topPInput->Render(),
-									 topPPlus->Render()));
-			rows.push_back(numberRow("Top K",
-									 topKMinus->Render(),
-									 topKInput->Render(),
-									 topKPlus->Render()));
-			rows.push_back(numberRow("Min P",
-									 minPMinus->Render(),
-									 minPInput->Render(),
-									 minPPlus->Render()));
-			rows.push_back(numberRow("Repeat Penalty",
-									 repeatPenMinus->Render(),
-									 repeatPenInput->Render(),
-									 repeatPenPlus->Render()));
-			rows.push_back(numberRow("Presence Penalty",
-									 presPenMinus->Render(),
-									 presPenInput->Render(),
-									 presPenPlus->Render()));
-			rows.push_back(numberRow("Frequency Penalty",
-									 freqPenMinus->Render(),
-									 freqPenInput->Render(),
-									 freqPenPlus->Render()));
+			rows.push_back(ui_utils::numberRow("Temperature",
+											   tempMinus->Render(),
+											   tempInput->Render(),
+											   tempPlus->Render()));
+			rows.push_back(ui_utils::numberRow("Top P",
+											   topPMinus->Render(),
+											   topPInput->Render(),
+											   topPPlus->Render()));
+			rows.push_back(ui_utils::numberRow("Top K",
+											   topKMinus->Render(),
+											   topKInput->Render(),
+											   topKPlus->Render()));
+			rows.push_back(ui_utils::numberRow("Min P",
+											   minPMinus->Render(),
+											   minPInput->Render(),
+											   minPPlus->Render()));
+			rows.push_back(ui_utils::numberRow("Repeat Penalty",
+											   repeatPenMinus->Render(),
+											   repeatPenInput->Render(),
+											   repeatPenPlus->Render()));
+			rows.push_back(ui_utils::numberRow("Presence Penalty",
+											   presPenMinus->Render(),
+											   presPenInput->Render(),
+											   presPenPlus->Render()));
+			rows.push_back(ui_utils::numberRow("Frequency Penalty",
+											   freqPenMinus->Render(),
+											   freqPenInput->Render(),
+											   freqPenPlus->Render()));
 			rows.push_back(
-				settingRowComponent("Max Tokens", nPredictInput->Render()));
+				ui_utils::settingRowComponent("Max Tokens",
+											  nPredictInput->Render()));
 			rightElements.push_back(
 				window(text("Inference Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),

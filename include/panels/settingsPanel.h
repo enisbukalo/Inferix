@@ -8,11 +8,13 @@
 
 /**
  * @file settingsPanel.h
- * @brief Comprehensive stateful settings panel for all application configuration.
+ * @brief Comprehensive stateful settings panel for all application
+ * configuration.
  *
- * This is the main configuration hub for Workbench, providing a unified interface
- * to manage all aspects of the application. Unlike ModelsPanel which focuses only
- * on Load+Inference parameters, this panel covers five major sections:
+ * This is the main configuration hub for Workbench, providing a unified
+ * interface to manage all aspects of the application. Unlike ModelsPanel which
+ * focuses only on Load+Inference parameters, this panel covers five major
+ * sections:
  *
  * **Server Settings** - Network and HTTP server behavior:
  *   Host/port binding, API key authentication, request timeout (60-3600s),
@@ -24,10 +26,9 @@
  *   Model path, GPU layer offloading (-1=auto or 0-N), context size and batch
  *   size controls, flash attention toggle (auto/on/off), memory mapping/locking.
  *
- * **Inference Settings** - Token generation parameters (partially duplicated from
- *   ModelsPanel):
- *   Temperature, top-P/top-K sampling, min-P filtering, repeat/presence/frequency
- *   penalties, max tokens prediction (-1=unlimited).
+ * **Inference Settings** - Token generation parameters (partially duplicated
+ * from ModelsPanel): Temperature, top-P/top-K sampling, min-P filtering,
+ * repeat/presence/frequency penalties, max tokens prediction (-1=unlimited).
  *
  * **UI Settings** - Application appearance and behavior:
  *   Theme selection (default/dark/light/monokai), default startup tab,
