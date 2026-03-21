@@ -1,5 +1,6 @@
 #include "settingsPanel.h"
 #include "configManager.h"
+#include "utility/ui_utils.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
@@ -11,48 +12,6 @@
 #include <sstream>
 
 using namespace ftxui;
-
-static std::string formatFloat(float value, int precision = 2)
-{
-	std::ostringstream oss;
-	oss << std::fixed << std::setprecision(precision) << value;
-	return oss.str();
-}
-
-/// Helper: renders a labelled row for text inputs.
-static Element settingRowComponent(const std::string &label,
-								   Element componentRender)
-{
-	return hbox({ text(label) | color(Color::MagentaLight),
-				  filler(),
-				  componentRender }) |
-		   xflex;
-}
-
-/// Helper: renders a labelled row with [-] [input] [+] controls.
-static Element numberRow(const std::string &label,
-						 Element minusBtn,
-						 Element inputRender,
-						 Element plusBtn)
-{
-	return hbox({ text(label) | color(Color::MagentaLight) | vcenter,
-				  filler(),
-				  minusBtn,
-				  separatorLight(),
-				  inputRender | size(WIDTH, EQUAL, 8),
-				  separatorLight(),
-				  plusBtn }) |
-		   xflex;
-}
-
-/// Helper: checkbox/toggle row — magenta label left, component right.
-static Element checkboxRow(const std::string &label, Element componentRender)
-{
-	return hbox({ text(label) | color(Color::MagentaLight),
-				  filler(),
-				  componentRender }) |
-		   xflex;
-}
 
 // ---------------------------------------------------------------------------
 
@@ -98,19 +57,19 @@ void SettingsPanel::loadFromConfig()
 
 	// Inference
 	m_temperature = static_cast<float>(cfg.inference.temperature);
-	m_temperatureStr = formatFloat(m_temperature);
+	m_temperatureStr = ui_utils::formatFloat(m_temperature);
 	m_topP = static_cast<float>(cfg.inference.topP);
-	m_topPStr = formatFloat(m_topP);
+	m_topPStr = ui_utils::formatFloat(m_topP);
 	m_topK = cfg.inference.topK;
 	m_topKStr = std::to_string(m_topK);
 	m_minP = static_cast<float>(cfg.inference.minP);
-	m_minPStr = formatFloat(m_minP);
+	m_minPStr = ui_utils::formatFloat(m_minP);
 	m_repeatPenalty = static_cast<float>(cfg.inference.repeatPenalty);
-	m_repeatPenaltyStr = formatFloat(m_repeatPenalty);
+	m_repeatPenaltyStr = ui_utils::formatFloat(m_repeatPenalty);
 	m_presencePenalty = static_cast<float>(cfg.inference.presencePenalty);
-	m_presencePenaltyStr = formatFloat(m_presencePenalty);
+	m_presencePenaltyStr = ui_utils::formatFloat(m_presencePenalty);
 	m_frequencyPenalty = static_cast<float>(cfg.inference.frequencyPenalty);
-	m_frequencyPenaltyStr = formatFloat(m_frequencyPenalty);
+	m_frequencyPenaltyStr = ui_utils::formatFloat(m_frequencyPenalty);
 	m_nPredict = std::to_string(cfg.inference.nPredict);
 
 	// UI
@@ -308,7 +267,7 @@ Component SettingsPanel::component()
 			"-",
 			[&value, &str, minVal, step, onChange] {
 				value = std::max(minVal, value - step);
-				str = formatFloat(value);
+				str = ui_utils::formatFloat(value);
 				onChange();
 			},
 			btnStyle);
@@ -316,7 +275,7 @@ Component SettingsPanel::component()
 			"+",
 			[&value, &str, maxVal, step, onChange] {
 				value = std::min(maxVal, value + step);
-				str = formatFloat(value);
+				str = ui_utils::formatFloat(value);
 				onChange();
 			},
 			btnStyle);
@@ -422,24 +381,29 @@ Component SettingsPanel::component()
 		// Server Settings
 		{
 			Elements rows;
-			rows.push_back(settingRowComponent("Host", hostInput->Render()));
-			rows.push_back(settingRowComponent("Port", portInput->Render()));
 			rows.push_back(
-				settingRowComponent("API Key", apiKeyInput->Render()));
-			rows.push_back(numberRow("Timeout",
-									 timeoutMinus->Render(),
-									 timeoutInput->Render(),
-									 timeoutPlus->Render()));
-			rows.push_back(numberRow("HTTP Threads",
-									 threadsHttpMinus->Render(),
-									 threadsHttpInput->Render(),
-									 threadsHttpPlus->Render()));
-			rows.push_back(checkboxRow("Web UI", webuiCb->Render()));
-			rows.push_back(checkboxRow("Embedding Mode", embeddingCb->Render()));
+				ui_utils::settingRowComponent("Host", hostInput->Render()));
 			rows.push_back(
-				checkboxRow("Continuous Batching", contBatchCb->Render()));
-			rows.push_back(checkboxRow("Cache Prompt", cachePromptCb->Render()));
-			rows.push_back(checkboxRow("Metrics", metricsCb->Render()));
+				ui_utils::settingRowComponent("Port", portInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("API Key", apiKeyInput->Render()));
+			rows.push_back(ui_utils::numberRow("Timeout",
+											   timeoutMinus->Render(),
+											   timeoutInput->Render(),
+											   timeoutPlus->Render()));
+			rows.push_back(ui_utils::numberRow("HTTP Threads",
+											   threadsHttpMinus->Render(),
+											   threadsHttpInput->Render(),
+											   threadsHttpPlus->Render()));
+			rows.push_back(ui_utils::checkboxRow("Web UI", webuiCb->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("Embedding Mode", embeddingCb->Render()));
+			rows.push_back(ui_utils::checkboxRow("Continuous Batching",
+												 contBatchCb->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("Cache Prompt", cachePromptCb->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("Metrics", metricsCb->Render()));
 			leftElements.push_back(
 				window(text("Server Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
@@ -449,15 +413,16 @@ Component SettingsPanel::component()
 		// UI Settings
 		{
 			Elements rows;
-			rows.push_back(checkboxRow("Theme", themeToggle->Render()));
 			rows.push_back(
-				checkboxRow("Default Tab", defaultTabToggle->Render()));
-			rows.push_back(
-				checkboxRow("Show System Panel", showSysPanelCb->Render()));
-			rows.push_back(numberRow("Refresh Rate",
-									 refreshMinus->Render(),
-									 refreshInput->Render(),
-									 refreshPlus->Render()));
+				ui_utils::checkboxRow("Theme", themeToggle->Render()));
+			rows.push_back(ui_utils::checkboxRow("Default Tab",
+												 defaultTabToggle->Render()));
+			rows.push_back(ui_utils::checkboxRow("Show System Panel",
+												 showSysPanelCb->Render()));
+			rows.push_back(ui_utils::numberRow("Refresh Rate",
+											   refreshMinus->Render(),
+											   refreshInput->Render(),
+											   refreshPlus->Render()));
 			leftElements.push_back(
 				window(text("UI Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
@@ -468,20 +433,22 @@ Component SettingsPanel::component()
 		Elements rightElements;
 		{
 			Elements rows;
+			rows.push_back(ui_utils::settingRowComponent("Default Shell",
+														 shellInput->Render()));
 			rows.push_back(
-				settingRowComponent("Default Shell", shellInput->Render()));
+				ui_utils::settingRowComponent("Initial Command",
+											  initCmdInput->Render()));
 			rows.push_back(
-				settingRowComponent("Initial Command", initCmdInput->Render()));
-			rows.push_back(settingRowComponent("Working Directory",
-											   workDirInput->Render()));
-			rows.push_back(numberRow("Default Cols",
-									 colsMinus->Render(),
-									 colsInput->Render(),
-									 colsPlus->Render()));
-			rows.push_back(numberRow("Default Rows",
-									 rowsMinus->Render(),
-									 rowsInput->Render(),
-									 rowsPlus->Render()));
+				ui_utils::settingRowComponent("Working Directory",
+											  workDirInput->Render()));
+			rows.push_back(ui_utils::numberRow("Default Cols",
+											   colsMinus->Render(),
+											   colsInput->Render(),
+											   colsPlus->Render()));
+			rows.push_back(ui_utils::numberRow("Default Rows",
+											   rowsMinus->Render(),
+											   rowsInput->Render(),
+											   rowsPlus->Render()));
 			rightElements.push_back(
 				window(text("Terminal Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
