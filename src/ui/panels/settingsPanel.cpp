@@ -38,40 +38,6 @@ void SettingsPanel::loadFromConfig()
 	m_cachePrompt = cfg.server.cachePrompt;
 	m_metrics = cfg.server.metrics;
 
-	// Load
-	m_modelPath = cfg.load.modelPath;
-	m_ngpuLayers = cfg.load.ngpuLayers;
-	m_ctxSize = cfg.load.ctxSize == 0 ? "" : std::to_string(cfg.load.ctxSize);
-	m_batchSize = cfg.load.batchSize;
-	m_batchSizeStr = std::to_string(m_batchSize);
-	// Flash attention dropdown index
-	if (cfg.load.flashAttn == "on")
-		m_flashAttnIdx = 1;
-	else if (cfg.load.flashAttn == "off")
-		m_flashAttnIdx = 2;
-	else
-		m_flashAttnIdx = 0;
-	m_mmap = cfg.load.mmap;
-	m_mlock = cfg.load.mlock;
-	m_fit = cfg.load.fit;
-
-	// Inference
-	m_temperature = static_cast<float>(cfg.inference.temperature);
-	m_temperatureStr = ui_utils::formatFloat(m_temperature);
-	m_topP = static_cast<float>(cfg.inference.topP);
-	m_topPStr = ui_utils::formatFloat(m_topP);
-	m_topK = cfg.inference.topK;
-	m_topKStr = std::to_string(m_topK);
-	m_minP = static_cast<float>(cfg.inference.minP);
-	m_minPStr = ui_utils::formatFloat(m_minP);
-	m_repeatPenalty = static_cast<float>(cfg.inference.repeatPenalty);
-	m_repeatPenaltyStr = ui_utils::formatFloat(m_repeatPenalty);
-	m_presencePenalty = static_cast<float>(cfg.inference.presencePenalty);
-	m_presencePenaltyStr = ui_utils::formatFloat(m_presencePenalty);
-	m_frequencyPenalty = static_cast<float>(cfg.inference.frequencyPenalty);
-	m_frequencyPenaltyStr = ui_utils::formatFloat(m_frequencyPenalty);
-	m_nPredict = std::to_string(cfg.inference.nPredict);
-
 	// UI
 	auto themeIt =
 		std::find(m_themeOptions.begin(), m_themeOptions.end(), cfg.ui.theme);
@@ -111,32 +77,6 @@ void SettingsPanel::saveConfig()
 	cfg.server.contBatching = m_contBatching;
 	cfg.server.cachePrompt = m_cachePrompt;
 	cfg.server.metrics = m_metrics;
-
-	// Load
-	cfg.load.modelPath = m_modelPath;
-	cfg.load.ngpuLayers = m_ngpuLayers;
-	try {
-		cfg.load.ctxSize = m_ctxSize.empty() ? 0 : std::stoi(m_ctxSize);
-	} catch (...) {
-	}
-	cfg.load.batchSize = m_batchSize;
-	cfg.load.flashAttn = m_flashAttnOptions[static_cast<size_t>(m_flashAttnIdx)];
-	cfg.load.mmap = m_mmap;
-	cfg.load.mlock = m_mlock;
-	cfg.load.fit = m_fit;
-
-	// Inference
-	cfg.inference.temperature = static_cast<double>(m_temperature);
-	cfg.inference.topP = static_cast<double>(m_topP);
-	cfg.inference.topK = m_topK;
-	cfg.inference.minP = static_cast<double>(m_minP);
-	cfg.inference.repeatPenalty = static_cast<double>(m_repeatPenalty);
-	cfg.inference.presencePenalty = static_cast<double>(m_presencePenalty);
-	cfg.inference.frequencyPenalty = static_cast<double>(m_frequencyPenalty);
-	try {
-		cfg.inference.nPredict = std::stoi(m_nPredict);
-	} catch (...) {
-	}
 
 	// UI
 	cfg.ui.theme = m_themeOptions[static_cast<size_t>(m_themeIdx)];
@@ -212,6 +152,9 @@ Component SettingsPanel::component()
 	};
 
 	// Helper: create [-] [input] [+] for an int field
+	// Creates a triplet of components: decrement button, text input, increment
+	// button Value is clamped to [minVal, maxVal] range on every change
+	// Immediately persists to config via onChange callback
 	auto makeIntControls =
 		[&](int &value, std::string &str, int minVal, int maxVal, int step) {
 			struct Controls
@@ -253,53 +196,10 @@ Component SettingsPanel::component()
 			return Controls{ minus, inp, plus };
 		};
 
-	// Helper: create [-] [input] [+] for a float field
-	auto makeFloatControls = [&](float &value,
-								 std::string &str,
-								 float minVal,
-								 float maxVal,
-								 float step) {
-		struct Controls
-		{
-			Component minus, input, plus;
-		};
-		auto minus = Button(
-			"-",
-			[&value, &str, minVal, step, onChange] {
-				value = std::max(minVal, value - step);
-				str = ui_utils::formatFloat(value);
-				onChange();
-			},
-			btnStyle);
-		auto plus = Button(
-			"+",
-			[&value, &str, maxVal, step, onChange] {
-				value = std::min(maxVal, value + step);
-				str = ui_utils::formatFloat(value);
-				onChange();
-			},
-			btnStyle);
-		InputOption numInputOpt = inputOpt;
-		numInputOpt.transform = [=](InputState state) {
-			auto e = state.element | center;
-			if (state.is_placeholder)
-				return e | color(toggleOffColor);
-			return e | color(toggleOnColor);
-		};
-		numInputOpt.on_change = [&value, &str, minVal, maxVal, onChange] {
-			try {
-				float v = std::stof(str);
-				value = std::clamp(v, minVal, maxVal);
-			} catch (...) {
-			}
-			onChange();
-		};
-		auto inp = Input(&str, "", numInputOpt);
-		return Controls{ minus, inp, plus };
-	};
-
 	// -----------------------------------------------------------------------
 	// Server components
+	// Creates FTXUI input components for server configuration
+	// API key uses password mode for privacy
 	// -----------------------------------------------------------------------
 	auto hostInput = Input(&m_host, "127.0.0.1", inputOpt);
 	auto portInput = Input(&m_port, "8080", inputOpt);
@@ -321,6 +221,8 @@ Component SettingsPanel::component()
 
 	// -----------------------------------------------------------------------
 	// UI components
+	// Creates controls for appearance and behavior settings
+	// Theme and default tab use toggle menus for selection
 	// -----------------------------------------------------------------------
 	auto themeOpt = toggleOpt;
 	themeOpt.entries = &m_themeOptions;
@@ -338,6 +240,9 @@ Component SettingsPanel::component()
 
 	// -----------------------------------------------------------------------
 	// Terminal components
+	// Creates inputs for embedded terminal emulator configuration
+	// Shell, command, and working directory are free-text inputs
+	// Cols/rows use integer controls with reasonable bounds
 	// -----------------------------------------------------------------------
 	auto shellInput = Input(&m_defaultShell, "system default", inputOpt);
 	auto initCmdInput = Input(&m_initialCommand, "none", inputOpt);

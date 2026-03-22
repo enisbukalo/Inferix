@@ -9,7 +9,6 @@
 
 #include "app.h"
 #include "configManager.h"
-#include "inferenceSettingsPanel.h"
 #include "modelsPanel.h"
 #include "serverInfoPanel.h"
 #include "settingsPanel.h"

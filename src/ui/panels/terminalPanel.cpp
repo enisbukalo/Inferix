@@ -52,7 +52,7 @@ static std::string Codepoint_to_utf8(uint32_t cp)
 void Vterm_output_cb(const char *s, size_t len, void *user)
 {
 	auto *panel = static_cast<TerminalPanel *>(user);
-	panel->pty_.write(s, len);
+	panel->m_pty.write(s, len);
 }
 
 // ---------------------------------------------------------------------------
@@ -61,7 +61,7 @@ void Vterm_output_cb(const char *s, size_t len, void *user)
 
 TerminalPanel::TerminalPanel(ScreenInteractive &screen,
 							 std::string initialCommand)
-	: screen_(screen), initialCommand_(std::move(initialCommand))
+	: m_screen(screen), m_initialCommand(std::move(initialCommand))
 {
 }
 
@@ -72,7 +72,7 @@ TerminalPanel::~TerminalPanel()
 
 bool TerminalPanel::isSpawned() const
 {
-	return spawned_.load();
+	return m_spawned.load();
 }
 
 // ---------------------------------------------------------------------------
@@ -81,38 +81,38 @@ bool TerminalPanel::isSpawned() const
 
 void TerminalPanel::spawn()
 {
-	if (spawned_.load())
+	if (m_spawned.load())
 		return;
 
 	// Use reflected box dimensions if available, otherwise keep defaults.
-	int boxCols = (box_.x_max - box_.x_min + 1) - 2;
-	int boxRows = (box_.y_max - box_.y_min + 1) - 2;
+	int boxCols = (m_box.x_max - m_box.x_min + 1) - 2;
+	int boxRows = (m_box.y_max - m_box.y_min + 1) - 2;
 	if (boxCols > 0 && boxRows > 0) {
-		cols_ = boxCols;
-		rows_ = boxRows;
+		m_cols = boxCols;
+		m_rows = boxRows;
 	}
 
-	vt_ = vterm_new(rows_, cols_);
-	vterm_set_utf8(vt_, 1);
+	m_vt = vterm_new(m_rows, m_cols);
+	vterm_set_utf8(m_vt, 1);
 
-	vts_ = vterm_obtain_screen(vt_);
-	vterm_screen_reset(vts_, 1);
+	m_vts = vterm_obtain_screen(m_vt);
+	vterm_screen_reset(m_vts, 1);
 
-	vterm_output_set_callback(vt_, Vterm_output_cb, this);
+	vterm_output_set_callback(m_vt, Vterm_output_cb, this);
 
-	if (!pty_.spawn(cols_, rows_)) {
-		vterm_free(vt_);
-		vt_ = nullptr;
-		vts_ = nullptr;
+	if (!m_pty.spawn(m_cols, m_rows)) {
+		vterm_free(m_vt);
+		m_vt = nullptr;
+		m_vts = nullptr;
 		return;
 	}
 
-	stopFlag_.store(false);
-	ptyDead_.store(false);
-	spawned_.store(true);
+	m_stopFlag.store(false);
+	m_ptyDead.store(false);
+	m_spawned.store(true);
 
-	initialCmdSent_.store(false);
-	readThread_ = std::thread(&TerminalPanel::ReadLoop, this);
+	m_initialCmdSent.store(false);
+	m_readThread = std::thread(&TerminalPanel::ReadLoop, this);
 }
 
 // ---------------------------------------------------------------------------
@@ -121,24 +121,24 @@ void TerminalPanel::spawn()
 
 void TerminalPanel::shutdown()
 {
-	if (!spawned_.load())
+	if (!m_spawned.load())
 		return;
 
-	stopFlag_.store(true);
-	cv_.notify_one();
+	m_stopFlag.store(true);
+	m_cv.notify_one();
 
-	if (readThread_.joinable())
-		readThread_.join();
+	if (m_readThread.joinable())
+		m_readThread.join();
 
-	pty_.close();
+	m_pty.close();
 
-	if (vt_) {
-		vterm_free(vt_);
-		vt_ = nullptr;
-		vts_ = nullptr;
+	if (m_vt) {
+		vterm_free(m_vt);
+		m_vt = nullptr;
+		m_vts = nullptr;
 	}
 
-	spawned_.store(false);
+	m_spawned.store(false);
 }
 
 // ---------------------------------------------------------------------------
@@ -149,32 +149,32 @@ void TerminalPanel::ReadLoop()
 {
 	char buf[4096];
 
-	while (!stopFlag_.load()) {
-		int n = pty_.read(buf, sizeof(buf));
+	while (!m_stopFlag.load()) {
+		int n = m_pty.read(buf, sizeof(buf));
 
 		if (n > 0) {
-			std::lock_guard<std::mutex> lock(vtermMutex_);
-			vterm_input_write(vt_, buf, static_cast<size_t>(n));
-			screen_.PostEvent(Event::Custom);
+			std::lock_guard<std::mutex> lock(m_vtermMutex);
+			vterm_input_write(m_vt, buf, static_cast<size_t>(n));
+			m_screen.PostEvent(Event::Custom);
 
 			// Send the initial command after the shell produces its first
 			// output (prompt), so it is ready to accept input.
-			if (!initialCommand_.empty() && !initialCmdSent_.load()) {
-				initialCmdSent_.store(true);
-				std::string cmd = initialCommand_ + "\r";
-				pty_.write(cmd.data(), cmd.size());
+			if (!m_initialCommand.empty() && !m_initialCmdSent.load()) {
+				m_initialCmdSent.store(true);
+				std::string cmd = m_initialCommand + "\r";
+				m_pty.write(cmd.data(), cmd.size());
 			}
 		} else if (n == 0) {
 			// No data available — sleep briefly
-			std::unique_lock<std::mutex> lock(cvMutex_);
-			cv_.wait_for(lock, std::chrono::milliseconds(16), [this] {
-				return stopFlag_.load();
+			std::unique_lock<std::mutex> lock(m_cvMutex);
+			m_cv.wait_for(lock, std::chrono::milliseconds(16), [this] {
+				return m_stopFlag.load();
 			});
 		} else {
 			// PTY error / closed
-			if (!pty_.isAlive()) {
-				ptyDead_.store(true);
-				screen_.PostEvent(Event::Custom);
+			if (!m_pty.isAlive()) {
+				m_ptyDead.store(true);
+				m_screen.PostEvent(Event::Custom);
 				break;
 			}
 		}
@@ -187,10 +187,10 @@ void TerminalPanel::ReadLoop()
 
 void TerminalPanel::resize(int newCols, int newRows)
 {
-	vterm_set_size(vt_, newRows, newCols);
-	pty_.resize(newCols, newRows);
-	cols_ = newCols;
-	rows_ = newRows;
+	vterm_set_size(m_vt, newRows, newCols);
+	m_pty.resize(newCols, newRows);
+	m_cols = newCols;
+	m_rows = newRows;
 }
 
 // ---------------------------------------------------------------------------
@@ -199,52 +199,52 @@ void TerminalPanel::resize(int newCols, int newRows)
 
 Element TerminalPanel::renderScreen()
 {
-	if (!spawned_.load()) {
+	if (!m_spawned.load()) {
 		return window(text(""),
 					  center(text("Terminal not started.") | dim),
 					  EMPTY) |
 			   flex;
 	}
 
-	if (ptyDead_.load()) {
+	if (m_ptyDead.load()) {
 		return window(text(""),
 					  center(text("Shell process has exited.") | dim),
 					  EMPTY) |
 			   flex;
 	}
 
-	std::lock_guard<std::mutex> lock(vtermMutex_);
+	std::lock_guard<std::mutex> lock(m_vtermMutex);
 
 	// Resize vterm + PTY if the container dimensions changed.
-	int newCols = (box_.x_max - box_.x_min + 1) - 2; // subtract window border
-	int newRows = (box_.y_max - box_.y_min + 1) - 2;
+	int newCols = (m_box.x_max - m_box.x_min + 1) - 2; // subtract window border
+	int newRows = (m_box.y_max - m_box.y_min + 1) - 2;
 	if (newCols < 1)
 		newCols = 1;
 	if (newRows < 1)
 		newRows = 1;
-	if (newCols > 0 && newRows > 0 && box_.x_max > 0 && box_.y_max > 0 &&
-		(newCols != cols_ || newRows != rows_)) {
+	if (newCols > 0 && newRows > 0 && m_box.x_max > 0 && m_box.y_max > 0 &&
+		(newCols != m_cols || newRows != m_rows)) {
 		resize(newCols, newRows);
 	}
 
 	// Query cursor position
 	VTermPos cursorPos = {};
-	vterm_state_get_cursorpos(vterm_obtain_state(vt_), &cursorPos);
+	vterm_state_get_cursorpos(vterm_obtain_state(m_vt), &cursorPos);
 
 	Elements lines;
-	lines.reserve(static_cast<size_t>(rows_));
+	lines.reserve(static_cast<size_t>(m_rows));
 
-	for (int row = 0; row < rows_; ++row) {
+	for (int row = 0; row < m_rows; ++row) {
 		Elements cells;
-		cells.reserve(static_cast<size_t>(cols_));
+		cells.reserve(static_cast<size_t>(m_cols));
 
-		for (int col = 0; col < cols_;) {
+		for (int col = 0; col < m_cols;) {
 			VTermPos pos;
 			pos.row = row;
 			pos.col = col;
 
 			VTermScreenCell cell;
-			vterm_screen_get_cell(vts_, pos, &cell);
+			vterm_screen_get_cell(m_vts, pos, &cell);
 
 			// Build character string from codepoints
 			std::string ch;
@@ -262,7 +262,7 @@ Element TerminalPanel::renderScreen()
 
 			// Apply foreground colour
 			VTermColor fg = cell.fg;
-			vterm_screen_convert_color_to_rgb(vts_, &fg);
+			vterm_screen_convert_color_to_rgb(m_vts, &fg);
 			if (!VTERM_COLOR_IS_DEFAULT_FG(&fg)) {
 				elem = elem |
 					   color(Color::RGB(fg.rgb.red, fg.rgb.green, fg.rgb.blue));
@@ -270,7 +270,7 @@ Element TerminalPanel::renderScreen()
 
 			// Apply background colour
 			VTermColor bg = cell.bg;
-			vterm_screen_convert_color_to_rgb(vts_, &bg);
+			vterm_screen_convert_color_to_rgb(m_vts, &bg);
 			if (!VTERM_COLOR_IS_DEFAULT_BG(&bg)) {
 				elem =
 					elem |
@@ -301,7 +301,7 @@ Element TerminalPanel::renderScreen()
 	}
 
 	auto content = vbox(std::move(lines));
-	if (!capturing_.load()) {
+	if (!m_capturing.load()) {
 		auto hint =
 			text(" DETACHED - Press Ctrl+T to re-attach ") | bold | inverted;
 		content = vbox({ content, hint });
@@ -315,99 +315,99 @@ Element TerminalPanel::renderScreen()
 
 bool TerminalPanel::isCapturing() const
 {
-	return capturing_.load();
+	return m_capturing.load();
 }
 
 void TerminalPanel::setCapturing(bool value)
 {
-	capturing_.store(value);
+	m_capturing.store(value);
 }
 
 bool TerminalPanel::handleEvent(Event event)
 {
-	if (!spawned_.load() || ptyDead_.load())
+	if (!m_spawned.load() || m_ptyDead.load())
 		return false;
 
 	// Ctrl+T toggles capture mode — releases input to the UI.
 	// Check both raw input byte and FTXUI character representation.
 	const std::string &raw = event.input();
 	if (raw.size() == 1 && raw[0] == '\x14') {
-		capturing_.store(!capturing_.load());
-		screen_.PostEvent(Event::Custom); // trigger redraw for hint
+		m_capturing.store(!m_capturing.load());
+		m_screen.PostEvent(Event::Custom); // trigger redraw for hint
 		return true;
 	}
 
 	// When not capturing, only Ctrl+T is handled (above). Let everything
 	// else fall through to FTXUI for tab navigation, etc.
-	if (!capturing_.load())
+	if (!m_capturing.load())
 		return false;
 
-	std::lock_guard<std::mutex> lock(vtermMutex_);
+	std::lock_guard<std::mutex> lock(m_vtermMutex);
 
 	VTermModifier mod = VTERM_MOD_NONE;
 
 	// Ctrl+Alt+J sends a literal newline (LF) for multi-line input.
 	if (raw == std::string("\x1b\x0a")) {
-		vterm_keyboard_unichar(vt_, '\n', mod);
+		vterm_keyboard_unichar(m_vt, '\n', mod);
 		return true;
 	}
 
 	// Enter — FTXUI normalizes both Enter and Ctrl+J to Event::Return with
 	// raw byte 0x0A.  We send VTERM_KEY_ENTER (produces CR).
 	if (event == Event::Return) {
-		vterm_keyboard_key(vt_, VTERM_KEY_ENTER, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_ENTER, mod);
 		return true;
 	}
 	if (event == Event::Tab) {
-		vterm_keyboard_key(vt_, VTERM_KEY_TAB, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_TAB, mod);
 		return true;
 	}
 	if (event == Event::Backspace) {
-		vterm_keyboard_key(vt_, VTERM_KEY_BACKSPACE, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_BACKSPACE, mod);
 		return true;
 	}
 	if (event == Event::Escape) {
-		vterm_keyboard_key(vt_, VTERM_KEY_ESCAPE, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_ESCAPE, mod);
 		return true;
 	}
 	if (event == Event::ArrowUp) {
-		vterm_keyboard_key(vt_, VTERM_KEY_UP, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_UP, mod);
 		return true;
 	}
 	if (event == Event::ArrowDown) {
-		vterm_keyboard_key(vt_, VTERM_KEY_DOWN, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_DOWN, mod);
 		return true;
 	}
 	if (event == Event::ArrowLeft) {
-		vterm_keyboard_key(vt_, VTERM_KEY_LEFT, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_LEFT, mod);
 		return true;
 	}
 	if (event == Event::ArrowRight) {
-		vterm_keyboard_key(vt_, VTERM_KEY_RIGHT, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_RIGHT, mod);
 		return true;
 	}
 	if (event == Event::Delete) {
-		vterm_keyboard_key(vt_, VTERM_KEY_DEL, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_DEL, mod);
 		return true;
 	}
 	if (event == Event::Home) {
-		vterm_keyboard_key(vt_, VTERM_KEY_HOME, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_HOME, mod);
 		return true;
 	}
 	if (event == Event::End) {
-		vterm_keyboard_key(vt_, VTERM_KEY_END, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_END, mod);
 		return true;
 	}
 	if (event == Event::PageUp) {
-		vterm_keyboard_key(vt_, VTERM_KEY_PAGEUP, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_PAGEUP, mod);
 		return true;
 	}
 	if (event == Event::PageDown) {
-		vterm_keyboard_key(vt_, VTERM_KEY_PAGEDOWN, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_PAGEDOWN, mod);
 		return true;
 	}
 	if (event == Event::Insert) {
-		vterm_keyboard_key(vt_, VTERM_KEY_INS, mod);
+		vterm_keyboard_key(m_vt, VTERM_KEY_INS, mod);
 		return true;
 	}
 
@@ -418,7 +418,7 @@ bool TerminalPanel::handleEvent(Event event)
 	};
 	for (int i = 0; i < 12; ++i) {
 		if (event == fkeys[i]) {
-			vterm_keyboard_key(vt_,
+			vterm_keyboard_key(m_vt,
 							   static_cast<VTermKey>(VTERM_KEY_FUNCTION(i + 1)),
 							   mod);
 			return true;
@@ -447,7 +447,7 @@ bool TerminalPanel::handleEvent(Event event)
 		}
 
 		if (cp > 0) {
-			vterm_keyboard_unichar(vt_, cp, mod);
+			vterm_keyboard_unichar(m_vt, cp, mod);
 			return true;
 		}
 	}
@@ -455,7 +455,7 @@ bool TerminalPanel::handleEvent(Event event)
 	// Pass any remaining input (Ctrl+key combos, Alt+key, etc.) directly
 	// to the PTY as raw bytes. Skip null-only sequences (e.g. Event::Custom).
 	if (!raw.empty() && raw.find_first_not_of('\0') != std::string::npos) {
-		pty_.write(raw.data(), raw.size());
+		m_pty.write(raw.data(), raw.size());
 		return true;
 	}
 
@@ -474,14 +474,14 @@ Component TerminalPanel::component()
 		auto elem = renderScreen();
 		if (focused)
 			elem = elem | focus;
-		return elem | reflect(box_);
+		return elem | reflect(m_box);
 	});
 	return impl | CatchEvent([this](Event e) { return handleEvent(e); });
 }
 
 bool TerminalPanel::wantsEvent(ftxui::Event event) const
 {
-	if (!spawned_.load() || ptyDead_.load())
+	if (!m_spawned.load() || m_ptyDead.load())
 		return false;
 
 	// Always intercept Ctrl+T so HandleEvent can toggle capture mode.
@@ -489,7 +489,7 @@ bool TerminalPanel::wantsEvent(ftxui::Event event) const
 		return true;
 
 	// When not capturing, let the UI handle input (tab switching, etc.).
-	if (!capturing_.load())
+	if (!m_capturing.load())
 		return false;
 
 	// Capture mode: claim all keyboard input for the terminal.
