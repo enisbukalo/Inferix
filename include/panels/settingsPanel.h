@@ -1,7 +1,7 @@
 #pragma once
 
-#include "terminalPresetsPanel.h"
 #include "core/eventBus.h"
+#include "terminalPresetsPanel.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>

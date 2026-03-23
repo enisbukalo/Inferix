@@ -126,8 +126,7 @@ void SettingsPanel::saveConfig()
 
 	// System panel visibility — future: UI could subscribe
 	if (oldShowSystemPanel != cfg.ui.showSystemPanel) {
-		EventBus::publish("config.ui.showSystemPanel",
-						 &cfg.ui.showSystemPanel);
+		EventBus::publish("config.ui.showSystemPanel", &cfg.ui.showSystemPanel);
 	}
 
 	// ========================================================================

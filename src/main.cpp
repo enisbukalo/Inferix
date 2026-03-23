@@ -22,16 +22,16 @@ int main()
 {
 	// Load configuration from disk
 	ConfigManager::instance().load();
-	
+
 	// Start the system monitor singleton with the configured refresh rate
-	auto& config = ConfigManager::instance().getConfig();
+	auto &config = ConfigManager::instance().getConfig();
 	SystemMonitorRunner::instance().start(config.ui.refreshRateMs);
-	
+
 	// Run the main application UI loop
 	App::run();
-	
+
 	// Clean up the system monitor before exit
 	SystemMonitorRunner::instance().stop();
-	
+
 	return 0;
 }

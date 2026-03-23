@@ -23,9 +23,10 @@
  * @note No dynamic allocation overhead after first access.
  * @note Destruction order is guaranteed at program termination.
  */
-EventBus::State& EventBus::getInstance() {
-    static State instance;
-    return instance;
+EventBus::State &EventBus::getInstance()
+{
+	static State instance;
+	return instance;
 }
 
 /**
@@ -48,19 +49,22 @@ EventBus::State& EventBus::getInstance() {
  * Complexity: O(log N + M) where N = number of unique event IDs,
  *            M = number of existing subscribers to this event
  */
-EventBus::SubscriptionId EventBus::subscribe(const EventId& event, Handler handler) {
-    State& state = getInstance();
-    
-    std::lock_guard<std::mutex> lock(state.mutex);
-    
-    // Generate unique subscription ID
-    SubscriptionId id = state.nextSubscriptionId++;
-    
-    // Insert handler into the appropriate event's subscriber list
-    // std::map::operator[] creates entry with default-constructed vector if not exists
-    state.subscriptions[event].emplace_back(std::move(handler), id);
-    
-    return id;
+EventBus::SubscriptionId EventBus::subscribe(const EventId &event,
+											 Handler handler)
+{
+	State &state = getInstance();
+
+	std::lock_guard<std::mutex> lock(state.mutex);
+
+	// Generate unique subscription ID
+	SubscriptionId id = state.nextSubscriptionId++;
+
+	// Insert handler into the appropriate event's subscriber list
+	// std::map::operator[] creates entry with default-constructed vector if not
+	// exists
+	state.subscriptions[event].emplace_back(std::move(handler), id);
+
+	return id;
 }
 
 /**
@@ -75,42 +79,42 @@ EventBus::SubscriptionId EventBus::subscribe(const EventId& event, Handler handl
  * @param id Subscription ID returned by subscribe()
  *
  * @note Safe to call multiple times with same ID (subsequent calls are no-ops).
- * @note O(N * M) where N = number of unique event IDs, M = subscribers per event.
- *       This is acceptable since unsubscribe is typically infrequent.
+ * @note O(N * M) where N = number of unique event IDs, M = subscribers per
+ * event. This is acceptable since unsubscribe is typically infrequent.
  * @note Handlers should not unsubscribe from themselves — deadlock possible.
  *
  * Complexity: O(N * M) where N = number of unique event IDs,
  *            M = average number of subscribers per event
  */
-void EventBus::unsubscribe(SubscriptionId id) {
-    State& state = getInstance();
-    
-    std::lock_guard<std::mutex> lock(state.mutex);
-    
-    // Search through all event buckets to find the subscription
-    for (auto& [eventId, subscribers] : state.subscriptions) {
-        // Find the subscriber with matching ID
-        auto it = std::find_if(
-            subscribers.begin(),
-            subscribers.end(),
-            [id](const auto& pair) { return pair.second == id; }
-        );
-        
-        // Remove if found
-        if (it != subscribers.end()) {
-            subscribers.erase(it);
-            
-            // Clean up empty event buckets to prevent memory leak
-            if (subscribers.empty()) {
-                state.subscriptions.erase(eventId);
-            }
-            
-            // Subscription ID is unique — stop after first removal
-            return;
-        }
-    }
-    
-    // ID not found — safe to ignore (idempotent operation)
+void EventBus::unsubscribe(SubscriptionId id)
+{
+	State &state = getInstance();
+
+	std::lock_guard<std::mutex> lock(state.mutex);
+
+	// Search through all event buckets to find the subscription
+	for (auto &[eventId, subscribers] : state.subscriptions) {
+		// Find the subscriber with matching ID
+		auto it =
+			std::find_if(subscribers.begin(),
+						 subscribers.end(),
+						 [id](const auto &pair) { return pair.second == id; });
+
+		// Remove if found
+		if (it != subscribers.end()) {
+			subscribers.erase(it);
+
+			// Clean up empty event buckets to prevent memory leak
+			if (subscribers.empty()) {
+				state.subscriptions.erase(eventId);
+			}
+
+			// Subscription ID is unique — stop after first removal
+			return;
+		}
+	}
+
+	// ID not found — safe to ignore (idempotent operation)
 }
 
 /**
@@ -134,37 +138,38 @@ void EventBus::unsubscribe(SubscriptionId id) {
  *
  * Complexity: O(S) where S = number of subscribers (named + wildcard)
  */
-void EventBus::publish(const EventId& event, const void* data) {
-    State& state = getInstance();
-    
-    // Copy handlers to a local vector while holding the lock
-    // This prevents handlers from being modified during iteration
-    // and allows handlers to safely subscribe/unsubscribe during execution
-    std::vector<Handler> handlersToCall;
-    
-    {
-        std::lock_guard<std::mutex> lock(state.mutex);
-        
-        // Add named event subscribers
-        auto it = state.subscriptions.find(event);
-        if (it != state.subscriptions.end()) {
-            for (const auto& [handler, _] : it->second) {
-                handlersToCall.push_back(handler);
-            }
-        }
-        
-        // Add wildcard subscribers
-        auto wildcardIt = state.subscriptions.find("*");
-        if (wildcardIt != state.subscriptions.end()) {
-            for (const auto& [handler, _] : wildcardIt->second) {
-                handlersToCall.push_back(handler);
-            }
-        }
-    } // Lock released here
-    
-    // Call all handlers outside the lock
-    // This prevents deadlock if a handler tries to subscribe/unsubscribe
-    for (auto& handler : handlersToCall) {
-        handler(event, data);
-    }
+void EventBus::publish(const EventId &event, const void *data)
+{
+	State &state = getInstance();
+
+	// Copy handlers to a local vector while holding the lock
+	// This prevents handlers from being modified during iteration
+	// and allows handlers to safely subscribe/unsubscribe during execution
+	std::vector<Handler> handlersToCall;
+
+	{
+		std::lock_guard<std::mutex> lock(state.mutex);
+
+		// Add named event subscribers
+		auto it = state.subscriptions.find(event);
+		if (it != state.subscriptions.end()) {
+			for (const auto &[handler, _] : it->second) {
+				handlersToCall.push_back(handler);
+			}
+		}
+
+		// Add wildcard subscribers
+		auto wildcardIt = state.subscriptions.find("*");
+		if (wildcardIt != state.subscriptions.end()) {
+			for (const auto &[handler, _] : wildcardIt->second) {
+				handlersToCall.push_back(handler);
+			}
+		}
+	} // Lock released here
+
+	// Call all handlers outside the lock
+	// This prevents deadlock if a handler tries to subscribe/unsubscribe
+	for (auto &handler : handlersToCall) {
+		handler(event, data);
+	}
 }

@@ -1,10 +1,10 @@
 #pragma once
+#include "core/eventBus.h"
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
 #include <mutex>
 #include <thread>
-#include "core/eventBus.h"
 
 namespace ftxui {
 class ScreenInteractive;
@@ -37,7 +37,8 @@ class ScreenInteractive;
  *       initialization, automatic cleanup at program termination.
  * @note start() can only be called once; subsequent calls are ignored.
  * @note This class does NOT trigger UI redraws; FTXUI's Screen::Loop() handles
- *       all rendering independently. The background thread only updates monitor data.
+ *       all rendering independently. The background thread only updates monitor
+ * data.
  */
 class SystemMonitorRunner
 {
@@ -59,7 +60,7 @@ class SystemMonitorRunner
 	 * @note This method is thread-safe; multiple simultaneous calls return
 	 *       the same instance.
 	 */
-	static SystemMonitorRunner& instance();
+	static SystemMonitorRunner &instance();
 
 	/**
 	 * @brief Start the background polling thread.
@@ -77,9 +78,9 @@ class SystemMonitorRunner
 	 *
 	 * @note Can only be called once; subsequent calls are ignored.
 	 * @note The background thread starts polling immediately.
-	 * @note This method does NOT take a screen reference — FTXUI's Screen::Loop()
-	 *       handles all rendering independently. The background thread only updates
-	 *       monitor data.
+	 * @note This method does NOT take a screen reference — FTXUI's
+	 * Screen::Loop() handles all rendering independently. The background thread
+	 * only updates monitor data.
 	 *
 	 * @code
 	 * // In main.cpp:
@@ -117,14 +118,14 @@ class SystemMonitorRunner
 	 *
 	 * Singleton cannot be copied.
 	 */
-	SystemMonitorRunner(const SystemMonitorRunner&) = delete;
+	SystemMonitorRunner(const SystemMonitorRunner &) = delete;
 
 	/**
 	 * @brief Deleted copy-assignment operator — not copyable by design.
 	 *
 	 * Singleton cannot be copied.
 	 */
-	SystemMonitorRunner& operator=(const SystemMonitorRunner&) = delete;
+	SystemMonitorRunner &operator=(const SystemMonitorRunner &) = delete;
 
   private:
 	/**
@@ -157,7 +158,8 @@ class SystemMonitorRunner
 	 * @param event Event identifier
 	 * @param data Pointer to event data (e.g., new refresh rate value)
 	 *
-	 * @note Called from the thread that publishes the event (typically UI thread).
+	 * @note Called from the thread that publishes the event (typically UI
+	 * thread).
 	 * @note Uses atomic store for lock-free refresh rate updates.
 	 *
 	 * @code
@@ -167,7 +169,7 @@ class SystemMonitorRunner
 	 * }
 	 * @endcode
 	 */
-	void onEvent(const EventBus::EventId& event, const void* data);
+	void onEvent(const EventBus::EventId &event, const void *data);
 
 	/**
 	 * @brief Background thread function that polls monitors.

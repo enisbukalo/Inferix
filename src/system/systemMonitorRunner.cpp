@@ -39,7 +39,7 @@ SystemMonitorRunner::~SystemMonitorRunner()
  *
  * @return Reference to the singleton SystemMonitorRunner instance.
  */
-SystemMonitorRunner& SystemMonitorRunner::instance()
+SystemMonitorRunner &SystemMonitorRunner::instance()
 {
 	static SystemMonitorRunner instance;
 	return instance;
@@ -64,18 +64,18 @@ void SystemMonitorRunner::start(int refreshRateMs)
 	std::call_once(startFlag_, [this, refreshRateMs]() {
 		// Set initial refresh rate
 		refreshRateMs_.store(refreshRateMs);
-		
+
 		// Subscribe to refresh rate change events
 		subscriptionId_ = EventBus::subscribe(
 			"config.ui.refreshRateMs",
-			[this](const EventBus::EventId& event, const void* data) {
+			[this](const EventBus::EventId &event, const void *data) {
 				this->onEvent(event, data);
-			}
-		);
-		
+			});
+
 		std::cout << "[SystemMonitorRunner] Started with refresh rate: "
-			<< refreshRateMs << "ms, subscription ID: " << subscriptionId_ << std::endl;
-		
+				  << refreshRateMs << "ms, subscription ID: " << subscriptionId_
+				  << std::endl;
+
 		// Start the background polling thread
 		thread_ = std::thread(&SystemMonitorRunner::run, this);
 	});
@@ -95,17 +95,19 @@ void SystemMonitorRunner::stop()
 	if (subscriptionId_ != 0) {
 		EventBus::unsubscribe(subscriptionId_);
 		subscriptionId_ = 0;
-		std::cout << "[SystemMonitorRunner] Unsubscribed from EventBus" << std::endl;
+		std::cout << "[SystemMonitorRunner] Unsubscribed from EventBus"
+				  << std::endl;
 	}
-	
+
 	// Signal the background thread to stop
 	stopFlag_.store(true);
 	cv_.notify_one();
-	
+
 	// Join the background thread
 	if (thread_.joinable()) {
 		thread_.join();
-		std::cout << "[SystemMonitorRunner] Background thread joined" << std::endl;
+		std::cout << "[SystemMonitorRunner] Background thread joined"
+				  << std::endl;
 	}
 }
 
@@ -118,13 +120,14 @@ void SystemMonitorRunner::stop()
  * @param event Event identifier
  * @param data Pointer to the new refresh rate value (int*)
  */
-void SystemMonitorRunner::onEvent(const EventBus::EventId& event, const void* data)
+void SystemMonitorRunner::onEvent(const EventBus::EventId &event,
+								  const void *data)
 {
 	if (event == "config.ui.refreshRateMs" && data != nullptr) {
-		int newRate = *static_cast<const int*>(data);
+		int newRate = *static_cast<const int *>(data);
 		refreshRateMs_.store(newRate);
-		std::cout << "[SystemMonitorRunner] Refresh rate updated to: "
-			<< newRate << "ms" << std::endl;
+		std::cout << "[SystemMonitorRunner] Refresh rate updated to: " << newRate
+				  << "ms" << std::endl;
 	}
 }
 
@@ -144,12 +147,12 @@ void SystemMonitorRunner::run()
 			std::unique_lock<std::mutex> lock(cvMutex_);
 			// Wait for the dynamic refresh interval or until stopped
 			cv_.wait_for(lock,
-					std::chrono::milliseconds(refreshRateMs_.load()),
-					[this] { return stopFlag_.load(); });
+						 std::chrono::milliseconds(refreshRateMs_.load()),
+						 [this] { return stopFlag_.load(); });
 		}
 		if (stopFlag_.load())
 			break;
-		
+
 		// Poll all monitors
 		MemoryMonitor::instance().update();
 		CpuMonitor::instance().update();
