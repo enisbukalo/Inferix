@@ -12,7 +12,6 @@
 #include "modelsPanel.h"
 #include "serverInfoPanel.h"
 #include "settingsPanel.h"
-#include "systemMonitorRunner.h"
 #include "systemResourcesPanel.h"
 #include "terminalPanel.h"
 #include "terminalPresetsPanel.h"
@@ -30,7 +29,6 @@ using namespace ftxui;
 void App::run()
 {
 	auto screen = ScreenInteractive::Fullscreen();
-	SystemMonitorRunner runner(screen);
 	TerminalPanel terminalPanel(screen);
 	SettingsPanel settingsPanel;
 	ModelsPanel modelsPanel;
