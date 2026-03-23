@@ -78,18 +78,17 @@ class SystemMonitorRunner
 	 *
 	 * @note Can only be called once; subsequent calls are ignored.
 	 * @note The background thread starts polling immediately.
-	 * @note This method does NOT take a screen reference — FTXUI's
-	 * Screen::Loop() handles all rendering independently. The background thread
-	 * only updates monitor data.
+	 * @note The screen pointer is stored and used to call Repaint() after each
+	 * monitor update, forcing the UI to refresh with new data.
+	 * @note The screen must outlive the SystemMonitorRunner.
 	 *
 	 * @code
-	 * // In main.cpp:
-	 * ConfigManager::instance().load();
-	 * auto& config = ConfigManager::instance().getConfig();
-	 * SystemMonitorRunner::instance().start(config.ui.refreshRateMs);
+	 * // In app.cpp (after screen creation):
+	 * auto screen = ScreenInteractive::Fullscreen();
+	 * SystemMonitorRunner::instance().start(&screen, config.ui.refreshRateMs);
 	 * @endcode
 	 */
-	void start(int refreshRateMs);
+	void start(ftxui::ScreenInteractive *screen, int refreshRateMs);
 
 	/**
 	 * @brief Stop the background polling thread.
@@ -176,8 +175,9 @@ class SystemMonitorRunner
 	 *
 	 * This loop:
 	 * 1. Calls update() on CpuMonitor, MemoryMonitor, and GpuMonitor
-	 * 2. Waits for refreshRateMs_ or until stopFlag_ is set
-	 * 3. Repeats until stopFlag_ is true
+	 * 2. Triggers a UI redraw via screen_->Repaint()
+	 * 3. Waits for refreshRateMs_ or until stopFlag_ is set
+	 * 4. Repeats until stopFlag_ is true
 	 *
 	 * The loop uses a condition variable to allow the thread to wake up
 	 * immediately if stop() is called, rather than waiting for the full
@@ -186,8 +186,9 @@ class SystemMonitorRunner
 	 * @note This method is called by the thread_ member.
 	 * @note All monitor update() calls are thread-safe.
 	 * @note Uses dynamic refreshRateMs_ instead of constant kThreadWaitTimeMs.
-	 * @note This method does NOT trigger UI redraws; FTXUI's Screen::Loop()
-	 *       handles all rendering independently.
+	 * @note Calls screen_->Repaint() after each update to force UI refresh.
+	 *       FTXUI's Repaint() is thread-safe and schedules a redraw on the
+	 *       main thread's next iteration of Screen::Loop().
 	 */
 	void run();
 
@@ -255,4 +256,17 @@ class SystemMonitorRunner
 	 * @note Set by start(), cleared by stop().
 	 */
 	EventBus::SubscriptionId subscriptionId_ = 0;
+
+	/**
+	 * @brief Pointer to the FTXUI screen for triggering redraws.
+	 *
+	 * This pointer is used to call Repaint() after updating monitor data,
+	 * forcing FTXUI to re-render the UI with fresh data.
+	 *
+	 * @note Set by start(screen, refreshRateMs).
+	 * @note The screen must outlive the SystemMonitorRunner.
+	 * @note FTXUI's Repaint() is thread-safe and can be called from the
+	 *       background thread.
+	 */
+	ftxui::ScreenInteractive *screen_ = nullptr;
 };

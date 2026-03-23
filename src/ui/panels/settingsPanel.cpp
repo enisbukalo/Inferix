@@ -365,7 +365,7 @@ Component SettingsPanel::component()
 												 defaultTabToggle->Render()));
 			rows.push_back(ui_utils::checkboxRow("Show System Panel",
 												 showSysPanelCb->Render()));
-			rows.push_back(ui_utils::numberRow("Refresh Rate",
+			rows.push_back(ui_utils::numberRow("System Info Refresh Rate",
 											   refreshMinus->Render(),
 											   refreshInput->Render(),
 											   refreshPlus->Render()));

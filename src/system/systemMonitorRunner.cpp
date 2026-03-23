@@ -11,6 +11,8 @@
 #include "cpuMonitor.h"
 #include "gpuMonitor.h"
 #include "ramMonitor.h"
+#include <ftxui/component/event.hpp>
+#include <ftxui/component/screen_interactive.hpp>
 #include <iostream>
 
 /**
@@ -51,17 +53,21 @@ SystemMonitorRunner &SystemMonitorRunner::instance()
  * Initializes the singleton with the initial refresh rate, subscribes
  * to refresh rate change events, and starts the background polling thread.
  *
+ * @param screen Pointer to the FTXUI screen for triggering redraws.
  * @param refreshRateMs Initial polling interval in milliseconds.
  *
  * @note Can only be called once; subsequent calls are ignored.
- * @note This method does NOT take a screen reference — FTXUI's Screen::Loop()
- *       handles all rendering independently. The background thread only updates
- *       monitor data.
+ * @note The screen pointer is stored and used to call Repaint() after
+ *       each monitor update, forcing the UI to refresh with new data.
  */
-void SystemMonitorRunner::start(int refreshRateMs)
+void SystemMonitorRunner::start(ftxui::ScreenInteractive *screen,
+								int refreshRateMs)
 {
 	// Ensure this runs exactly once
-	std::call_once(startFlag_, [this, refreshRateMs]() {
+	std::call_once(startFlag_, [this, screen, refreshRateMs]() {
+		// Store the screen pointer for triggering redraws
+		screen_ = screen;
+
 		// Set initial refresh rate
 		refreshRateMs_.store(refreshRateMs);
 
@@ -135,10 +141,12 @@ void SystemMonitorRunner::onEvent(const EventBus::EventId &event,
  * @brief Background thread function that polls monitors.
  *
  * Polls all system monitors at the interval specified by refreshRateMs_,
- * which can be updated dynamically via EventBus.
+ * which can be updated dynamically via EventBus. After each update,
+ * triggers a UI redraw via screen_->PostEvent(Event::Custom).
  *
- * @note This method does NOT trigger UI redraws; FTXUI's Screen::Loop()
- *       handles all rendering independently.
+ * @note Calls screen_->PostEvent(Event::Custom) after each update to force
+ * UI refresh. FTXUI's PostEvent() is thread-safe and schedules a redraw on
+ * the main thread's next iteration of Screen::Loop().
  */
 void SystemMonitorRunner::run()
 {
@@ -157,5 +165,10 @@ void SystemMonitorRunner::run()
 		MemoryMonitor::instance().update();
 		CpuMonitor::instance().update();
 		GpuMonitor::instance().update();
+
+		// Trigger UI redraw with fresh data
+		if (screen_ != nullptr) {
+			screen_->PostEvent(ftxui::Event::Custom);
+		}
 	}
 }

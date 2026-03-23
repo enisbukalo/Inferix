@@ -13,8 +13,9 @@
 /**
  * @brief Program entry point.
  *
- * Loads user configuration, starts the system monitor singleton, and
- * launches the Workbench terminal UI.
+ * Loads user configuration and launches the Workbench terminal UI.
+ * The SystemMonitorRunner is started from within App::run() after the
+ * screen is created, so it can trigger redraws when monitor data updates.
  *
  * @return 0 on successful execution.
  */
@@ -22,10 +23,6 @@ int main()
 {
 	// Load configuration from disk
 	ConfigManager::instance().load();
-
-	// Start the system monitor singleton with the configured refresh rate
-	auto &config = ConfigManager::instance().getConfig();
-	SystemMonitorRunner::instance().start(config.ui.refreshRateMs);
 
 	// Run the main application UI loop
 	App::run();
