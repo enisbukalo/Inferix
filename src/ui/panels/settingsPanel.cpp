@@ -1,5 +1,6 @@
 #include "settingsPanel.h"
 #include "configManager.h"
+#include "core/eventBus.h"
 #include "utility/ui_utils.h"
 
 #include <ftxui/component/component.hpp>
@@ -63,7 +64,17 @@ void SettingsPanel::saveConfig()
 {
 	auto &cfg = ConfigManager::instance().getConfig();
 
-	// Server
+	// ========================================================================
+	// Capture old values for change detection
+	// ========================================================================
+	int oldRefreshRateMs = cfg.ui.refreshRateMs;
+	std::string oldTheme = cfg.ui.theme;
+	int oldDefaultTab = cfg.ui.defaultTab;
+	bool oldShowSystemPanel = cfg.ui.showSystemPanel;
+
+	// ========================================================================
+	// Update Server settings
+	// ========================================================================
 	cfg.server.host = m_host;
 	try {
 		cfg.server.port = std::stoi(m_port);
@@ -78,19 +89,50 @@ void SettingsPanel::saveConfig()
 	cfg.server.cachePrompt = m_cachePrompt;
 	cfg.server.metrics = m_metrics;
 
-	// UI
+	// ========================================================================
+	// Update UI settings
+	// ========================================================================
 	cfg.ui.theme = m_themeOptions[static_cast<size_t>(m_themeIdx)];
 	cfg.ui.defaultTab = m_defaultTabIdx;
 	cfg.ui.showSystemPanel = m_showSystemPanel;
 	cfg.ui.refreshRateMs = m_refreshRateMs;
 
-	// Terminal
+	// ========================================================================
+	// Update Terminal settings
+	// ========================================================================
 	cfg.terminal.defaultShell = m_defaultShell;
 	cfg.terminal.initialCommand = m_initialCommand;
 	cfg.terminal.workingDirectory = m_workingDirectory;
 	cfg.terminal.defaultCols = m_defaultCols;
 	cfg.terminal.defaultRows = m_defaultRows;
 
+	// ========================================================================
+	// Publish events for changed values (dynamic updates)
+	// ========================================================================
+	// UI refresh rate — SystemMonitorRunner subscribes to this
+	if (oldRefreshRateMs != cfg.ui.refreshRateMs) {
+		EventBus::publish("config.ui.refreshRateMs", &cfg.ui.refreshRateMs);
+	}
+
+	// UI theme — future: ThemeManager could subscribe
+	if (oldTheme != cfg.ui.theme) {
+		EventBus::publish("config.ui.theme", &cfg.ui.theme);
+	}
+
+	// Default tab — future: TabManager could subscribe
+	if (oldDefaultTab != cfg.ui.defaultTab) {
+		EventBus::publish("config.ui.defaultTab", &cfg.ui.defaultTab);
+	}
+
+	// System panel visibility — future: UI could subscribe
+	if (oldShowSystemPanel != cfg.ui.showSystemPanel) {
+		EventBus::publish("config.ui.showSystemPanel",
+						 &cfg.ui.showSystemPanel);
+	}
+
+	// ========================================================================
+	// Persist to disk
+	// ========================================================================
 	ConfigManager::instance().save();
 }
 
