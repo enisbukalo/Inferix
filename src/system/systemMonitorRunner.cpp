@@ -1,9 +1,10 @@
 /**
  * @file systemMonitorRunner.cpp
- * @brief Background monitoring thread implementation.
+ * @brief Singleton background monitoring thread implementation.
  *
- * Implements the polling thread that periodically updates all system
+ * Implements the singleton polling thread that periodically updates all system
  * monitors (CPU, GPU, RAM) and triggers UI redraws via FTXUI events.
+ * Supports dynamic refresh rate updates via EventBus subscription.
  */
 
 #include "systemMonitorRunner.h"
@@ -12,39 +13,152 @@
 #include "ramMonitor.h"
 #include <ftxui/component/event.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <iostream>
 
-SystemMonitorRunner::SystemMonitorRunner(ftxui::ScreenInteractive &screen)
-	: screen_(screen), thread_(&SystemMonitorRunner::run, this)
+/**
+ * @brief Private constructor for singleton.
+ *
+ * Initializes the singleton instance. Called only by instance().
+ * The background thread is NOT started here; it's started by start().
+ */
+SystemMonitorRunner::SystemMonitorRunner()
 {
 }
 
+/**
+ * @brief Destructor. Calls stop() to cleanly shut down.
+ *
+ * Ensures the background thread is stopped and any active subscription
+ * is cleaned up.
+ */
 SystemMonitorRunner::~SystemMonitorRunner()
 {
 	stop();
 }
 
-void SystemMonitorRunner::stop()
+/**
+ * @brief Get the singleton instance (Meyers' singleton).
+ *
+ * @return Reference to the singleton SystemMonitorRunner instance.
+ */
+SystemMonitorRunner& SystemMonitorRunner::instance()
 {
-	stopFlag_.store(true);
-	cv_.notify_one();
-	if (thread_.joinable())
-		thread_.join();
+	static SystemMonitorRunner instance;
+	return instance;
 }
 
+/**
+ * @brief Start the background polling thread.
+ *
+ * Initializes the singleton with screen reference and refresh rate,
+ * subscribes to refresh rate change events, and starts the background
+ * polling thread.
+ *
+ * @param screen Reference to the FTXUI interactive screen.
+ * @param refreshRateMs Initial polling interval in milliseconds.
+ *
+ * @note Can only be called once; subsequent calls are ignored.
+ */
+void SystemMonitorRunner::start(ftxui::ScreenInteractive& screen, int refreshRateMs)
+{
+	// Ensure this runs exactly once
+	std::call_once(startFlag_, [this, &screen, refreshRateMs]() {
+		// Store screen reference
+		screen_ = &screen;
+		
+		// Set initial refresh rate
+		refreshRateMs_.store(refreshRateMs);
+		
+		// Subscribe to refresh rate change events
+		subscriptionId_ = EventBus::subscribe(
+			"config.ui.refreshRateMs",
+			[this](const EventBus::EventId& event, const void* data) {
+				this->onEvent(event, data);
+			}
+		);
+		
+		std::cout << "[SystemMonitorRunner] Started with refresh rate: "
+			<< refreshRateMs << "ms, subscription ID: " << subscriptionId_ << std::endl;
+		
+		// Start the background polling thread
+		thread_ = std::thread(&SystemMonitorRunner::run, this);
+	});
+}
+
+/**
+ * @brief Stop the background polling thread.
+ *
+ * Unsubscribes from EventBus, sets the stop flag, wakes the polling
+ * thread, and joins it.
+ *
+ * @note Safe to call multiple times; subsequent calls are no-ops.
+ */
+void SystemMonitorRunner::stop()
+{
+	// Unsubscribe from EventBus if subscribed
+	if (subscriptionId_ != 0) {
+		EventBus::unsubscribe(subscriptionId_);
+		subscriptionId_ = 0;
+		std::cout << "[SystemMonitorRunner] Unsubscribed from EventBus" << std::endl;
+	}
+	
+	// Signal the background thread to stop
+	stopFlag_.store(true);
+	cv_.notify_one();
+	
+	// Join the background thread
+	if (thread_.joinable()) {
+		thread_.join();
+		std::cout << "[SystemMonitorRunner] Background thread joined" << std::endl;
+	}
+}
+
+/**
+ * @brief Event handler for EventBus.
+ *
+ * Handles "config.ui.refreshRateMs" events by updating the polling
+ * interval dynamically.
+ *
+ * @param event Event identifier
+ * @param data Pointer to the new refresh rate value (int*)
+ */
+void SystemMonitorRunner::onEvent(const EventBus::EventId& event, const void* data)
+{
+	if (event == "config.ui.refreshRateMs" && data != nullptr) {
+		int newRate = *static_cast<const int*>(data);
+		refreshRateMs_.store(newRate);
+		std::cout << "[SystemMonitorRunner] Refresh rate updated to: "
+			<< newRate << "ms" << std::endl;
+	}
+}
+
+/**
+ * @brief Background thread function that polls monitors and triggers redraws.
+ *
+ * Polls all system monitors at the interval specified by refreshRateMs_,
+ * which can be updated dynamically via EventBus.
+ */
 void SystemMonitorRunner::run()
 {
 	while (true) {
 		{
 			std::unique_lock<std::mutex> lock(cvMutex_);
+			// Wait for the dynamic refresh interval or until stopped
 			cv_.wait_for(lock,
-						 std::chrono::milliseconds(kThreadWaitTimeMs),
-						 [this] { return stopFlag_.load(); });
+					std::chrono::milliseconds(refreshRateMs_.load()),
+					[this] { return stopFlag_.load(); });
 		}
 		if (stopFlag_.load())
 			break;
+		
+		// Poll all monitors
 		MemoryMonitor::instance().update();
 		CpuMonitor::instance().update();
 		GpuMonitor::instance().update();
-		screen_.PostEvent(ftxui::Event::Custom);
+		
+		// Trigger UI redraw
+		if (screen_ != nullptr) {
+			screen_->PostEvent(ftxui::Event::Custom);
+		}
 	}
 }
