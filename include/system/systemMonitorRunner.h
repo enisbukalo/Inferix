@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <mutex>
 #include <thread>
-#include "eventBus.h"
+#include "core/eventBus.h"
 
 namespace ftxui {
 class ScreenInteractive;
@@ -12,33 +12,32 @@ class ScreenInteractive;
 
 /**
  * @file systemMonitorRunner.h
- * @brief Singleton that manages a background thread polling all monitors and
- * triggering UI redraws.
+ * @brief Singleton that manages a background thread polling all monitors.
  *
  * This class implements a background monitoring thread that:
  * 1. Polls all hardware monitors (CPU, GPU, RAM) at configurable intervals
- * 2. Triggers FTXUI screen redrawing after each poll
- * 3. Dynamically updates polling interval via EventBus subscription
- * 4. Provides clean shutdown via stop() or destructor
+ * 2. Dynamically updates polling interval via EventBus subscription
+ * 3. Provides clean shutdown via stop() or destructor
  *
  * Thread model:
- * - Background thread: Calls update() on all monitors and posts redraw events
- * - Main thread: Receives redraw events and updates the UI
+ * - Background thread: Calls update() on all monitors
+ * - Main thread: FTXUI's Screen::Loop() handles all rendering independently
  * - Shared state: Protected by condition variable and mutex for coordination
  *
  * Timing:
  * - Polling interval: Configurable via refreshRateMs_ (default 250ms)
  * - Effective update rate: Dynamic, updated via "config.ui.refreshRateMs" event
- * - FTXUI redraw: Triggered after each poll cycle
  *
  * Singleton lifecycle:
  * - Created: First call to instance()
- * - Started: start(screen, refreshRateMs) called once from main()
+ * - Started: start(refreshRateMs) called once from main()
  * - Stopped: stop() called explicitly or via destructor
  *
  * @note This class follows Meyers' singleton pattern — thread-safe, lazy
  *       initialization, automatic cleanup at program termination.
  * @note start() can only be called once; subsequent calls are ignored.
+ * @note This class does NOT trigger UI redraws; FTXUI's Screen::Loop() handles
+ *       all rendering independently. The background thread only updates monitor data.
  */
 class SystemMonitorRunner
 {
@@ -65,31 +64,31 @@ class SystemMonitorRunner
 	/**
 	 * @brief Start the background polling thread.
 	 *
-	 * Initializes the singleton with the FTXUI screen reference and initial
-	 * refresh rate, then starts the background polling thread. Also subscribes
-	 * to "config.ui.refreshRateMs" events for dynamic updates.
+	 * Initializes the singleton with the initial refresh rate, subscribes
+	 * to "config.ui.refreshRateMs" events for dynamic updates, and starts
+	 * the background polling thread.
 	 *
 	 * This method:
-	 * 1. Stores the screen reference
-	 * 2. Sets the initial refresh rate
-	 * 3. Subscribes to refresh rate change events
-	 * 4. Starts the background polling thread
+	 * 1. Sets the initial refresh rate
+	 * 2. Subscribes to refresh rate change events
+	 * 3. Starts the background polling thread
 	 *
-	 * @param screen Reference to the FTXUI interactive screen.
 	 * @param refreshRateMs Initial polling interval in milliseconds.
 	 *
 	 * @note Can only be called once; subsequent calls are ignored.
-	 * @note The screen must remain valid for the lifetime of this object.
 	 * @note The background thread starts polling immediately.
+	 * @note This method does NOT take a screen reference — FTXUI's Screen::Loop()
+	 *       handles all rendering independently. The background thread only updates
+	 *       monitor data.
 	 *
 	 * @code
 	 * // In main.cpp:
 	 * ConfigManager::instance().load();
 	 * auto& config = ConfigManager::instance().getConfig();
-	 * SystemMonitorRunner::instance().start(screen, config.ui.refreshRateMs);
+	 * SystemMonitorRunner::instance().start(config.ui.refreshRateMs);
 	 * @endcode
 	 */
-	void start(ftxui::ScreenInteractive& screen, int refreshRateMs);
+	void start(int refreshRateMs);
 
 	/**
 	 * @brief Stop the background polling thread.
@@ -171,14 +170,12 @@ class SystemMonitorRunner
 	void onEvent(const EventBus::EventId& event, const void* data);
 
 	/**
-	 * @brief Background thread function that polls monitors and triggers
-	 * redraws.
+	 * @brief Background thread function that polls monitors.
 	 *
 	 * This loop:
 	 * 1. Calls update() on CpuMonitor, MemoryMonitor, and GpuMonitor
-	 * 2. Posts a Custom event to the FTXUI screen to trigger redraw
-	 * 3. Waits for refreshRateMs_ or until stopFlag_ is set
-	 * 4. Repeats until stopFlag_ is true
+	 * 2. Waits for refreshRateMs_ or until stopFlag_ is set
+	 * 3. Repeats until stopFlag_ is true
 	 *
 	 * The loop uses a condition variable to allow the thread to wake up
 	 * immediately if stop() is called, rather than waiting for the full
@@ -186,20 +183,11 @@ class SystemMonitorRunner
 	 *
 	 * @note This method is called by the thread_ member.
 	 * @note All monitor update() calls are thread-safe.
-	 * @note The screen.PostEvent() call is safe from the background thread.
 	 * @note Uses dynamic refreshRateMs_ instead of constant kThreadWaitTimeMs.
+	 * @note This method does NOT trigger UI redraws; FTXUI's Screen::Loop()
+	 *       handles all rendering independently.
 	 */
 	void run();
-
-	/**
-	 * @brief Reference to the FTXUI interactive screen.
-	 *
-	 * Used to post redraw events from the background thread.
-	 * @note This reference must remain valid for the lifetime of
-	 *       this object.
-	 * @note Set by start() method.
-	 */
-	ftxui::ScreenInteractive* screen_ = nullptr;
 
 	/**
 	 * @brief Dynamic polling interval in milliseconds.

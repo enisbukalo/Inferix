@@ -11,8 +11,6 @@
 #include "cpuMonitor.h"
 #include "gpuMonitor.h"
 #include "ramMonitor.h"
-#include <ftxui/component/event.hpp>
-#include <ftxui/component/screen_interactive.hpp>
 #include <iostream>
 
 /**
@@ -50,22 +48,20 @@ SystemMonitorRunner& SystemMonitorRunner::instance()
 /**
  * @brief Start the background polling thread.
  *
- * Initializes the singleton with screen reference and refresh rate,
- * subscribes to refresh rate change events, and starts the background
- * polling thread.
+ * Initializes the singleton with the initial refresh rate, subscribes
+ * to refresh rate change events, and starts the background polling thread.
  *
- * @param screen Reference to the FTXUI interactive screen.
  * @param refreshRateMs Initial polling interval in milliseconds.
  *
  * @note Can only be called once; subsequent calls are ignored.
+ * @note This method does NOT take a screen reference — FTXUI's Screen::Loop()
+ *       handles all rendering independently. The background thread only updates
+ *       monitor data.
  */
-void SystemMonitorRunner::start(ftxui::ScreenInteractive& screen, int refreshRateMs)
+void SystemMonitorRunner::start(int refreshRateMs)
 {
 	// Ensure this runs exactly once
-	std::call_once(startFlag_, [this, &screen, refreshRateMs]() {
-		// Store screen reference
-		screen_ = &screen;
-		
+	std::call_once(startFlag_, [this, refreshRateMs]() {
 		// Set initial refresh rate
 		refreshRateMs_.store(refreshRateMs);
 		
@@ -133,10 +129,13 @@ void SystemMonitorRunner::onEvent(const EventBus::EventId& event, const void* da
 }
 
 /**
- * @brief Background thread function that polls monitors and triggers redraws.
+ * @brief Background thread function that polls monitors.
  *
  * Polls all system monitors at the interval specified by refreshRateMs_,
  * which can be updated dynamically via EventBus.
+ *
+ * @note This method does NOT trigger UI redraws; FTXUI's Screen::Loop()
+ *       handles all rendering independently.
  */
 void SystemMonitorRunner::run()
 {
@@ -155,10 +154,5 @@ void SystemMonitorRunner::run()
 		MemoryMonitor::instance().update();
 		CpuMonitor::instance().update();
 		GpuMonitor::instance().update();
-		
-		// Trigger UI redraw
-		if (screen_ != nullptr) {
-			screen_->PostEvent(ftxui::Event::Custom);
-		}
 	}
 }
