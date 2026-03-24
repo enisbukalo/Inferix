@@ -27,6 +27,7 @@
  */
 
 #include "configManager.h"
+#include "core/eventBus.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -131,6 +132,10 @@ bool ConfigManager::save()
 
 	json j = config_;
 	file << j.dump(4) << std::endl;
+
+	// Publish config.saved event — subscribers can reload if needed
+	EventBus::publish("config.saved", &config_);
+
 	return true;
 }
 

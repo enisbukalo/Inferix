@@ -8,17 +8,27 @@
 
 #include "app.h"
 #include "configManager.h"
+#include "systemMonitorRunner.h"
 
 /**
  * @brief Program entry point.
  *
  * Loads user configuration and launches the Workbench terminal UI.
+ * The SystemMonitorRunner is started from within App::run() after the
+ * screen is created, so it can trigger redraws when monitor data updates.
  *
  * @return 0 on successful execution.
  */
 int main()
 {
+	// Load configuration from disk
 	ConfigManager::instance().load();
+
+	// Run the main application UI loop
 	App::run();
+
+	// Clean up the system monitor before exit
+	SystemMonitorRunner::instance().stop();
+
 	return 0;
 }

@@ -9,7 +9,6 @@
 
 #include "app.h"
 #include "configManager.h"
-#include "inferenceSettingsPanel.h"
 #include "modelsPanel.h"
 #include "serverInfoPanel.h"
 #include "settingsPanel.h"
@@ -31,7 +30,12 @@ using namespace ftxui;
 void App::run()
 {
 	auto screen = ScreenInteractive::Fullscreen();
-	SystemMonitorRunner runner(screen);
+
+	// Load config and start the system monitor singleton with the screen
+	// reference This allows it to trigger redraws when monitor data updates
+	auto &config = ConfigManager::instance().getConfig();
+	SystemMonitorRunner::instance().start(&screen, config.ui.refreshRateMs);
+
 	TerminalPanel terminalPanel(screen);
 	SettingsPanel settingsPanel;
 	ModelsPanel modelsPanel;
@@ -88,7 +92,7 @@ void App::run()
 	std::vector<DynamicTerminal> dynamicTerminals;
 
 	// Load terminals from config
-	auto &config = ConfigManager::instance().getConfig();
+	// (config already loaded above for SystemMonitorRunner)
 	for (const auto &preset : config.terminalPresets) {
 		auto panel =
 			std::make_unique<TerminalPanel>(screen, preset.initialCommand);

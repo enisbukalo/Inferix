@@ -158,6 +158,9 @@ Component ModelsPanel::component()
 	};
 
 	// Helper: create [-] [input] [+] for an int field
+	// Creates a triplet of components: decrement button, text input, increment
+	// button Value is clamped to [minVal, maxVal] range on every change
+	// Immediately persists to config via onChange callback
 	auto makeIntControls =
 		[&](int &value, std::string &str, int minVal, int maxVal, int step) {
 			struct Controls
@@ -200,6 +203,9 @@ Component ModelsPanel::component()
 		};
 
 	// Helper: create [-] [input] [+] for a float field
+	// Same pattern as makeIntControls but for floating-point values
+	// Uses ui_utils::formatFloat for consistent decimal representation
+	// Useful for probability/temperature parameters (e.g., temperature, top_p)
 	auto makeFloatControls = [&](float &value,
 								 std::string &str,
 								 float minVal,
@@ -246,6 +252,8 @@ Component ModelsPanel::component()
 
 	// -----------------------------------------------------------------------
 	// Load components
+	// Creates FTXUI input components for model loading parameters
+	// Each component is bound to a member variable and triggers auto-save
 	// -----------------------------------------------------------------------
 	auto modelPathInput = Input(&m_modelPath, "path/to/model.gguf", inputOpt);
 	auto gpuLayersInput = Input(&m_ngpuLayers, "auto", inputOpt);
@@ -264,6 +272,9 @@ Component ModelsPanel::component()
 
 	// -----------------------------------------------------------------------
 	// Inference components
+	// Creates controls for text generation parameters (temperature, sampling,
+	// penalties) Float controls use 0.01 step for fine-grained probability
+	// adjustments
 	// -----------------------------------------------------------------------
 	auto [tempMinus, tempInput, tempPlus] =
 		makeFloatControls(m_temperature, m_temperatureStr, 0.0f, 2.0f, 0.01f);
@@ -296,6 +307,9 @@ Component ModelsPanel::component()
 
 	// -----------------------------------------------------------------------
 	// Container — two-column layout: Load Settings (left), Inference (right)
+	// Uses FTXUI's Container::Horizontal to split the panel vertically
+	// Each column is a vertical stack of interactive components
+	// The Renderer below wraps each column in a labeled window
 	// -----------------------------------------------------------------------
 	auto container = Container::Horizontal({
 		Container::Vertical({
