@@ -1,6 +1,7 @@
 #pragma once
 
 #include "configManager.h"
+#include "modelDiscovery.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -103,4 +104,15 @@ class ModelsPanel
 	// Dropdown Options
 	// =========================================================================
 	std::vector<std::string> m_flashAttnOptions = { "auto", "on", "off" };
+
+	// =========================================================================
+	// Model Discovery & Selection (Phase 1)
+	// =========================================================================
+	std::vector<std::string> m_modelPaths;		  // Full paths from discovery
+	std::vector<std::string> m_modelDisplayNames; // Display names for dropdown
+	int m_modelDropdownIndex = 0;				  // Selected index in dropdown
+	std::string m_selectedModelPath;			  // Full path of selected model
+
+	/** Refresh model list from ModelDiscovery singleton. */
+	void refreshModelList();
 };

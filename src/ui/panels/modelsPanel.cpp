@@ -1,5 +1,6 @@
 #include "modelsPanel.h"
 #include "configManager.h"
+#include "modelDiscovery.h"
 #include "ui_utils.h"
 
 #include <ftxui/component/component.hpp>
@@ -9,6 +10,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <numeric>
 #include <sstream>
 
 using namespace ftxui;
@@ -61,6 +63,18 @@ void ModelsPanel::loadFromConfig()
 	m_frequencyPenalty = static_cast<float>(cfg.inference.frequencyPenalty);
 	m_frequencyPenaltyStr = ui_utils::formatFloat(m_frequencyPenalty);
 	m_nPredict = std::to_string(cfg.inference.nPredict);
+
+	// Phase 1: Refresh model list and try to select config.load.modelPath
+	refreshModelList();
+
+	// Try to select the model matching config.load.modelPath (if found)
+	for (size_t i = 0; i < m_modelPaths.size(); ++i) {
+		if (m_modelPaths[i] == cfg.load.modelPath) {
+			m_modelDropdownIndex = static_cast<int>(i);
+			m_selectedModelPath = m_modelPaths[i];
+			break;
+		}
+	}
 }
 
 void ModelsPanel::saveConfig()
@@ -94,6 +108,50 @@ void ModelsPanel::saveConfig()
 	}
 
 	ConfigManager::instance().save();
+}
+
+// =========================================================================
+// Phase 1: Model Discovery Integration
+// =========================================================================
+
+void ModelsPanel::refreshModelList()
+{
+	// Scan for models using ModelDiscovery singleton
+	auto models = ModelDiscovery::instance().scanForModels();
+
+	m_modelPaths.clear();
+	m_modelDisplayNames.clear();
+
+	for (const auto &path : models) {
+		m_modelPaths.push_back(path);
+		m_modelDisplayNames.push_back(
+			ModelDiscovery::instance().pathToDisplayName(path));
+	}
+
+	// Sort by display name for user-friendly dropdown
+	// Keep paths and names in sync
+	std::vector<size_t> indices(m_modelPaths.size());
+	std::iota(indices.begin(), indices.end(), 0);
+	std::sort(indices.begin(), indices.end(), [this](size_t a, size_t b) {
+		return m_modelDisplayNames[a] < m_modelDisplayNames[b];
+	});
+
+	std::vector<std::string> sortedPaths, sortedNames;
+	for (auto idx : indices) {
+		sortedPaths.push_back(m_modelPaths[idx]);
+		sortedNames.push_back(m_modelDisplayNames[idx]);
+	}
+	m_modelPaths = std::move(sortedPaths);
+	m_modelDisplayNames = std::move(sortedNames);
+
+	// Reset dropdown index if it's now out of bounds
+	if (m_modelDropdownIndex < 0 ||
+		m_modelDropdownIndex >= static_cast<int>(m_modelPaths.size())) {
+		m_modelDropdownIndex = 0;
+		if (!m_modelPaths.empty()) {
+			m_selectedModelPath = m_modelPaths[0];
+		}
+	}
 }
 
 // =========================================================================
@@ -271,6 +329,22 @@ Component ModelsPanel::component()
 	auto fitCb = Checkbox("", &m_fit, cbOpt);
 
 	// -----------------------------------------------------------------------
+	// Phase 1: Model Selection Dropdown and LOAD Button
+	// -----------------------------------------------------------------------
+	// Model dropdown - using ftxui's recommended Dropdown component
+	// Dropdown automatically updates m_modelDropdownIndex on selection
+	auto modelDropdown = Dropdown(&m_modelDisplayNames, &m_modelDropdownIndex);
+
+	// LOAD button - placeholder for now (Phase 2 will wire up process launch)
+	auto loadButton = Button(
+		"LOAD",
+		[this] {
+			// Phase 2: Will launch llama-server with selected model
+			// For now, just a placeholder
+		},
+		btnStyle);
+
+	// -----------------------------------------------------------------------
 	// Inference components
 	// Creates controls for text generation parameters (temperature, sampling,
 	// penalties) Float controls use 0.01 step for fine-grained probability
@@ -412,7 +486,23 @@ Component ModelsPanel::component()
 		auto leftCol = vbox(std::move(leftElements)) | flex;
 		auto rightCol = vbox(std::move(rightElements)) | flex;
 
-		return hbox({ leftCol, separatorLight(), rightCol });
+		// Phase 1.3: Footer section with model dropdown above LOAD button
+		auto footerRow = hbox({
+			filler(),
+			vbox({
+				modelDropdown->Render(),
+				separatorLight(),
+				loadButton->Render(),
+			}),
+			filler(),
+		});
+
+		return vbox({
+				   hbox({ leftCol, separatorLight(), rightCol }),
+				   filler(),
+				   footerRow,
+			   }) |
+			   xflex | yflex;
 	});
 
 	return m_component;
