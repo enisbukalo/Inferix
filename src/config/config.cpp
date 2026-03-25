@@ -364,6 +364,20 @@ void from_json(const json &j, TerminalPreset &v)
 }
 
 // ============================================================================
+// DiscoverySettings serialization
+// ============================================================================
+
+void to_json(json &j, const DiscoverySettings &v)
+{
+	j["modelSearchPaths"] = v.modelSearchPaths;
+}
+
+void from_json(const json &j, DiscoverySettings &v)
+{
+	v.modelSearchPaths = j.value("modelSearchPaths", std::vector<std::string>{});
+}
+
+// ============================================================================
 // UserConfig serialization (main container)
 // ============================================================================
 
@@ -374,6 +388,7 @@ void to_json(json &j, const UserConfig &v)
 	j["inference"] = v.inference;
 	j["ui"] = v.ui;
 	j["terminal"] = v.terminal;
+	j["discovery"] = v.discovery;
 	j["presets"] = v.presets;
 	j["terminalPresets"] = v.terminalPresets;
 }
@@ -390,6 +405,8 @@ void from_json(const json &j, UserConfig &v)
 		v.ui = j["ui"].get<UISettings>();
 	if (j.contains("terminal"))
 		v.terminal = j["terminal"].get<TerminalSettings>();
+	if (j.contains("discovery"))
+		v.discovery = j["discovery"].get<DiscoverySettings>();
 	if (j.contains("presets"))
 		v.presets = j["presets"].get<std::vector<ModelPreset>>();
 	if (j.contains("terminalPresets"))

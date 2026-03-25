@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/eventBus.h"
+#include "eventBus.h"
 #include "terminalPresetsPanel.h"
 
 #include <ftxui/component/component.hpp>

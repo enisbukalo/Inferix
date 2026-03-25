@@ -27,7 +27,7 @@
  */
 
 #include "configManager.h"
-#include "core/eventBus.h"
+#include "eventBus.h"
 
 #include <algorithm>
 #include <filesystem>

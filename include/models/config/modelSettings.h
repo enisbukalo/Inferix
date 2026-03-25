@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 
 namespace Config {
 
@@ -908,6 +909,43 @@ struct ModelPreset
 	 * @see InferenceSettings for parameter documentation
 	 */
 	InferenceSettings inference;
+};
+
+/**
+ * @brief Model discovery settings.
+ *
+ * Configuration for automatic model file discovery. Specifies
+ * directories to scan recursively for .gguf model files.
+ *
+ * @note No default search paths are provided. The user must
+ *       explicitly configure at least one path in modelSearchPaths
+ *       for model discovery to work. If empty, no models will be
+ *       discovered and the model dropdown will remain empty.
+ *
+ * @code
+ * // Configure search paths
+ * DiscoverySettings discovery;
+ * discovery.modelSearchPaths = {
+ *     "/path/to/models",
+ *     "~/llama.cpp/models",
+ *     "C:\\AI\\models"
+ * };
+ * @endcode
+ */
+struct DiscoverySettings
+{
+	/**
+	 * @brief Directories to scan for model files.
+	 *
+	 * List of directory paths to recursively search for .gguf files.
+	 * Paths can be absolute or relative, and may use ~ for home directory.
+	 *
+	 * @note Empty by default - user must explicitly configure search paths.
+	 * @note Tilde (~) is expanded to the user's home directory.
+	 * @note Non-existent directories are silently skipped during scanning.
+	 * @note Scanning is recursive - subdirectories are included.
+	 */
+	std::vector<std::string> modelSearchPaths;
 };
 
 } // namespace Config

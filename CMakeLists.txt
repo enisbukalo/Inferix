@@ -16,14 +16,16 @@ FetchContent_MakeAvailable(ftxui)
 # libvterm third-party library
 add_subdirectory(third_party/libvterm-0.3.3)
 
-# Collect only subdirectories under include/ (not files)
-file(GLOB INCLUDE_SUBDIRS ${CMAKE_SOURCE_DIR}/include/*)
-set(INCLUDE_DIRS "")
-foreach(DIR ${INCLUDE_SUBDIRS})
-  if(IS_DIRECTORY ${DIR})
-    list(APPEND INCLUDE_DIRS ${DIR})
+# Add all subdirectories under include/ as include paths (recursive)
+# This ensures includes like "serverSettings.h" work from anywhere
+file(GLOB_RECURSE ALL_ITEMS LIST_DIRECTORIES true ${CMAKE_SOURCE_DIR}/include/*)
+set(INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/include")
+foreach(ITEM ${ALL_ITEMS})
+  if(IS_DIRECTORY "${ITEM}")
+    list(APPEND INCLUDE_DIRS "${ITEM}")
   endif()
 endforeach()
+message(STATUS "Include directories: ${INCLUDE_DIRS}")
 
 # httplib header-only interface library
 add_library(httplib INTERFACE)

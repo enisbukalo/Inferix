@@ -1,7 +1,7 @@
 #include "settingsPanel.h"
 #include "configManager.h"
-#include "core/eventBus.h"
-#include "utility/ui_utils.h"
+#include "eventBus.h"
+#include "ui_utils.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>

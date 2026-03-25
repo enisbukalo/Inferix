@@ -1,5 +1,5 @@
 #pragma once
-#include "core/eventBus.h"
+#include "eventBus.h"
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
