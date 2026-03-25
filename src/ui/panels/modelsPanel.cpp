@@ -189,6 +189,15 @@ Component ModelsPanel::component()
 		return e | center;
 	};
 
+	auto loadBtnStyle = ButtonOption::Animated();
+	loadBtnStyle.transform = [=](const EntryState &s) {
+		auto e = text(s.label) | color(toggleOnColor);
+		if (s.focused)
+			e |= bold;
+		e |= bgcolor(Color::MagentaLight);
+		return e | center;
+	};
+
 	CheckboxOption cbOpt;
 	cbOpt.on_change = onChange;
 	cbOpt.transform = [=](const EntryState &s) {
@@ -342,7 +351,7 @@ Component ModelsPanel::component()
 			// Phase 2: Will launch llama-server with selected model
 			// For now, just a placeholder
 		},
-		btnStyle);
+		loadBtnStyle);
 
 	// -----------------------------------------------------------------------
 	// Inference components
@@ -398,6 +407,9 @@ Component ModelsPanel::component()
 			mmapCb,
 			mlockCb,
 			fitCb,
+			// Footer: model dropdown and load button
+			modelDropdown,
+			loadButton,
 		}),
 		Container::Vertical({
 			// Right column: Inference Settings
@@ -486,7 +498,7 @@ Component ModelsPanel::component()
 		auto leftCol = vbox(std::move(leftElements)) | flex;
 		auto rightCol = vbox(std::move(rightElements)) | flex;
 
-		// Phase 1.3: Footer section with model dropdown above LOAD button
+		// Footer section with model dropdown above LOAD button
 		auto footerRow = hbox({
 			filler(),
 			vbox({
