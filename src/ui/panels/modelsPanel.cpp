@@ -114,6 +114,90 @@ void ModelsPanel::saveConfig()
 // Phase 1: Model Discovery Integration
 // =========================================================================
 
+/**
+ * @brief Check if a model path should be filtered out based on fileFilter
+ * patterns.
+ *
+ * Implements glob-style wildcard matching (case-insensitive):
+ * - `mmproj*` → matches filenames starting with "mmproj"
+ * - `*mmproj` → matches filenames ending with "mmproj"
+ * - `*mmproj*` → matches filenames containing "mmproj"
+ * - No `*` → substring match anywhere in filename
+ *
+ * @param path Full or partial path to the model file
+ * @return true if the model should be filtered out (excluded), false otherwise
+ */
+bool ModelsPanel::shouldFilterModel(const std::string &path) const
+{
+	// Extract just the filename from the path
+	std::string filename = path;
+	size_t lastSlash = path.find_last_of("/\\");
+	if (lastSlash != std::string::npos) {
+		filename = path.substr(lastSlash + 1);
+	}
+
+	// Convert filename to lowercase for case-insensitive matching
+	std::string lowerFilename;
+	lowerFilename.reserve(filename.size());
+	for (char c : filename) {
+		lowerFilename +=
+			static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	}
+
+	// Get filter patterns from config
+	auto &cfg = ConfigManager::instance().getConfig();
+	const auto &filters = cfg.discovery.fileFilter;
+
+	// Check each filter pattern - if ANY matches, filter out the model
+	for (const auto &pattern : filters) {
+		if (pattern.empty()) {
+			continue;
+		}
+
+		// Convert pattern to lowercase
+		std::string lowerPattern;
+		lowerPattern.reserve(pattern.size());
+		for (char c : pattern) {
+			lowerPattern +=
+				static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+		}
+
+		// Find position of '*'
+		size_t starPos = lowerPattern.find('*');
+
+		if (starPos == std::string::npos) {
+			// No wildcard: substring match
+			if (lowerFilename.find(lowerPattern) != std::string::npos) {
+				return true;
+			}
+		} else if (starPos == 0 && lowerPattern.back() == '*') {
+			// *pattern*: contains match
+			std::string searchStr =
+				lowerPattern.substr(1, lowerPattern.size() - 2);
+			if (lowerFilename.find(searchStr) != std::string::npos) {
+				return true;
+			}
+		} else if (starPos == 0) {
+			// *pattern: ends with
+			std::string suffix = lowerPattern.substr(1);
+			if (lowerFilename.size() >= suffix.size() &&
+				lowerFilename.compare(lowerFilename.size() - suffix.size(),
+									  suffix.size(),
+									  suffix) == 0) {
+				return true;
+			}
+		} else {
+			// pattern*: starts with
+			std::string prefix = lowerPattern.substr(0, starPos);
+			if (lowerFilename.rfind(prefix, 0) == 0) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 void ModelsPanel::refreshModelList()
 {
 	// Scan for models using ModelDiscovery singleton
@@ -123,6 +207,11 @@ void ModelsPanel::refreshModelList()
 	m_modelDisplayNames.clear();
 
 	for (const auto &path : models) {
+		// Phase 3: Apply file filter - skip models matching filter patterns
+		if (shouldFilterModel(path)) {
+			continue;
+		}
+
 		m_modelPaths.push_back(path);
 		m_modelDisplayNames.push_back(
 			ModelDiscovery::instance().pathToDisplayName(path));
@@ -504,7 +593,7 @@ Component ModelsPanel::component()
 			vbox({
 				modelDropdown->Render(),
 				separatorLight(),
-				loadButton->Render(),
+				loadButton->Render() | bgcolor(Color::MagentaLight),
 			}),
 			filler(),
 		});

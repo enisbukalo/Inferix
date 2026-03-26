@@ -115,4 +115,16 @@ class ModelsPanel
 
 	/** Refresh model list from ModelDiscovery singleton. */
 	void refreshModelList();
+
+	/**
+	 * @brief Check if a model path should be filtered out based on fileFilter
+	 * patterns.
+	 *
+	 * Implements glob-style wildcard matching (case-insensitive).
+	 *
+	 * @param path Full or partial path to the model file
+	 * @return true if the model should be filtered out (excluded), false
+	 * otherwise
+	 */
+	bool shouldFilterModel(const std::string &path) const;
 };

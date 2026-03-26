@@ -946,6 +946,31 @@ struct DiscoverySettings
 	 * @note Scanning is recursive - subdirectories are included.
 	 */
 	std::vector<std::string> modelSearchPaths;
+
+	/**
+	 * @brief File filter patterns to exclude from model discovery.
+	 *
+	 * List of glob-style patterns to exclude files from the model list.
+	 * Supports single `*` wildcard matching (case-insensitive):
+	 * - `mmproj*` → matches filenames starting with "mmproj"
+	 * - `*mmproj` → matches filenames ending with "mmproj"
+	 * - `*mmproj*` → matches filenames containing "mmproj"
+	 * - No `*` → substring match anywhere in filename
+	 *
+	 * @note Defaults to `{"mmproj*"}` to exclude multimodal projector files.
+	 * @note Patterns are matched against the filename only (not full path).
+	 * @note Matching is case-insensitive.
+	 * @note Multiple patterns can be specified; file is excluded if ANY match.
+	 *
+	 * @code
+	 * // Exclude mmproj files and draft models
+	 * discovery.fileFilter = {"mmproj*", "*draft*"};
+	 *
+	 * // Show all files (no filtering)
+	 * discovery.fileFilter = {};
+	 * @endcode
+	 */
+	std::vector<std::string> fileFilter = { "mmproj*" };
 };
 
 } // namespace Config
