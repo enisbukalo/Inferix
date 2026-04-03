@@ -24,10 +24,11 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 		args.push_back("-ngl");
 		args.push_back(load.ngpuLayers);
 	}
-	// Main GPU
-	if (load.mainGpu >= 0) {
+	// Device priority - set main GPU for priority (e.g., "0" = GPU 0 first, "1"
+	// = GPU 1 first)
+	if (!load.devicePriority.empty()) {
 		args.push_back("-mg");
-		args.push_back(std::to_string(load.mainGpu));
+		args.push_back(load.devicePriority);
 	}
 	// Context size
 	if (load.ctxSize > 0) {

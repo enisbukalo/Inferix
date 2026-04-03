@@ -133,7 +133,7 @@ void to_json(json &j, const LoadSettings &v)
 	j["ngpuLayers"] = v.ngpuLayers;
 	j["splitMode"] = v.splitMode;
 	j["tensorSplit"] = v.tensorSplit;
-	j["mainGpu"] = v.mainGpu;
+	j["devicePriority"] = v.devicePriority;
 
 	j["ctxSize"] = v.ctxSize;
 	j["batchSize"] = v.batchSize;
@@ -174,7 +174,7 @@ void from_json(const json &j, LoadSettings &v)
 	v.ngpuLayers = j.value("ngpuLayers", v.ngpuLayers);
 	v.splitMode = j.value("splitMode", v.splitMode);
 	v.tensorSplit = j.value("tensorSplit", v.tensorSplit);
-	v.mainGpu = j.value("mainGpu", v.mainGpu);
+	v.devicePriority = j.value("devicePriority", v.devicePriority);
 
 	v.ctxSize = j.value("ctxSize", v.ctxSize);
 	v.batchSize = j.value("batchSize", v.batchSize);

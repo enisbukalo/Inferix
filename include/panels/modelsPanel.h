@@ -79,9 +79,10 @@ class ModelsPanel
 	std::string m_batchSizeStr = "2048";
 	int m_flashAttnIdx = 0; // 0=auto, 1=on, 2=off
 	bool m_kvOffload = true;
-	bool m_mmap = true;
+	bool m_mmap = false;
 	bool m_mlock = false;
 	bool m_fit = true;
+	std::string m_devicePriority = ""; // ""=auto, "0,1"=GPU0 then GPU1
 
 	// =========================================================================
 	// Inference Settings State

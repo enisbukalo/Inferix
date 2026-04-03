@@ -144,16 +144,16 @@ struct LoadSettings
 	std::string tensorSplit;
 
 	/**
-	 * @brief Primary GPU index for model loading.
+	 * @brief Device priority order for loading.
 	 *
-	 * Which GPU to use as the primary device. Use -1 for
-	 * automatic selection.
+	 * Comma-separated list of device IDs to prioritize when loading.
+	 * Example: "0,1" fills GPU 0 first, then GPU 1.
+	 * Use empty for default (auto).
 	 *
-	 * Corresponds to: `-mg INDEX`
-	 * @default -1 (auto)
-	 * @range -1 or valid GPU index
+	 * Corresponds to: `-mg INDEX` (single) or combined with split-mode
+	 * @default "" (auto)
 	 */
-	int mainGpu = -1;
+	std::string devicePriority;
 
 	/**
 	 * @name Context and Batching
@@ -285,9 +285,9 @@ struct LoadSettings
 	 * lower peak memory usage. May cause swapping on large models.
 	 *
 	 * Corresponds to: `--mmap` (enable) or `--no-mmap` (disable)
-	 * @default true
+	 * @default false
 	 */
-	bool mmap = true;
+	bool mmap = false;
 
 	/**
 	 * @name Threading

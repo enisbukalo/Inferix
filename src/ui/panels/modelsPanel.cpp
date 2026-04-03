@@ -48,6 +48,7 @@ void ModelsPanel::loadFromConfig()
 	m_mmap = cfg.load.mmap;
 	m_mlock = cfg.load.mlock;
 	m_fit = cfg.load.fit;
+	m_devicePriority = cfg.load.devicePriority;
 
 	// Inference settings
 	m_temperature = static_cast<float>(cfg.inference.temperature);
@@ -96,6 +97,7 @@ void ModelsPanel::saveConfig()
 	cfg.load.mmap = m_mmap;
 	cfg.load.mlock = m_mlock;
 	cfg.load.fit = m_fit;
+	cfg.load.devicePriority = m_devicePriority;
 
 	// Inference settings
 	cfg.inference.temperature = static_cast<double>(m_temperature);
@@ -415,6 +417,7 @@ Component ModelsPanel::component()
 	// Each component is bound to a member variable and triggers auto-save
 	// -----------------------------------------------------------------------
 	auto gpuLayersInput = Input(&m_ngpuLayers, "auto", inputOpt);
+	auto devicePriorityInput = Input(&m_devicePriority, "e.g. 0", inputOpt);
 	auto ctxSizeInput = Input(&m_ctxSize, "0 = default", inputOpt);
 
 	auto [batchSizeMinus, batchSizeInput, batchSizePlus] =
@@ -492,6 +495,7 @@ Component ModelsPanel::component()
 		Container::Vertical({
 			// Left column: Load Settings
 			gpuLayersInput,
+			devicePriorityInput,
 			ctxSizeInput,
 			batchSizeMinus,
 			batchSizeInput,
@@ -524,6 +528,9 @@ Component ModelsPanel::component()
 			rows.push_back(
 				ui_utils::settingRowComponent("GPU Layers",
 											  gpuLayersInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Device Priority",
+											  devicePriorityInput->Render()));
 			rows.push_back(
 				ui_utils::settingRowComponent("Context Size",
 											  ctxSizeInput->Render()));
