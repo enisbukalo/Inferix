@@ -7,6 +7,7 @@
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
+#include <iostream>
 
 #include <algorithm>
 #include <iomanip>
@@ -433,13 +434,10 @@ Component ModelsPanel::component()
 	// Dropdown automatically updates m_modelDropdownIndex on selection
 	auto modelDropdown = Dropdown(&m_modelDisplayNames, &m_modelDropdownIndex);
 
-	// LOAD button - placeholder for now (Phase 2 will wire up process launch)
+	// LOAD button - launches llama-server with selected model
 	auto loadButton = Button(
 		"LOAD",
-		[this] {
-			// Phase 2: Will launch llama-server with selected model
-			// For now, just a placeholder
-		},
+		[this] { onLoadClicked(); },
 		loadBtnStyle);
 
 	// -----------------------------------------------------------------------
@@ -607,4 +605,39 @@ Component ModelsPanel::component()
 	});
 
 	return m_component;
+}
+
+void ModelsPanel::onLoadClicked()
+{
+	// Validate model selection
+	if (m_modelPaths.empty() || m_modelDropdownIndex < 0 ||
+		m_modelDropdownIndex >= static_cast<int>(m_modelPaths.size())) {
+		std::cout << "Error: No model selected\n";
+		return;
+	}
+
+	// Get selected model path
+	std::string modelPath = m_modelPaths[m_modelDropdownIndex];
+
+	// Get current config
+	auto &cfg = ConfigManager::instance().getConfig();
+
+	// If already running, terminate first
+	if (LlamaServerProcess::instance().isRunning()) {
+		std::cout << "Terminating existing llama-server process...\n";
+		LlamaServerProcess::instance().terminate();
+	}
+
+	// Launch the server using singleton for global access during cleanup
+	bool success = LlamaServerProcess::instance().launch(modelPath,
+														 cfg.load,
+														 cfg.inference,
+														 cfg.server);
+
+	if (!success) {
+		std::cout << "Error: Failed to launch llama-server\n";
+	} else {
+		std::cout << "llama-server launched successfully with model: "
+				  << modelPath << "\n";
+	}
 }

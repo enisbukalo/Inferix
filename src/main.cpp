@@ -8,6 +8,7 @@
 
 #include "app.h"
 #include "configManager.h"
+#include "llamaServerProcess.h"
 #include "systemMonitorRunner.h"
 
 /**
@@ -29,6 +30,9 @@ int main()
 
 	// Clean up the system monitor before exit
 	SystemMonitorRunner::instance().stop();
+
+	// Terminate llama-server if still running
+	LlamaServerProcess::instance().terminate();
 
 	return 0;
 }

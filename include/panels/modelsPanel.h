@@ -1,6 +1,7 @@
 #pragma once
 
 #include "configManager.h"
+#include "llamaServerProcess.h"
 #include "modelDiscovery.h"
 
 #include <ftxui/component/component.hpp>
@@ -127,4 +128,10 @@ class ModelsPanel
 	 * otherwise
 	 */
 	bool shouldFilterModel(const std::string &path) const;
+
+	// =========================================================================
+	// Llama Server Process (Phase 2)
+	// =========================================================================
+	/** Handle LOAD button click - launch llama-server with selected model. */
+	void onLoadClicked();
 };

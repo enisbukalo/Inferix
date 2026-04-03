@@ -46,6 +46,9 @@ list(REMOVE_ITEM ALL_SOURCES
     "${CMAKE_SOURCE_DIR}/src/system/systemInfoWindows.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/ptyLinux.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/ptyWindows.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcess.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcessLinux.cpp"
+    "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcessWindows.cpp"
 )
 
 # Add back only the files for the current platform
@@ -55,6 +58,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
       "${CMAKE_SOURCE_DIR}/src/system/cpuWindows.cpp"
       "${CMAKE_SOURCE_DIR}/src/system/systemInfoWindows.cpp"
       "${CMAKE_SOURCE_DIR}/src/system/ptyWindows.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcess.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcessWindows.cpp"
   )
 else()
   list(APPEND ALL_SOURCES
@@ -62,6 +67,8 @@ else()
       "${CMAKE_SOURCE_DIR}/src/system/cpuLinux.cpp"
       "${CMAKE_SOURCE_DIR}/src/system/systemInfoLinux.cpp"
       "${CMAKE_SOURCE_DIR}/src/system/ptyLinux.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcess.cpp"
+      "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcessLinux.cpp"
   )
 endif()
 
