@@ -35,6 +35,8 @@ void ModelsPanel::loadFromConfig()
 	m_ctxSize = cfg.load.ctxSize == 0 ? "" : std::to_string(cfg.load.ctxSize);
 	m_batchSize = cfg.load.batchSize;
 	m_batchSizeStr = std::to_string(m_batchSize);
+	m_parallel = cfg.load.parallel;
+	m_parallelStr = m_parallel < 0 ? "-1" : std::to_string(m_parallel);
 
 	// Flash attention dropdown index
 	if (cfg.load.flashAttn == "on")
@@ -92,6 +94,7 @@ void ModelsPanel::saveConfig()
 	} catch (...) {
 	}
 	cfg.load.batchSize = m_batchSize;
+	cfg.load.parallel = m_parallel;
 	cfg.load.flashAttn = m_flashAttnOptions[static_cast<size_t>(m_flashAttnIdx)];
 	cfg.load.kvOffload = m_kvOffload;
 	cfg.load.mmap = m_mmap;
@@ -423,6 +426,9 @@ Component ModelsPanel::component()
 	auto [batchSizeMinus, batchSizeInput, batchSizePlus] =
 		makeIntControls(m_batchSize, m_batchSizeStr, 32, 8192, 32);
 
+	auto [parallelMinus, parallelInput, parallelPlus] =
+		makeIntControls(m_parallel, m_parallelStr, -1, 128, 1);
+
 	auto flashAttnOpt = toggleOpt;
 	flashAttnOpt.entries = &m_flashAttnOptions;
 	flashAttnOpt.selected = &m_flashAttnIdx;
@@ -500,6 +506,9 @@ Component ModelsPanel::component()
 			batchSizeMinus,
 			batchSizeInput,
 			batchSizePlus,
+			parallelMinus,
+			parallelInput,
+			parallelPlus,
 			flashAttnToggle,
 			kvOffloadCb,
 			mmapCb,
@@ -538,6 +547,10 @@ Component ModelsPanel::component()
 											   batchSizeMinus->Render(),
 											   batchSizeInput->Render(),
 											   batchSizePlus->Render()));
+			rows.push_back(ui_utils::numberRow("Parallel Slots",
+											   parallelMinus->Render(),
+											   parallelInput->Render(),
+											   parallelPlus->Render()));
 			rows.push_back(ui_utils::checkboxRow("Flash Attention",
 												 flashAttnToggle->Render()));
 			rows.push_back(ui_utils::checkboxRow("KV Cache Offload",

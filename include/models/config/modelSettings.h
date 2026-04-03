@@ -203,9 +203,9 @@ struct LoadSettings
 	 * Higher values increase memory usage.
 	 *
 	 * Corresponds to: `-np COUNT`
-	 * @default 1
+	 * @default 4
 	 */
-	int parallel = 1;
+	int parallel = 4;
 
 	/**
 	 * @name KV Cache Configuration

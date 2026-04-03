@@ -40,6 +40,11 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 		args.push_back("-b");
 		args.push_back(std::to_string(load.batchSize));
 	}
+	// Parallel slots
+	if (load.parallel > 0) {
+		args.push_back("-np");
+		args.push_back(std::to_string(load.parallel));
+	}
 	// Flash attention
 	if (!load.flashAttn.empty() && load.flashAttn != "auto") {
 		args.push_back("-fa");
