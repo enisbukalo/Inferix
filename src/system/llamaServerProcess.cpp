@@ -19,8 +19,8 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 	}
 
 	// === Load Settings ===
-	// GPU layers
-	if (!load.ngpuLayers.empty() && load.ngpuLayers != "auto") {
+	// GPU layers (default is "all" now, so only add if not default)
+	if (!load.ngpuLayers.empty() && load.ngpuLayers != "all") {
 		args.push_back("-ngl");
 		args.push_back(load.ngpuLayers);
 	}
@@ -43,6 +43,10 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 	if (!load.flashAttn.empty() && load.flashAttn != "auto") {
 		args.push_back("-fa");
 		args.push_back(load.flashAttn);
+	}
+	// KV cache offload
+	if (!load.kvOffload) {
+		args.push_back("--no-kv-offload");
 	}
 	// Memory map
 	args.push_back(load.mmap ? "--mmap" : "--no-mmap");

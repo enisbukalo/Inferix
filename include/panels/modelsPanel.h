@@ -78,6 +78,7 @@ class ModelsPanel
 	int m_batchSize = 2048;
 	std::string m_batchSizeStr = "2048";
 	int m_flashAttnIdx = 0; // 0=auto, 1=on, 2=off
+	bool m_kvOffload = true;
 	bool m_mmap = true;
 	bool m_mlock = false;
 	bool m_fit = true;

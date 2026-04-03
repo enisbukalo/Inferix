@@ -44,6 +44,7 @@ void ModelsPanel::loadFromConfig()
 	else
 		m_flashAttnIdx = 0;
 
+	m_kvOffload = cfg.load.kvOffload;
 	m_mmap = cfg.load.mmap;
 	m_mlock = cfg.load.mlock;
 	m_fit = cfg.load.fit;
@@ -91,6 +92,7 @@ void ModelsPanel::saveConfig()
 	}
 	cfg.load.batchSize = m_batchSize;
 	cfg.load.flashAttn = m_flashAttnOptions[static_cast<size_t>(m_flashAttnIdx)];
+	cfg.load.kvOffload = m_kvOffload;
 	cfg.load.mmap = m_mmap;
 	cfg.load.mlock = m_mlock;
 	cfg.load.fit = m_fit;
@@ -422,6 +424,7 @@ Component ModelsPanel::component()
 	flashAttnOpt.entries = &m_flashAttnOptions;
 	flashAttnOpt.selected = &m_flashAttnIdx;
 	auto flashAttnToggle = Menu(flashAttnOpt);
+	auto kvOffloadCb = Checkbox("", &m_kvOffload, cbOpt);
 	auto mmapCb = Checkbox("", &m_mmap, cbOpt);
 	auto mlockCb = Checkbox("", &m_mlock, cbOpt);
 	auto fitCb = Checkbox("", &m_fit, cbOpt);
@@ -494,6 +497,7 @@ Component ModelsPanel::component()
 			batchSizeInput,
 			batchSizePlus,
 			flashAttnToggle,
+			kvOffloadCb,
 			mmapCb,
 			mlockCb,
 			fitCb,
@@ -529,6 +533,8 @@ Component ModelsPanel::component()
 											   batchSizePlus->Render()));
 			rows.push_back(ui_utils::checkboxRow("Flash Attention",
 												 flashAttnToggle->Render()));
+			rows.push_back(ui_utils::checkboxRow("KV Cache Offload",
+												 kvOffloadCb->Render()));
 			rows.push_back(
 				ui_utils::checkboxRow("Memory Map", mmapCb->Render()));
 			rows.push_back(

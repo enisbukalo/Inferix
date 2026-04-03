@@ -114,10 +114,10 @@ struct LoadSettings
 	 * - Integer as string: Exact layer count (e.g., "33")
 	 *
 	 * Corresponds to: `-ngl COUNT`
-	 * @default "auto"
+	 * @default "all"
 	 * @note Higher values use more VRAM but provide faster inference.
 	 */
-	std::string ngpuLayers = "auto";
+	std::string ngpuLayers = "all";
 
 	/**
 	 * @brief Tensor splitting mode across GPUs.
@@ -262,10 +262,10 @@ struct LoadSettings
 	 * - "off": Force disable
 	 *
 	 * Corresponds to: `-fa MODE`
-	 * @default "auto"
+	 * @default "on"
 	 * @note Can significantly reduce memory usage for large contexts.
 	 */
-	std::string flashAttn = "auto";
+	std::string flashAttn = "on";
 
 	/**
 	 * @brief Lock model in RAM.
