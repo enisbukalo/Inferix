@@ -59,6 +59,11 @@ std::string ConfigManager::getConfigFilePath()
 	return getConfigDir() + "/config.json";
 }
 
+std::string ConfigManager::getLogsDir()
+{
+	return getConfigDir() + "/logs";
+}
+
 bool ConfigManager::load()
 {
 	std::string configDir = getConfigDir();

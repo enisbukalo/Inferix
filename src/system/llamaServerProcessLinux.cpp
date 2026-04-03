@@ -3,14 +3,16 @@
  * @brief Linux-specific implementation for launching llama-server.
  *
  * Uses fork() + execve() to spawn the llama-server process.
- * Redirects stdout/stderr to /dev/null to run as a background process.
+ * Redirects stdout/stderr to a log file in .workbench/logs/
  */
 
+#include "configManager.h"
 #include "llamaServerProcess.h"
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
+#include <filesystem>
 #include <iostream>
 #include <signal.h>
 #include <sys/wait.h>
@@ -117,12 +119,19 @@ class LlamaServerProcess::Impl
   private:
 	void launchChild(const std::vector<std::string> &args)
 	{
-		// Redirect stdout and stderr to /dev/null
-		int devnull = open("/dev/null", O_WRONLY);
-		if (devnull >= 0) {
-			dup2(devnull, STDOUT_FILENO);
-			dup2(devnull, STDERR_FILENO);
-			close(devnull);
+		// Get log path - redirect to .workbench/logs/llama-server.log
+		std::string logsDir = ConfigManager::getLogsDir();
+		std::string logPath = logsDir + "/llama-server.log";
+
+		// Create logs directory if it doesn't exist
+		std::filesystem::create_directories(logsDir);
+
+		// Open log file
+		int logfd = open(logPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		if (logfd >= 0) {
+			dup2(logfd, STDOUT_FILENO);
+			dup2(logfd, STDERR_FILENO);
+			close(logfd);
 		}
 
 		// Convert std::vector<std::string> to char* const* for execve
@@ -174,4 +183,9 @@ LlamaServerProcess &LlamaServerProcess::instance()
 {
 	static LlamaServerProcess process;
 	return process;
+}
+
+std::string LlamaServerProcess::getLogPath()
+{
+	return ConfigManager::getLogsDir() + "/llama-server.log";
 }

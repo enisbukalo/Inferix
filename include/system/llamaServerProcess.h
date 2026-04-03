@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config.h"
+#include "configManager.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -90,6 +91,13 @@ class LlamaServerProcess
 					 const Config::LoadSettings &load,
 					 const Config::InferenceSettings &inference,
 					 const Config::ServerSettings &server);
+
+	/**
+	 * @brief Get the path to the llama-server log file.
+	 * @return The full path to the log file (e.g.,
+	 * ~/.workbench/logs/llama-server.log)
+	 */
+	static std::string getLogPath();
 
   private:
 	class Impl; // Forward declaration for pImpl

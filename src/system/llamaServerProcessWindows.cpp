@@ -3,9 +3,10 @@
  * @brief Windows-specific implementation for launching llama-server.
  *
  * Uses CreateProcessA() to spawn the llama-server process.
- * Uses CREATE_NO_WINDOW flag to prevent console window popup.
+ * Redirects stdout/stderr to a log file in .workbench/logs/
  */
 
+#include "configManager.h"
 #include "llamaServerProcess.h"
 #include <iostream>
 #include <string>
@@ -44,10 +45,33 @@ class LlamaServerProcess::Impl
 		// Convert args to command line string with proper quoting
 		std::string cmdLine = buildCommandLine(args);
 
+		// Get log path - redirect to .workbench/logs/llama-server.log
+		std::string logsDir = ConfigManager::getLogsDir();
+		std::string logPath = logsDir + "\\llama-server.log";
+
+		// Create logs directory if it doesn't exist
+		CreateDirectoryA(logsDir.c_str(), NULL);
+
+		// Setup for stdout/stderr redirection to log file
 		STARTUPINFOA si = {};
 		si.cb = sizeof(si);
-		si.dwFlags = STARTF_USESHOWWINDOW;
+		si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
 		si.wShowWindow = SW_HIDE;
+
+		// Create log file handles
+		SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
+		HANDLE hLogFile = CreateFileA(logPath.c_str(),
+									  GENERIC_WRITE,
+									  FILE_SHARE_WRITE,
+									  &sa,
+									  CREATE_ALWAYS,
+									  FILE_ATTRIBUTE_NORMAL,
+									  NULL);
+
+		if (hLogFile != INVALID_HANDLE_VALUE) {
+			si.hStdOutput = hLogFile;
+			si.hStdError = hLogFile;
+		}
 
 		PROCESS_INFORMATION pi = {};
 
@@ -64,6 +88,11 @@ class LlamaServerProcess::Impl
 			&si,								 // lpStartupInfo
 			&pi									 // lpProcessInformation
 		);
+
+		// Close log file handle
+		if (hLogFile != INVALID_HANDLE_VALUE) {
+			CloseHandle(hLogFile);
+		}
 
 		if (!success) {
 			DWORD error = GetLastError();
@@ -177,4 +206,9 @@ LlamaServerProcess &LlamaServerProcess::instance()
 {
 	static LlamaServerProcess process;
 	return process;
+}
+
+std::string LlamaServerProcess::getLogPath()
+{
+	return ConfigManager::getLogsDir() + "/llama-server.log";
 }
