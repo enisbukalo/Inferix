@@ -8,10 +8,21 @@
 
 #include "configManager.h"
 #include "llamaServerProcess.h"
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <windows.h>
+
+namespace {
+void logDebug(const std::string &msg)
+{
+	std::string logsDir = ConfigManager::getLogsDir();
+	std::string debugLogPath = logsDir + "\\debug.log";
+	std::ofstream debugFile(debugLogPath, std::ios::app);
+	debugFile << msg << "\n";
+}
+} // namespace
 
 class LlamaServerProcess::Impl
 {
@@ -40,17 +51,23 @@ class LlamaServerProcess::Impl
 		for (size_t i = 1; i < args.size(); ++i) {
 			logCmd += " " + args[i];
 		}
-		std::cout << "Launching: " << logCmd << "\n";
+		logDebug("=== launch called ===");
+		logDebug("logCmd: " + logCmd);
 
 		// Convert args to command line string with proper quoting
 		std::string cmdLine = buildCommandLine(args);
+		logDebug("cmdLine: " + cmdLine);
 
 		// Get log path - redirect to .workbench/logs/llama-server.log
 		std::string logsDir = ConfigManager::getLogsDir();
 		std::string logPath = logsDir + "\\llama-server.log";
+		logDebug("logsDir: " + logsDir);
+		logDebug("logPath: " + logPath);
 
 		// Create logs directory if it doesn't exist
 		CreateDirectoryA(logsDir.c_str(), NULL);
+
+		logDebug("About to launch with cmd /c");
 
 		// Setup for stdout/stderr redirection to log file
 		STARTUPINFOA si = {};
@@ -75,10 +92,13 @@ class LlamaServerProcess::Impl
 
 		PROCESS_INFORMATION pi = {};
 
-		// Create the process with CREATE_NO_WINDOW to avoid console popup
+		// Create the process - use cmd /c to search PATH
+		// Build: "cmd /c llama-server <args>"
+		std::string fullCmd = "cmd /c " + cmdLine;
+		logDebug("fullCmd: " + fullCmd);
 		BOOL success = CreateProcessA(
-			"llama-server",						 // lpApplicationName
-			cmdLine.data(),						 // lpCommandLine
+			NULL,								 // lpApplicationName
+			fullCmd.data(),						 // lpCommandLine
 			nullptr,							 // lpProcessAttributes
 			nullptr,							 // lpThreadAttributes
 			FALSE,								 // bInheritHandles
@@ -96,10 +116,11 @@ class LlamaServerProcess::Impl
 
 		if (!success) {
 			DWORD error = GetLastError();
-			std::cout << "CreateProcessA failed: " << error << "\n";
+			logDebug("CreateProcessA FAILED, error: " + std::to_string(error));
 			return false;
 		}
 
+		logDebug("CreateProcessA SUCCESS");
 		// Close thread handle - we only need process handle
 		CloseHandle(pi.hThread);
 

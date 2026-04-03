@@ -412,7 +412,6 @@ Component ModelsPanel::component()
 	// Creates FTXUI input components for model loading parameters
 	// Each component is bound to a member variable and triggers auto-save
 	// -----------------------------------------------------------------------
-	auto modelPathInput = Input(&m_modelPath, "path/to/model.gguf", inputOpt);
 	auto gpuLayersInput = Input(&m_ngpuLayers, "auto", inputOpt);
 	auto ctxSizeInput = Input(&m_ctxSize, "0 = default", inputOpt);
 
@@ -430,9 +429,14 @@ Component ModelsPanel::component()
 	// -----------------------------------------------------------------------
 	// Phase 1: Model Selection Dropdown and LOAD Button
 	// -----------------------------------------------------------------------
-	// Model dropdown - using ftxui's recommended Dropdown component
-	// Dropdown automatically updates m_modelDropdownIndex on selection
+	// Model dropdown - selecting a model updates m_modelPath which is used when
+	// clicking LOAD Note: Using Dropdown component for scrollable list (works
+	// with 100+ models)
 	auto modelDropdown = Dropdown(&m_modelDisplayNames, &m_modelDropdownIndex);
+
+	// Custom on_change handler for dropdown - using a separate Button to trigger
+	// the sync Since Dropdown doesn't have on_change, we update m_modelPath in
+	// onLoadClicked() But we need to make sure it's updated BEFORE launch
 
 	// LOAD button - launches llama-server with selected model
 	auto loadButton = Button(
@@ -484,7 +488,6 @@ Component ModelsPanel::component()
 	auto container = Container::Horizontal({
 		Container::Vertical({
 			// Left column: Load Settings
-			modelPathInput,
 			gpuLayersInput,
 			ctxSizeInput,
 			batchSizeMinus,
@@ -514,9 +517,6 @@ Component ModelsPanel::component()
 		Elements leftElements;
 		{
 			Elements rows;
-			rows.push_back(
-				ui_utils::settingRowComponent("Model Path",
-											  modelPathInput->Render()));
 			rows.push_back(
 				ui_utils::settingRowComponent("GPU Layers",
 											  gpuLayersInput->Render()));
@@ -612,7 +612,6 @@ void ModelsPanel::onLoadClicked()
 	// Validate model selection
 	if (m_modelPaths.empty() || m_modelDropdownIndex < 0 ||
 		m_modelDropdownIndex >= static_cast<int>(m_modelPaths.size())) {
-		std::cout << "Error: No model selected\n";
 		return;
 	}
 
@@ -624,7 +623,6 @@ void ModelsPanel::onLoadClicked()
 
 	// If already running, terminate first
 	if (LlamaServerProcess::instance().isRunning()) {
-		std::cout << "Terminating existing llama-server process...\n";
 		LlamaServerProcess::instance().terminate();
 	}
 
@@ -633,11 +631,4 @@ void ModelsPanel::onLoadClicked()
 														 cfg.load,
 														 cfg.inference,
 														 cfg.server);
-
-	if (!success) {
-		std::cout << "Error: Failed to launch llama-server\n";
-	} else {
-		std::cout << "llama-server launched successfully with model: "
-				  << modelPath << "\n";
-	}
 }

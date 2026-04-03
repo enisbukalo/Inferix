@@ -58,40 +58,11 @@ Element ServerInfoPanel::render()
 
 	// Get color based on status
 	Color statusColor = running ? Color::GreenLight : Color::Red;
-	std::string statusText = running ? "● Running" : "○ Stopped";
 
-	// Read log file if server is running
-	std::string logContent;
-	if (running) {
-		logContent = readLastLines(LlamaServerProcess::getLogPath(), 8);
-	}
-
-	// Build the display
-	Elements rows;
-	rows.push_back(hbox({
+	// Just show the bullseye indicator - no text
+	return hbox({
 		text("Server Status") | bold,
 		separatorEmpty(),
 		text("◉") | hcenter | color(statusColor),
-		text(" " + statusText) | color(statusColor),
-	}));
-
-	// Add log content if available
-	if (!logContent.empty()) {
-		rows.push_back(separatorLight());
-		// Show log content in a box, last lines first (most recent at top)
-		std::istringstream iss(logContent);
-		std::string line;
-		while (std::getline(iss, line)) {
-			// Show only first 60 chars of each line to keep UI clean
-			if (line.length() > 60) {
-				line = line.substr(0, 57) + "...";
-			}
-			rows.push_back(text(line) | dim);
-		}
-	} else if (running) {
-		rows.push_back(separatorLight());
-		rows.push_back(text("Loading log...") | dim);
-	}
-
-	return vbox(std::move(rows));
+	});
 }
