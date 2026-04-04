@@ -14,7 +14,7 @@
 #include <chrono>
 #include <filesystem>
 #include <iomanip>
-#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 #include <sstream>
 
@@ -95,39 +95,30 @@ int main()
 		std::stringstream ss;
 		ss << std::put_time(std::localtime(&time), "%Y%m%d_%H%M%S");
 		std::string logFilename = ss.str() + "_workbench.log";
+		std::string logPath = (logsDir / logFilename).string();
 
-		// Create rotating file sink - 5MB max, keep 3 files
-		auto rotatingSink =
-			std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-				(logsDir / logFilename).string(),
-				1024 * 1024 * 5,
-				3);
-
-		// Create logger with the file sink
-		std::vector<spdlog::sink_ptr> sinks{ rotatingSink };
-		auto logger = std::make_shared<spdlog::logger>("workbench",
-													   sinks.begin(),
-													   sinks.end());
+		// Create basic file logger with timestamp in filename
+		auto fileLogger = spdlog::basic_logger_mt("workbench", logPath, true);
 
 		// Set pattern: [timestamp] [level] message
-		logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%-7l%$] %v");
+		fileLogger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%-7l%$] %v");
+
+		// Register as default logger FIRST (before any logging)
+		spdlog::set_default_logger(fileLogger);
 
 		// Set default level to debug (capture everything)
-		logger->set_level(spdlog::level::debug);
+		spdlog::set_level(spdlog::level::debug);
 
-		// Register as default logger
-		spdlog::set_default_logger(logger);
+		// Flush on trace level (lowest) - covers all levels above
+		spdlog::flush_on(spdlog::level::trace);
 
-		// Flush immediately to ensure log is written
-		logger->flush();
-		spdlog::info("Workbench starting...");
+		spdlog::info("Workbench starting... (log: {})", logPath);
 	} catch (const spdlog::spdlog_ex &ex) {
 		// Fallback to basic console if file sink fails
 		spdlog::set_level(spdlog::level::debug);
 		spdlog::warn("Failed to initialize file logging, using default: {}",
 					 ex.what());
 	}
-
 	// Load configuration from disk
 	ConfigManager::instance().load();
 
