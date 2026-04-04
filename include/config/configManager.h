@@ -116,6 +116,14 @@ public:
     static std::string getConfigFilePath();
 
     /**
+     * @brief Get the logs directory path (~/.workbench/logs/).
+     * 
+     * @return The platform-appropriate logs directory path.
+     * @note Does not create the directory; it is created when needed.
+     */
+    static std::string getLogsDir();
+
+    /**
      * @brief Create a default config.json file if one doesn't exist.
      * 
      * Initializes the configuration with all default values and writes

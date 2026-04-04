@@ -1,14 +1,17 @@
 #include "modelsPanel.h"
 #include "configManager.h"
-#include "utility/ui_utils.h"
+#include "modelDiscovery.h"
+#include "ui_utils.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
+#include <iostream>
 
 #include <algorithm>
 #include <iomanip>
+#include <numeric>
 #include <sstream>
 
 using namespace ftxui;
@@ -32,6 +35,8 @@ void ModelsPanel::loadFromConfig()
 	m_ctxSize = cfg.load.ctxSize == 0 ? "" : std::to_string(cfg.load.ctxSize);
 	m_batchSize = cfg.load.batchSize;
 	m_batchSizeStr = std::to_string(m_batchSize);
+	m_parallel = cfg.load.parallel;
+	m_parallelStr = m_parallel < 0 ? "-1" : std::to_string(m_parallel);
 
 	// Flash attention dropdown index
 	if (cfg.load.flashAttn == "on")
@@ -41,9 +46,58 @@ void ModelsPanel::loadFromConfig()
 	else
 		m_flashAttnIdx = 0;
 
+	m_kvOffload = cfg.load.kvOffload;
+	m_kvUnified = cfg.load.kvUnified;
 	m_mmap = cfg.load.mmap;
 	m_mlock = cfg.load.mlock;
 	m_fit = cfg.load.fit;
+	m_devicePriority = cfg.load.devicePriority;
+	m_splitMode = cfg.load.splitMode;
+	m_tensorSplit = cfg.load.tensorSplit;
+	m_cacheTypeK = cfg.load.cacheTypeK;
+	m_cacheTypeV = cfg.load.cacheTypeV;
+	m_lora = cfg.load.lora;
+	m_mmproj = cfg.load.mmproj;
+	m_modelDraft = cfg.load.modelDraft;
+	m_draftMax = std::to_string(cfg.load.draftMax);
+	m_chatTemplate = cfg.load.chatTemplate;
+	m_reasoningFormat = cfg.load.reasoningFormat;
+
+	// Split mode dropdown index
+	m_splitModeIdx = 0;
+	for (size_t i = 0; i < m_splitModeOptions.size(); ++i) {
+		if (m_splitModeOptions[i] == cfg.load.splitMode) {
+			m_splitModeIdx = static_cast<int>(i);
+			break;
+		}
+	}
+
+	// Cache type K dropdown index
+	m_cacheTypeKIdx = 0;
+	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
+		if (m_cacheTypeOptions[i] == cfg.load.cacheTypeK) {
+			m_cacheTypeKIdx = static_cast<int>(i);
+			break;
+		}
+	}
+
+	// Cache type V dropdown index
+	m_cacheTypeVIdx = 0;
+	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
+		if (m_cacheTypeOptions[i] == cfg.load.cacheTypeV) {
+			m_cacheTypeVIdx = static_cast<int>(i);
+			break;
+		}
+	}
+
+	// Reasoning format dropdown index
+	m_reasoningFormatIdx = 0;
+	for (size_t i = 0; i < m_reasoningFormatOptions.size(); ++i) {
+		if (m_reasoningFormatOptions[i] == cfg.load.reasoningFormat) {
+			m_reasoningFormatIdx = static_cast<int>(i);
+			break;
+		}
+	}
 
 	// Inference settings
 	m_temperature = static_cast<float>(cfg.inference.temperature);
@@ -61,6 +115,19 @@ void ModelsPanel::loadFromConfig()
 	m_frequencyPenalty = static_cast<float>(cfg.inference.frequencyPenalty);
 	m_frequencyPenaltyStr = ui_utils::formatFloat(m_frequencyPenalty);
 	m_nPredict = std::to_string(cfg.inference.nPredict);
+	m_seed = std::to_string(cfg.inference.seed);
+
+	// Refresh model list and try to select config.load.modelPath
+	refreshModelList();
+
+	// Try to select the model matching config.load.modelPath (if found)
+	for (size_t i = 0; i < m_modelPaths.size(); ++i) {
+		if (m_modelPaths[i] == cfg.load.modelPath) {
+			m_modelDropdownIndex = static_cast<int>(i);
+			m_selectedModelPath = m_modelPaths[i];
+			break;
+		}
+	}
 }
 
 void ModelsPanel::saveConfig()
@@ -75,12 +142,33 @@ void ModelsPanel::saveConfig()
 	} catch (...) {
 	}
 	cfg.load.batchSize = m_batchSize;
+	cfg.load.parallel = m_parallel;
 	cfg.load.flashAttn = m_flashAttnOptions[static_cast<size_t>(m_flashAttnIdx)];
+	cfg.load.kvOffload = m_kvOffload;
+	cfg.load.kvUnified = m_kvUnified;
 	cfg.load.mmap = m_mmap;
 	cfg.load.mlock = m_mlock;
 	cfg.load.fit = m_fit;
+	cfg.load.devicePriority = m_devicePriority;
+	cfg.load.splitMode = m_splitMode;
+	cfg.load.tensorSplit = m_tensorSplit;
+	cfg.load.cacheTypeK =
+		m_cacheTypeOptions[static_cast<size_t>(m_cacheTypeKIdx)];
+	cfg.load.cacheTypeV =
+		m_cacheTypeOptions[static_cast<size_t>(m_cacheTypeVIdx)];
+	cfg.load.lora = m_lora;
+	cfg.load.mmproj = m_mmproj;
+	cfg.load.modelDraft = m_modelDraft;
+	try {
+		cfg.load.draftMax = std::stoi(m_draftMax);
+	} catch (...) {
+	}
+	cfg.load.chatTemplate = m_chatTemplate;
+	cfg.load.reasoningFormat =
+		m_reasoningFormatOptions[static_cast<size_t>(m_reasoningFormatIdx)];
 
 	// Inference settings
+	cfg.inference.seed = std::stoi(m_seed);
 	cfg.inference.temperature = static_cast<double>(m_temperature);
 	cfg.inference.topP = static_cast<double>(m_topP);
 	cfg.inference.topK = m_topK;
@@ -94,6 +182,139 @@ void ModelsPanel::saveConfig()
 	}
 
 	ConfigManager::instance().save();
+}
+
+// =========================================================================
+// Model Discovery Integration
+// =========================================================================
+
+/**
+ * @brief Check if a model path should be filtered out based on fileFilter
+ * patterns.
+ *
+ * Implements glob-style wildcard matching (case-insensitive):
+ * - `mmproj*` → matches filenames starting with "mmproj"
+ * - `*mmproj` → matches filenames ending with "mmproj"
+ * - `*mmproj*` → matches filenames containing "mmproj"
+ * - No `*` → substring match anywhere in filename
+ *
+ * @param path Full or partial path to the model file
+ * @return true if the model should be filtered out (excluded), false otherwise
+ */
+bool ModelsPanel::shouldFilterModel(const std::string &path) const
+{
+	// Extract just the filename from the path
+	std::string filename = path;
+	size_t lastSlash = path.find_last_of("/\\");
+	if (lastSlash != std::string::npos) {
+		filename = path.substr(lastSlash + 1);
+	}
+
+	// Convert filename to lowercase for case-insensitive matching
+	std::string lowerFilename;
+	lowerFilename.reserve(filename.size());
+	for (char c : filename) {
+		lowerFilename +=
+			static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	}
+
+	// Get filter patterns from config
+	auto &cfg = ConfigManager::instance().getConfig();
+	const auto &filters = cfg.discovery.fileFilter;
+
+	// Check each filter pattern - if ANY matches, filter out the model
+	for (const auto &pattern : filters) {
+		if (pattern.empty()) {
+			continue;
+		}
+
+		// Convert pattern to lowercase
+		std::string lowerPattern;
+		lowerPattern.reserve(pattern.size());
+		for (char c : pattern) {
+			lowerPattern +=
+				static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+		}
+
+		// Find position of '*'
+		size_t starPos = lowerPattern.find('*');
+
+		if (starPos == std::string::npos) {
+			// No wildcard: substring match
+			if (lowerFilename.find(lowerPattern) != std::string::npos) {
+				return true;
+			}
+		} else if (starPos == 0 && lowerPattern.back() == '*') {
+			// *pattern*: contains match
+			std::string searchStr =
+				lowerPattern.substr(1, lowerPattern.size() - 2);
+			if (lowerFilename.find(searchStr) != std::string::npos) {
+				return true;
+			}
+		} else if (starPos == 0) {
+			// *pattern: ends with
+			std::string suffix = lowerPattern.substr(1);
+			if (lowerFilename.size() >= suffix.size() &&
+				lowerFilename.compare(lowerFilename.size() - suffix.size(),
+									  suffix.size(),
+									  suffix) == 0) {
+				return true;
+			}
+		} else {
+			// pattern*: starts with
+			std::string prefix = lowerPattern.substr(0, starPos);
+			if (lowerFilename.rfind(prefix, 0) == 0) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void ModelsPanel::refreshModelList()
+{
+	// Scan for models using ModelDiscovery singleton
+	auto models = ModelDiscovery::instance().scanForModels();
+
+	m_modelPaths.clear();
+	m_modelDisplayNames.clear();
+
+	for (const auto &path : models) {
+		// Apply file filter - skip models matching filter patterns
+		if (shouldFilterModel(path)) {
+			continue;
+		}
+
+		m_modelPaths.push_back(path);
+		m_modelDisplayNames.push_back(
+			ModelDiscovery::instance().pathToDisplayName(path));
+	}
+
+	// Sort by display name for user-friendly dropdown
+	// Keep paths and names in sync
+	std::vector<size_t> indices(m_modelPaths.size());
+	std::iota(indices.begin(), indices.end(), 0);
+	std::sort(indices.begin(), indices.end(), [this](size_t a, size_t b) {
+		return m_modelDisplayNames[a] < m_modelDisplayNames[b];
+	});
+
+	std::vector<std::string> sortedPaths, sortedNames;
+	for (auto idx : indices) {
+		sortedPaths.push_back(m_modelPaths[idx]);
+		sortedNames.push_back(m_modelDisplayNames[idx]);
+	}
+	m_modelPaths = std::move(sortedPaths);
+	m_modelDisplayNames = std::move(sortedNames);
+
+	// Reset dropdown index if it's now out of bounds
+	if (m_modelDropdownIndex < 0 ||
+		m_modelDropdownIndex >= static_cast<int>(m_modelPaths.size())) {
+		m_modelDropdownIndex = 0;
+		if (!m_modelPaths.empty()) {
+			m_selectedModelPath = m_modelPaths[0];
+		}
+	}
 }
 
 // =========================================================================
@@ -128,6 +349,15 @@ Component ModelsPanel::component()
 		auto e = text(s.label) | color(toggleOnColor);
 		if (s.focused)
 			e |= bold;
+		return e | center;
+	};
+
+	auto loadBtnStyle = ButtonOption::Animated();
+	loadBtnStyle.transform = [=](const EntryState &s) {
+		auto e = text(s.label) | color(toggleOnColor);
+		if (s.focused)
+			e |= bold;
+		e |= bgcolor(Color::MagentaLight);
 		return e | center;
 	};
 
@@ -255,20 +485,76 @@ Component ModelsPanel::component()
 	// Creates FTXUI input components for model loading parameters
 	// Each component is bound to a member variable and triggers auto-save
 	// -----------------------------------------------------------------------
-	auto modelPathInput = Input(&m_modelPath, "path/to/model.gguf", inputOpt);
 	auto gpuLayersInput = Input(&m_ngpuLayers, "auto", inputOpt);
+	auto devicePriorityInput = Input(&m_devicePriority, "e.g. 0", inputOpt);
 	auto ctxSizeInput = Input(&m_ctxSize, "0 = default", inputOpt);
 
 	auto [batchSizeMinus, batchSizeInput, batchSizePlus] =
 		makeIntControls(m_batchSize, m_batchSizeStr, 32, 8192, 32);
 
+	auto [parallelMinus, parallelInput, parallelPlus] =
+		makeIntControls(m_parallel, m_parallelStr, -1, 128, 1);
+
 	auto flashAttnOpt = toggleOpt;
 	flashAttnOpt.entries = &m_flashAttnOptions;
 	flashAttnOpt.selected = &m_flashAttnIdx;
 	auto flashAttnToggle = Menu(flashAttnOpt);
+
+	// New: Split mode dropdown
+	auto splitModeOpt = toggleOpt;
+	splitModeOpt.entries = &m_splitModeOptions;
+	splitModeOpt.selected = &m_splitModeIdx;
+	auto splitModeToggle = Menu(splitModeOpt);
+
+	// New: Cache type K dropdown
+	auto cacheTypeKOpt = toggleOpt;
+	cacheTypeKOpt.entries = &m_cacheTypeOptions;
+	cacheTypeKOpt.selected = &m_cacheTypeKIdx;
+	auto cacheTypeKToggle = Menu(cacheTypeKOpt);
+
+	// New: Cache type V dropdown
+	auto cacheTypeVOpt = toggleOpt;
+	cacheTypeVOpt.entries = &m_cacheTypeOptions;
+	cacheTypeVOpt.selected = &m_cacheTypeVIdx;
+	auto cacheTypeVToggle = Menu(cacheTypeVOpt);
+
+	// New: Reasoning format dropdown
+	auto reasoningFormatOpt = toggleOpt;
+	reasoningFormatOpt.entries = &m_reasoningFormatOptions;
+	reasoningFormatOpt.selected = &m_reasoningFormatIdx;
+	auto reasoningFormatToggle = Menu(reasoningFormatOpt);
+
+	// New: Text inputs for new settings
+	auto tensorSplitInput = Input(&m_tensorSplit, "e.g. 1,1", inputOpt);
+	auto loraInput = Input(&m_lora, "path/to/adapter.gguf", inputOpt);
+	auto mmprojInput = Input(&m_mmproj, "path/to/mmproj.gguf", inputOpt);
+	auto modelDraftInput = Input(&m_modelDraft, "path/to/draft.gguf", inputOpt);
+	auto draftMaxInput = Input(&m_draftMax, "-1 = auto", inputOpt);
+	auto chatTemplateInput = Input(&m_chatTemplate, "e.g. chatml", inputOpt);
+
+	auto kvOffloadCb = Checkbox("", &m_kvOffload, cbOpt);
+	auto kvUnifiedCb = Checkbox("", &m_kvUnified, cbOpt);
 	auto mmapCb = Checkbox("", &m_mmap, cbOpt);
 	auto mlockCb = Checkbox("", &m_mlock, cbOpt);
 	auto fitCb = Checkbox("", &m_fit, cbOpt);
+
+	// -----------------------------------------------------------------------
+	// Model Selection Dropdown and LOAD Button
+	// -----------------------------------------------------------------------
+	// Model dropdown - selecting a model updates m_modelPath which is used when
+	// clicking LOAD Note: Using Dropdown component for scrollable list (works
+	// with 100+ models)
+	auto modelDropdown = Dropdown(&m_modelDisplayNames, &m_modelDropdownIndex);
+
+	// Custom on_change handler for dropdown - using a separate Button to trigger
+	// the sync Since Dropdown doesn't have on_change, we update m_modelPath in
+	// onLoadClicked() But we need to make sure it's updated BEFORE launch
+
+	// LOAD button - launches llama-server with selected model
+	auto loadButton = Button(
+		"LOAD",
+		[this] { onLoadClicked(); },
+		loadBtnStyle);
 
 	// -----------------------------------------------------------------------
 	// Inference components
@@ -304,6 +590,7 @@ Component ModelsPanel::component()
 						  0.01f);
 
 	auto nPredictInput = Input(&m_nPredict, "-1 = unlimited", inputOpt);
+	auto seedInput = Input(&m_seed, "-1 = random", inputOpt);
 
 	// -----------------------------------------------------------------------
 	// Container — two-column layout: Load Settings (left), Inference (right)
@@ -314,16 +601,34 @@ Component ModelsPanel::component()
 	auto container = Container::Horizontal({
 		Container::Vertical({
 			// Left column: Load Settings
-			modelPathInput,
 			gpuLayersInput,
+			devicePriorityInput,
 			ctxSizeInput,
 			batchSizeMinus,
 			batchSizeInput,
 			batchSizePlus,
+			parallelMinus,
+			parallelInput,
+			parallelPlus,
 			flashAttnToggle,
+			splitModeToggle,
+			tensorSplitInput,
+			cacheTypeKToggle,
+			cacheTypeVToggle,
+			loraInput,
+			mmprojInput,
+			modelDraftInput,
+			draftMaxInput,
+			chatTemplateInput,
+			reasoningFormatToggle,
+			kvOffloadCb,
+			kvUnifiedCb,
 			mmapCb,
 			mlockCb,
 			fitCb,
+			// Footer: model dropdown and load button
+			modelDropdown,
+			loadButton,
 		}),
 		Container::Vertical({
 			// Right column: Inference Settings
@@ -332,7 +637,7 @@ Component ModelsPanel::component()
 			topKPlus,		minPMinus,		minPInput,	   minPPlus,
 			repeatPenMinus, repeatPenInput, repeatPenPlus, presPenMinus,
 			presPenInput,	presPenPlus,	freqPenMinus,  freqPenInput,
-			freqPenPlus,	nPredictInput,
+			freqPenPlus,	nPredictInput,	seedInput,
 		}),
 	});
 
@@ -342,11 +647,11 @@ Component ModelsPanel::component()
 		{
 			Elements rows;
 			rows.push_back(
-				ui_utils::settingRowComponent("Model Path",
-											  modelPathInput->Render()));
-			rows.push_back(
 				ui_utils::settingRowComponent("GPU Layers",
 											  gpuLayersInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Device Priority",
+											  devicePriorityInput->Render()));
 			rows.push_back(
 				ui_utils::settingRowComponent("Context Size",
 											  ctxSizeInput->Render()));
@@ -354,8 +659,41 @@ Component ModelsPanel::component()
 											   batchSizeMinus->Render(),
 											   batchSizeInput->Render(),
 											   batchSizePlus->Render()));
+			rows.push_back(ui_utils::numberRow("Parallel Slots",
+											   parallelMinus->Render(),
+											   parallelInput->Render(),
+											   parallelPlus->Render()));
 			rows.push_back(ui_utils::checkboxRow("Flash Attention",
 												 flashAttnToggle->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("Split Mode", splitModeToggle->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Tensor Split",
+											  tensorSplitInput->Render()));
+			rows.push_back(ui_utils::checkboxRow("Cache Type K",
+												 cacheTypeKToggle->Render()));
+			rows.push_back(ui_utils::checkboxRow("Cache Type V",
+												 cacheTypeVToggle->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("LoRA", loraInput->Render()));
+			rows.push_back(ui_utils::settingRowComponent("MM Projector",
+														 mmprojInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Draft Model",
+											  modelDraftInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Draft Max",
+											  draftMaxInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Chat Template",
+											  chatTemplateInput->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("Reasoning Format",
+									  reasoningFormatToggle->Render()));
+			rows.push_back(ui_utils::checkboxRow("KV Cache Offload",
+												 kvOffloadCb->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("KV Unified", kvUnifiedCb->Render()));
 			rows.push_back(
 				ui_utils::checkboxRow("Memory Map", mmapCb->Render()));
 			rows.push_back(
@@ -403,6 +741,8 @@ Component ModelsPanel::component()
 			rows.push_back(
 				ui_utils::settingRowComponent("Max Tokens",
 											  nPredictInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Seed", seedInput->Render()));
 			rightElements.push_back(
 				window(text("Inference Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
@@ -412,8 +752,50 @@ Component ModelsPanel::component()
 		auto leftCol = vbox(std::move(leftElements)) | flex;
 		auto rightCol = vbox(std::move(rightElements)) | flex;
 
-		return hbox({ leftCol, separatorLight(), rightCol });
+		// Footer section with model dropdown above LOAD button
+		auto footerRow = hbox({
+			filler(),
+			vbox({
+				modelDropdown->Render(),
+				separatorLight(),
+				loadButton->Render() | bgcolor(Color::MagentaLight),
+			}),
+			filler(),
+		});
+
+		return vbox({
+				   hbox({ leftCol, separatorLight(), rightCol }),
+				   filler(),
+				   footerRow,
+			   }) |
+			   xflex | yflex;
 	});
 
 	return m_component;
+}
+
+void ModelsPanel::onLoadClicked()
+{
+	// Validate model selection
+	if (m_modelPaths.empty() || m_modelDropdownIndex < 0 ||
+		m_modelDropdownIndex >= static_cast<int>(m_modelPaths.size())) {
+		return;
+	}
+
+	// Get selected model path
+	std::string modelPath = m_modelPaths[m_modelDropdownIndex];
+
+	// Get current config
+	auto &cfg = ConfigManager::instance().getConfig();
+
+	// If already running, terminate first
+	if (LlamaServerProcess::instance().isRunning()) {
+		LlamaServerProcess::instance().terminate();
+	}
+
+	// Launch the server using singleton for global access during cleanup
+	bool success = LlamaServerProcess::instance().launch(modelPath,
+														 cfg.load,
+														 cfg.inference,
+														 cfg.server);
 }

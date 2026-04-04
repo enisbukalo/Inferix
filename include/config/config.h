@@ -1,8 +1,8 @@
 #pragma once
-#include "models/config/serverSettings.h"
-#include "models/config/modelSettings.h"
-#include "models/config/uiSettings.h"
-#include "models/config/userSettings.h"
+#include "serverSettings.h"
+#include "modelSettings.h"
+#include "uiSettings.h"
+#include "userSettings.h"
 #include <optional>
 #include <vector>
 #include "json.hpp"
@@ -122,9 +122,19 @@ struct UserConfig
 	 * default shell, initial command, working directory, and
 	 * default dimensions.
 	 *
-	 * @see userSettings.h for detailed field documentation
+	 * @see userSettings.h for TerminalSettings documentation
 	 */
 	TerminalSettings terminal;
+
+	/**
+	 * @brief Model discovery configuration.
+	 *
+	 * Contains settings for automatic model file discovery,
+	 * including directories to scan for .gguf files.
+	 *
+	 * @see modelSettings.h for DiscoverySettings documentation
+	 */
+	DiscoverySettings discovery;
 
 	/**
 	 * @brief Named model presets.
@@ -200,6 +210,11 @@ void from_json(const nlohmann::json &j, ModelPreset &v);
 void to_json(nlohmann::json &j, const TerminalPreset &v);
 /** @brief Deserialize TerminalPreset from JSON. */
 void from_json(const nlohmann::json &j, TerminalPreset &v);
+
+/** @brief Serialize DiscoverySettings to JSON. */
+void to_json(nlohmann::json &j, const DiscoverySettings &v);
+/** @brief Deserialize DiscoverySettings from JSON. */
+void from_json(const nlohmann::json &j, DiscoverySettings &v);
 
 /** @brief Serialize UserConfig to JSON. */
 void to_json(nlohmann::json &j, const UserConfig &v);

@@ -1,31 +1,68 @@
 /**
  * @file serverInfoPanel.cpp
- * @brief Animated presence indicator implementation for server display.
+ * @brief Server status display showing llama-server log output.
  *
- * This is a placeholder animation that alternates between green and red
- * every 8 frames (~2 seconds at ~4fps) to create a simple pulsing effect.
- * No actual server health monitoring is performed.
+ * Displays the current status of the llama-server process and reads
+ * the log file from .workbench/logs/ to show server output.
  */
 
 #include "serverInfoPanel.h"
+#include "llamaServerProcess.h"
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
 
+#include <fstream>
+#include <sstream>
+
 using namespace ftxui;
+
+namespace {
+/**
+ * @brief Read the last N lines from a file.
+ * @param path Path to the file to read.
+ * @param maxLines Maximum number of lines to return.
+ * @return The last N lines as a string, or empty if file doesn't exist.
+ */
+std::string readLastLines(const std::string &path, int maxLines = 10)
+{
+	std::ifstream file(path);
+	if (!file.is_open()) {
+		return "";
+	}
+
+	// Read all lines into a vector
+	std::vector<std::string> lines;
+	std::string line;
+	while (std::getline(file, line)) {
+		lines.push_back(line);
+	}
+
+	// Return the last maxLines
+	int start = static_cast<int>(lines.size()) - maxLines;
+	if (start < 0)
+		start = 0;
+
+	std::string result;
+	for (int i = start; i < static_cast<int>(lines.size()); ++i) {
+		result += lines[i] + "\n";
+	}
+	return result;
+}
+} // namespace
 
 Element ServerInfoPanel::render()
 {
-	static int frame = 0;
-	frame++;
+	// Check if server is running
+	bool running = LlamaServerProcess::instance().isRunning();
 
-	Color pulse_color = frame < 8
-							? Color::Red
-							: Color::GreenLight; // 8 frames at 4fps = 2 seconds
+	// Get color based on status
+	Color statusColor = running ? Color::GreenLight : Color::Red;
 
+	// Just show the bullseye indicator - no text
 	return hbox({
 		text("Server Status") | bold,
 		separatorEmpty(),
-		text("◉") | hcenter | color(pulse_color),
+		text("◉") | hcenter | color(statusColor),
 	});
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 
 namespace Config {
 
@@ -113,10 +114,10 @@ struct LoadSettings
 	 * - Integer as string: Exact layer count (e.g., "33")
 	 *
 	 * Corresponds to: `-ngl COUNT`
-	 * @default "auto"
+	 * @default "all"
 	 * @note Higher values use more VRAM but provide faster inference.
 	 */
-	std::string ngpuLayers = "auto";
+	std::string ngpuLayers = "all";
 
 	/**
 	 * @brief Tensor splitting mode across GPUs.
@@ -143,16 +144,16 @@ struct LoadSettings
 	std::string tensorSplit;
 
 	/**
-	 * @brief Primary GPU index for model loading.
+	 * @brief Device priority order for loading.
 	 *
-	 * Which GPU to use as the primary device. Use -1 for
-	 * automatic selection.
+	 * Comma-separated list of device IDs to prioritize when loading.
+	 * Example: "0,1" fills GPU 0 first, then GPU 1.
+	 * Use empty for default (auto).
 	 *
-	 * Corresponds to: `-mg INDEX`
-	 * @default -1 (auto)
-	 * @range -1 or valid GPU index
+	 * Corresponds to: `-mg INDEX` (single) or combined with split-mode
+	 * @default "" (auto)
 	 */
-	int mainGpu = -1;
+	std::string devicePriority;
 
 	/**
 	 * @name Context and Batching
@@ -202,9 +203,9 @@ struct LoadSettings
 	 * Higher values increase memory usage.
 	 *
 	 * Corresponds to: `-np COUNT`
-	 * @default 1
+	 * @default 4
 	 */
-	int parallel = 1;
+	int parallel = 4;
 
 	/**
 	 * @name KV Cache Configuration
@@ -247,6 +248,17 @@ struct LoadSettings
 	bool kvOffload = true;
 
 	/**
+	 * @brief Use unified KV cache buffer.
+	 *
+	 * Use single unified KV buffer shared across all sequences.
+	 * Improves memory efficiency when using multiple slots.
+	 *
+	 * Corresponds to: `--kv-unified`
+	 * @default true when parallel is auto, false otherwise
+	 */
+	bool kvUnified = true;
+
+	/**
 	 * @name Memory Management
 	 *
 	 * Advanced memory optimization settings.
@@ -261,10 +273,10 @@ struct LoadSettings
 	 * - "off": Force disable
 	 *
 	 * Corresponds to: `-fa MODE`
-	 * @default "auto"
+	 * @default "on"
 	 * @note Can significantly reduce memory usage for large contexts.
 	 */
-	std::string flashAttn = "auto";
+	std::string flashAttn = "on";
 
 	/**
 	 * @brief Lock model in RAM.
@@ -284,9 +296,9 @@ struct LoadSettings
 	 * lower peak memory usage. May cause swapping on large models.
 	 *
 	 * Corresponds to: `--mmap` (enable) or `--no-mmap` (disable)
-	 * @default true
+	 * @default false
 	 */
-	bool mmap = true;
+	bool mmap = false;
 
 	/**
 	 * @name Threading
@@ -908,6 +920,68 @@ struct ModelPreset
 	 * @see InferenceSettings for parameter documentation
 	 */
 	InferenceSettings inference;
+};
+
+/**
+ * @brief Model discovery settings.
+ *
+ * Configuration for automatic model file discovery. Specifies
+ * directories to scan recursively for .gguf model files.
+ *
+ * @note No default search paths are provided. The user must
+ *       explicitly configure at least one path in modelSearchPaths
+ *       for model discovery to work. If empty, no models will be
+ *       discovered and the model dropdown will remain empty.
+ *
+ * @code
+ * // Configure search paths
+ * DiscoverySettings discovery;
+ * discovery.modelSearchPaths = {
+ *     "/path/to/models",
+ *     "~/llama.cpp/models",
+ *     "C:\\AI\\models"
+ * };
+ * @endcode
+ */
+struct DiscoverySettings
+{
+	/**
+	 * @brief Directories to scan for model files.
+	 *
+	 * List of directory paths to recursively search for .gguf files.
+	 * Paths can be absolute or relative, and may use ~ for home directory.
+	 *
+	 * @note Empty by default - user must explicitly configure search paths.
+	 * @note Tilde (~) is expanded to the user's home directory.
+	 * @note Non-existent directories are silently skipped during scanning.
+	 * @note Scanning is recursive - subdirectories are included.
+	 */
+	std::vector<std::string> modelSearchPaths;
+
+	/**
+	 * @brief File filter patterns to exclude from model discovery.
+	 *
+	 * List of glob-style patterns to exclude files from the model list.
+	 * Supports single `*` wildcard matching (case-insensitive):
+	 * - `mmproj*` → matches filenames starting with "mmproj"
+	 * - `*mmproj` → matches filenames ending with "mmproj"
+	 * - `*mmproj*` → matches filenames containing "mmproj"
+	 * - No `*` → substring match anywhere in filename
+	 *
+	 * @note Defaults to `{"mmproj*"}` to exclude multimodal projector files.
+	 * @note Patterns are matched against the filename only (not full path).
+	 * @note Matching is case-insensitive.
+	 * @note Multiple patterns can be specified; file is excluded if ANY match.
+	 *
+	 * @code
+	 * // Exclude mmproj files and draft models
+	 * discovery.fileFilter = {"mmproj*", "*draft*"};
+	 *
+	 * // Show all files (no filtering)
+	 * discovery.fileFilter = {};
+	 * @endcode
+	 */
+	std::vector<std::string> fileFilter = { "mmproj*" };
 };
 
 } // namespace Config

@@ -27,7 +27,7 @@
  */
 
 #include "configManager.h"
-#include "core/eventBus.h"
+#include "eventBus.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -57,6 +57,11 @@ std::string ConfigManager::getConfigDir()
 std::string ConfigManager::getConfigFilePath()
 {
 	return getConfigDir() + "/config.json";
+}
+
+std::string ConfigManager::getLogsDir()
+{
+	return getConfigDir() + "/logs";
 }
 
 bool ConfigManager::load()

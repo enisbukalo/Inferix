@@ -133,7 +133,7 @@ void to_json(json &j, const LoadSettings &v)
 	j["ngpuLayers"] = v.ngpuLayers;
 	j["splitMode"] = v.splitMode;
 	j["tensorSplit"] = v.tensorSplit;
-	j["mainGpu"] = v.mainGpu;
+	j["devicePriority"] = v.devicePriority;
 
 	j["ctxSize"] = v.ctxSize;
 	j["batchSize"] = v.batchSize;
@@ -143,6 +143,7 @@ void to_json(json &j, const LoadSettings &v)
 	j["cacheTypeK"] = v.cacheTypeK;
 	j["cacheTypeV"] = v.cacheTypeV;
 	j["kvOffload"] = v.kvOffload;
+	j["kvUnified"] = v.kvUnified;
 
 	j["flashAttn"] = v.flashAttn;
 	j["mlock"] = v.mlock;
@@ -174,7 +175,7 @@ void from_json(const json &j, LoadSettings &v)
 	v.ngpuLayers = j.value("ngpuLayers", v.ngpuLayers);
 	v.splitMode = j.value("splitMode", v.splitMode);
 	v.tensorSplit = j.value("tensorSplit", v.tensorSplit);
-	v.mainGpu = j.value("mainGpu", v.mainGpu);
+	v.devicePriority = j.value("devicePriority", v.devicePriority);
 
 	v.ctxSize = j.value("ctxSize", v.ctxSize);
 	v.batchSize = j.value("batchSize", v.batchSize);
@@ -184,6 +185,7 @@ void from_json(const json &j, LoadSettings &v)
 	v.cacheTypeK = j.value("cacheTypeK", v.cacheTypeK);
 	v.cacheTypeV = j.value("cacheTypeV", v.cacheTypeV);
 	v.kvOffload = j.value("kvOffload", v.kvOffload);
+	v.kvUnified = j.value("kvUnified", v.kvUnified);
 
 	v.flashAttn = j.value("flashAttn", v.flashAttn);
 	v.mlock = j.value("mlock", v.mlock);
@@ -364,6 +366,22 @@ void from_json(const json &j, TerminalPreset &v)
 }
 
 // ============================================================================
+// DiscoverySettings serialization
+// ============================================================================
+
+void to_json(json &j, const DiscoverySettings &v)
+{
+	j["modelSearchPaths"] = v.modelSearchPaths;
+	j["fileFilter"] = v.fileFilter;
+}
+
+void from_json(const json &j, DiscoverySettings &v)
+{
+	v.modelSearchPaths = j.value("modelSearchPaths", std::vector<std::string>{});
+	v.fileFilter = j.value("fileFilter", std::vector<std::string>{ "mmproj*" });
+}
+
+// ============================================================================
 // UserConfig serialization (main container)
 // ============================================================================
 
@@ -374,6 +392,7 @@ void to_json(json &j, const UserConfig &v)
 	j["inference"] = v.inference;
 	j["ui"] = v.ui;
 	j["terminal"] = v.terminal;
+	j["discovery"] = v.discovery;
 	j["presets"] = v.presets;
 	j["terminalPresets"] = v.terminalPresets;
 }
@@ -390,6 +409,8 @@ void from_json(const json &j, UserConfig &v)
 		v.ui = j["ui"].get<UISettings>();
 	if (j.contains("terminal"))
 		v.terminal = j["terminal"].get<TerminalSettings>();
+	if (j.contains("discovery"))
+		v.discovery = j["discovery"].get<DiscoverySettings>();
 	if (j.contains("presets"))
 		v.presets = j["presets"].get<std::vector<ModelPreset>>();
 	if (j.contains("terminalPresets"))
