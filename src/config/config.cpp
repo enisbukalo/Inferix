@@ -293,7 +293,8 @@ void to_json(json &j, const UISettings &v)
 	j = json{ { "theme", v.theme },
 			  { "defaultTab", v.defaultTab },
 			  { "showSystemPanel", v.showSystemPanel },
-			  { "refreshRateMs", v.refreshRateMs } };
+			  { "refreshRateMs", v.refreshRateMs },
+			  { "logRetentionDays", v.logRetentionDays } };
 }
 
 void from_json(const json &j, UISettings &v)
@@ -302,6 +303,7 @@ void from_json(const json &j, UISettings &v)
 	v.defaultTab = j.value("defaultTab", v.defaultTab);
 	v.showSystemPanel = j.value("showSystemPanel", v.showSystemPanel);
 	v.refreshRateMs = j.value("refreshRateMs", v.refreshRateMs);
+	v.logRetentionDays = j.value("logRetentionDays", v.logRetentionDays);
 }
 
 // ============================================================================
