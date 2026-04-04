@@ -51,6 +51,52 @@ void ModelsPanel::loadFromConfig()
 	m_mlock = cfg.load.mlock;
 	m_fit = cfg.load.fit;
 	m_devicePriority = cfg.load.devicePriority;
+	m_splitMode = cfg.load.splitMode;
+	m_tensorSplit = cfg.load.tensorSplit;
+	m_cacheTypeK = cfg.load.cacheTypeK;
+	m_cacheTypeV = cfg.load.cacheTypeV;
+	m_lora = cfg.load.lora;
+	m_mmproj = cfg.load.mmproj;
+	m_modelDraft = cfg.load.modelDraft;
+	m_draftMax = std::to_string(cfg.load.draftMax);
+	m_chatTemplate = cfg.load.chatTemplate;
+	m_reasoningFormat = cfg.load.reasoningFormat;
+
+	// Split mode dropdown index
+	m_splitModeIdx = 0;
+	for (size_t i = 0; i < m_splitModeOptions.size(); ++i) {
+		if (m_splitModeOptions[i] == cfg.load.splitMode) {
+			m_splitModeIdx = static_cast<int>(i);
+			break;
+		}
+	}
+
+	// Cache type K dropdown index
+	m_cacheTypeKIdx = 0;
+	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
+		if (m_cacheTypeOptions[i] == cfg.load.cacheTypeK) {
+			m_cacheTypeKIdx = static_cast<int>(i);
+			break;
+		}
+	}
+
+	// Cache type V dropdown index
+	m_cacheTypeVIdx = 0;
+	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
+		if (m_cacheTypeOptions[i] == cfg.load.cacheTypeV) {
+			m_cacheTypeVIdx = static_cast<int>(i);
+			break;
+		}
+	}
+
+	// Reasoning format dropdown index
+	m_reasoningFormatIdx = 0;
+	for (size_t i = 0; i < m_reasoningFormatOptions.size(); ++i) {
+		if (m_reasoningFormatOptions[i] == cfg.load.reasoningFormat) {
+			m_reasoningFormatIdx = static_cast<int>(i);
+			break;
+		}
+	}
 
 	// Inference settings
 	m_temperature = static_cast<float>(cfg.inference.temperature);
@@ -68,6 +114,7 @@ void ModelsPanel::loadFromConfig()
 	m_frequencyPenalty = static_cast<float>(cfg.inference.frequencyPenalty);
 	m_frequencyPenaltyStr = ui_utils::formatFloat(m_frequencyPenalty);
 	m_nPredict = std::to_string(cfg.inference.nPredict);
+	m_seed = std::to_string(cfg.inference.seed);
 
 	// Phase 1: Refresh model list and try to select config.load.modelPath
 	refreshModelList();
@@ -101,8 +148,25 @@ void ModelsPanel::saveConfig()
 	cfg.load.mlock = m_mlock;
 	cfg.load.fit = m_fit;
 	cfg.load.devicePriority = m_devicePriority;
+	cfg.load.splitMode = m_splitMode;
+	cfg.load.tensorSplit = m_tensorSplit;
+	cfg.load.cacheTypeK =
+		m_cacheTypeOptions[static_cast<size_t>(m_cacheTypeKIdx)];
+	cfg.load.cacheTypeV =
+		m_cacheTypeOptions[static_cast<size_t>(m_cacheTypeVIdx)];
+	cfg.load.lora = m_lora;
+	cfg.load.mmproj = m_mmproj;
+	cfg.load.modelDraft = m_modelDraft;
+	try {
+		cfg.load.draftMax = std::stoi(m_draftMax);
+	} catch (...) {
+	}
+	cfg.load.chatTemplate = m_chatTemplate;
+	cfg.load.reasoningFormat =
+		m_reasoningFormatOptions[static_cast<size_t>(m_reasoningFormatIdx)];
 
 	// Inference settings
+	cfg.inference.seed = std::stoi(m_seed);
 	cfg.inference.temperature = static_cast<double>(m_temperature);
 	cfg.inference.topP = static_cast<double>(m_topP);
 	cfg.inference.topK = m_topK;
@@ -433,6 +497,39 @@ Component ModelsPanel::component()
 	flashAttnOpt.entries = &m_flashAttnOptions;
 	flashAttnOpt.selected = &m_flashAttnIdx;
 	auto flashAttnToggle = Menu(flashAttnOpt);
+
+	// New: Split mode dropdown
+	auto splitModeOpt = toggleOpt;
+	splitModeOpt.entries = &m_splitModeOptions;
+	splitModeOpt.selected = &m_splitModeIdx;
+	auto splitModeToggle = Menu(splitModeOpt);
+
+	// New: Cache type K dropdown
+	auto cacheTypeKOpt = toggleOpt;
+	cacheTypeKOpt.entries = &m_cacheTypeOptions;
+	cacheTypeKOpt.selected = &m_cacheTypeKIdx;
+	auto cacheTypeKToggle = Menu(cacheTypeKOpt);
+
+	// New: Cache type V dropdown
+	auto cacheTypeVOpt = toggleOpt;
+	cacheTypeVOpt.entries = &m_cacheTypeOptions;
+	cacheTypeVOpt.selected = &m_cacheTypeVIdx;
+	auto cacheTypeVToggle = Menu(cacheTypeVOpt);
+
+	// New: Reasoning format dropdown
+	auto reasoningFormatOpt = toggleOpt;
+	reasoningFormatOpt.entries = &m_reasoningFormatOptions;
+	reasoningFormatOpt.selected = &m_reasoningFormatIdx;
+	auto reasoningFormatToggle = Menu(reasoningFormatOpt);
+
+	// New: Text inputs for new settings
+	auto tensorSplitInput = Input(&m_tensorSplit, "e.g. 1,1", inputOpt);
+	auto loraInput = Input(&m_lora, "path/to/adapter.gguf", inputOpt);
+	auto mmprojInput = Input(&m_mmproj, "path/to/mmproj.gguf", inputOpt);
+	auto modelDraftInput = Input(&m_modelDraft, "path/to/draft.gguf", inputOpt);
+	auto draftMaxInput = Input(&m_draftMax, "-1 = auto", inputOpt);
+	auto chatTemplateInput = Input(&m_chatTemplate, "e.g. chatml", inputOpt);
+
 	auto kvOffloadCb = Checkbox("", &m_kvOffload, cbOpt);
 	auto mmapCb = Checkbox("", &m_mmap, cbOpt);
 	auto mlockCb = Checkbox("", &m_mlock, cbOpt);
@@ -490,6 +587,7 @@ Component ModelsPanel::component()
 						  0.01f);
 
 	auto nPredictInput = Input(&m_nPredict, "-1 = unlimited", inputOpt);
+	auto seedInput = Input(&m_seed, "-1 = random", inputOpt);
 
 	// -----------------------------------------------------------------------
 	// Container — two-column layout: Load Settings (left), Inference (right)
@@ -510,6 +608,16 @@ Component ModelsPanel::component()
 			parallelInput,
 			parallelPlus,
 			flashAttnToggle,
+			splitModeToggle,
+			tensorSplitInput,
+			cacheTypeKToggle,
+			cacheTypeVToggle,
+			loraInput,
+			mmprojInput,
+			modelDraftInput,
+			draftMaxInput,
+			chatTemplateInput,
+			reasoningFormatToggle,
 			kvOffloadCb,
 			mmapCb,
 			mlockCb,
@@ -525,7 +633,7 @@ Component ModelsPanel::component()
 			topKPlus,		minPMinus,		minPInput,	   minPPlus,
 			repeatPenMinus, repeatPenInput, repeatPenPlus, presPenMinus,
 			presPenInput,	presPenPlus,	freqPenMinus,  freqPenInput,
-			freqPenPlus,	nPredictInput,
+			freqPenPlus,	nPredictInput,	seedInput,
 		}),
 	});
 
@@ -553,6 +661,31 @@ Component ModelsPanel::component()
 											   parallelPlus->Render()));
 			rows.push_back(ui_utils::checkboxRow("Flash Attention",
 												 flashAttnToggle->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("Split Mode", splitModeToggle->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Tensor Split",
+											  tensorSplitInput->Render()));
+			rows.push_back(ui_utils::checkboxRow("Cache Type K",
+												 cacheTypeKToggle->Render()));
+			rows.push_back(ui_utils::checkboxRow("Cache Type V",
+												 cacheTypeVToggle->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("LoRA", loraInput->Render()));
+			rows.push_back(ui_utils::settingRowComponent("MM Projector",
+														 mmprojInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Draft Model",
+											  modelDraftInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Draft Max",
+											  draftMaxInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Chat Template",
+											  chatTemplateInput->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("Reasoning Format",
+									  reasoningFormatToggle->Render()));
 			rows.push_back(ui_utils::checkboxRow("KV Cache Offload",
 												 kvOffloadCb->Render()));
 			rows.push_back(
@@ -602,6 +735,8 @@ Component ModelsPanel::component()
 			rows.push_back(
 				ui_utils::settingRowComponent("Max Tokens",
 											  nPredictInput->Render()));
+			rows.push_back(
+				ui_utils::settingRowComponent("Seed", seedInput->Render()));
 			rightElements.push_back(
 				window(text("Inference Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),

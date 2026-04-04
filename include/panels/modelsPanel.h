@@ -85,6 +85,16 @@ class ModelsPanel
 	bool m_mlock = false;
 	bool m_fit = true;
 	std::string m_devicePriority = ""; // ""=auto, "0"=GPU0 first, "1"=GPU1 first
+	std::string m_splitMode;		   // ""=none, "layer", "row"
+	std::string m_tensorSplit;		   // comma-separated ratios
+	std::string m_cacheTypeK = "f16";
+	std::string m_cacheTypeV = "f16";
+	std::string m_lora;
+	std::string m_mmproj;
+	std::string m_modelDraft;
+	std::string m_draftMax = "-1";
+	std::string m_chatTemplate;
+	std::string m_reasoningFormat;
 
 	// =========================================================================
 	// Inference Settings State
@@ -104,11 +114,23 @@ class ModelsPanel
 	float m_frequencyPenalty = 0.0f;
 	std::string m_frequencyPenaltyStr;
 	std::string m_nPredict;
+	std::string m_seed = "-1"; // -1 = random
 
 	// =========================================================================
 	// Dropdown Options
 	// =========================================================================
 	std::vector<std::string> m_flashAttnOptions = { "auto", "on", "off" };
+	std::vector<std::string> m_splitModeOptions = { "none", "layer", "row" };
+	std::vector<std::string> m_cacheTypeOptions = { "f16",	  "f32",  "bf16",
+													"q8_0",	  "q4_0", "q4_1",
+													"iq4_nl", "q5_0", "q5_1" };
+	std::vector<std::string> m_reasoningFormatOptions = {
+		"auto", "default", "none", "hidden", "deepseek", "deepseek-legacy"
+	};
+	int m_splitModeIdx = 1;		  // 1 = "layer" (default)
+	int m_cacheTypeKIdx = 0;	  // 0 = "f16" (default)
+	int m_cacheTypeVIdx = 0;	  // 0 = "f16" (default)
+	int m_reasoningFormatIdx = 0; // 0 = "auto" (default)
 
 	// =========================================================================
 	// Model Discovery & Selection (Phase 1)
