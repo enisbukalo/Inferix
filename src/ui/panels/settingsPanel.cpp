@@ -116,28 +116,33 @@ void SettingsPanel::saveConfig()
 	// UI refresh rate — SystemMonitorRunner subscribes to this
 	if (oldRefreshRateMs != cfg.ui.refreshRateMs) {
 		EventBus::publish("config.ui.refreshRateMs", &cfg.ui.refreshRateMs);
+		spdlog::info("Config changed: ui.refreshRateMs = {}",
+					 cfg.ui.refreshRateMs);
 	}
 
 	// UI theme — future: ThemeManager could subscribe
 	if (oldTheme != cfg.ui.theme) {
 		EventBus::publish("config.ui.theme", &cfg.ui.theme);
+		spdlog::info("Config changed: ui.theme = {}", cfg.ui.theme);
 	}
 
 	// Default tab — future: TabManager could subscribe
 	if (oldDefaultTab != cfg.ui.defaultTab) {
 		EventBus::publish("config.ui.defaultTab", &cfg.ui.defaultTab);
+		spdlog::info("Config changed: ui.defaultTab = {}", cfg.ui.defaultTab);
 	}
 
 	// System panel visibility — future: UI could subscribe
 	if (oldShowSystemPanel != cfg.ui.showSystemPanel) {
 		EventBus::publish("config.ui.showSystemPanel", &cfg.ui.showSystemPanel);
+		spdlog::info("Config changed: ui.showSystemPanel = {}",
+					 cfg.ui.showSystemPanel);
 	}
 
 	// ========================================================================
 	// Persist to disk
 	// ========================================================================
 	ConfigManager::instance().save();
-	spdlog::info("Settings updated");
 }
 
 Component SettingsPanel::component()

@@ -184,7 +184,8 @@ void ModelsPanel::saveConfig()
 	}
 
 	ConfigManager::instance().save();
-	spdlog::debug("Saved settings to config");
+	spdlog::info("Model settings saved (model: {})",
+				 m_modelPath.empty() ? "<none>" : m_modelPath);
 }
 
 // =========================================================================
