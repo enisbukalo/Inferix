@@ -13,6 +13,13 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
+# spdlog
+FetchContent_Declare(spdlog
+  GIT_REPOSITORY https://github.com/gabime/spdlog
+  GIT_TAG v1.12.0
+)
+FetchContent_MakeAvailable(spdlog)
+
 # libvterm third-party library
 add_subdirectory(third_party/libvterm-0.3.3)
 
@@ -75,7 +82,7 @@ endif()
 add_executable(Workbench ${ALL_SOURCES})
 
 # Target settings
-target_link_libraries(Workbench PRIVATE httplib ftxui::component ftxui::dom ftxui::screen vterm)
+target_link_libraries(Workbench PRIVATE httplib ftxui::component ftxui::dom ftxui::screen vterm spdlog::spdlog)
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   target_link_libraries(Workbench PRIVATE ws2_32)
   target_link_options(Workbench PRIVATE -static-libgcc -static-libstdc++ -static)

@@ -11,6 +11,8 @@
 #include "llamaServerProcess.h"
 #include "systemMonitorRunner.h"
 
+#include <spdlog/spdlog.h>
+
 /**
  * @brief Program entry point.
  *
@@ -22,6 +24,10 @@
  */
 int main()
 {
+	// Initialize spdlog with console sink
+	spdlog::set_level(spdlog::level::info);
+	spdlog::info("Workbench starting...");
+
 	// Load configuration from disk
 	ConfigManager::instance().load();
 
@@ -34,5 +40,6 @@ int main()
 	// Terminate llama-server if still running
 	LlamaServerProcess::instance().terminate();
 
+	spdlog::info("Workbench exiting.");
 	return 0;
 }
