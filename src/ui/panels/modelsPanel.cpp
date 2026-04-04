@@ -3,11 +3,11 @@
 #include "modelDiscovery.h"
 #include "ui_utils.h"
 
+#include <spdlog/spdlog.h>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
-#include <iostream>
 
 #include <algorithm>
 #include <iomanip>
@@ -28,6 +28,8 @@ ModelsPanel::ModelsPanel()
 void ModelsPanel::loadFromConfig()
 {
 	auto &cfg = ConfigManager::instance().getConfig();
+
+	spdlog::debug("Loaded settings from config");
 
 	// Load settings
 	m_modelPath = cfg.load.modelPath;
@@ -182,6 +184,7 @@ void ModelsPanel::saveConfig()
 	}
 
 	ConfigManager::instance().save();
+	spdlog::debug("Saved settings to config");
 }
 
 // =========================================================================
@@ -779,6 +782,7 @@ void ModelsPanel::onLoadClicked()
 	// Validate model selection
 	if (m_modelPaths.empty() || m_modelDropdownIndex < 0 ||
 		m_modelDropdownIndex >= static_cast<int>(m_modelPaths.size())) {
+		spdlog::warn("No model selected, cannot load");
 		return;
 	}
 
@@ -798,4 +802,10 @@ void ModelsPanel::onLoadClicked()
 														 cfg.load,
 														 cfg.inference,
 														 cfg.server);
+
+	if (success) {
+		spdlog::info("Loading model: '{}'", modelPath);
+	} else {
+		spdlog::error("Failed to load model: '{}'", modelPath);
+	}
 }

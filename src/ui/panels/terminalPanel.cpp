@@ -9,6 +9,7 @@
 
 #include "terminalPanel.h"
 
+#include <spdlog/spdlog.h>
 #include <vterm.h>
 
 #include <ftxui/component/event.hpp>
@@ -101,11 +102,14 @@ void TerminalPanel::spawn()
 	vterm_output_set_callback(m_vt, Vterm_output_cb, this);
 
 	if (!m_pty.spawn(m_cols, m_rows)) {
+		spdlog::error("Failed to spawn terminal: PTY spawn failed");
 		vterm_free(m_vt);
 		m_vt = nullptr;
 		m_vts = nullptr;
 		return;
 	}
+
+	spdlog::info("Terminal spawned (cols: {}, rows: {})", m_cols, m_rows);
 
 	m_stopFlag.store(false);
 	m_ptyDead.store(false);
@@ -139,6 +143,7 @@ void TerminalPanel::shutdown()
 	}
 
 	m_spawned.store(false);
+	spdlog::debug("Terminal shut down");
 }
 
 // ---------------------------------------------------------------------------

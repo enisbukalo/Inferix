@@ -3,6 +3,7 @@
 #include "eventBus.h"
 #include "ui_utils.h"
 
+#include <spdlog/spdlog.h>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -133,6 +134,7 @@ void SettingsPanel::saveConfig()
 	// Persist to disk
 	// ========================================================================
 	ConfigManager::instance().save();
+	spdlog::info("Settings updated");
 }
 
 Component SettingsPanel::component()
