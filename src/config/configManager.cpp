@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <spdlog/spdlog.h>
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
@@ -83,8 +84,11 @@ bool ConfigManager::load()
 	// Create config directory if it doesn't exist
 	try {
 		fs::create_directories(configDir);
-	} catch (const std::exception &) {
+	} catch (const std::exception &e) {
 		// If we can't create the directory, use defaults
+		spdlog::warn("Failed to create config dir '{}', using defaults: {}",
+					 configDir,
+					 e.what());
 		config_ = Config::UserConfig{};
 		loaded_ = true;
 		return true;
@@ -99,8 +103,12 @@ bool ConfigManager::load()
 		try {
 			json j = json::parse(file);
 			config_ = j.get<Config::UserConfig>();
-		} catch (const std::exception &) {
+			spdlog::info("Config loaded from '{}'", configFile);
+		} catch (const std::exception &e) {
 			// Invalid JSON, use defaults
+			spdlog::warn("Config file '{}' corrupted, using defaults: {}",
+						 configFile,
+						 e.what());
 			config_ = Config::UserConfig{};
 		}
 	} else {
@@ -110,8 +118,11 @@ bool ConfigManager::load()
 			config_ = Config::UserConfig{};
 			// Create default config file for the user
 			createDefaultConfig();
+			spdlog::info("Created default config at '{}'", configFile);
 		} else {
 			// File exists but couldn't be opened, use defaults
+			spdlog::warn("Could not open config file '{}', using defaults",
+						 configFile);
 			config_ = Config::UserConfig{};
 		}
 	}
@@ -127,16 +138,25 @@ bool ConfigManager::save()
 
 	try {
 		fs::create_directories(configDir);
-	} catch (const std::exception &) {
+	} catch (const std::exception &e) {
+		spdlog::error(
+			"Failed to save config: could not create directory '{}': {}",
+			configDir,
+			e.what());
 		return false;
 	}
 
 	std::ofstream file(configFile);
-	if (!file.is_open())
+	if (!file.is_open()) {
+		spdlog::error("Failed to save config: could not open file '{}'",
+					  configFile);
 		return false;
+	}
 
 	json j = config_;
 	file << j.dump(4) << std::endl;
+
+	spdlog::info("Config saved to '{}'", configFile);
 
 	// Publish config.saved event — subscribers can reload if needed
 	EventBus::publish("config.saved", &config_);
@@ -167,6 +187,8 @@ bool ConfigManager::createDefaultConfig()
 
 	// Ensure config_ has default values
 	config_ = Config::UserConfig{};
+
+	spdlog::info("Created default config");
 
 	// save() will handle creating the directory and writing the file
 	return save();

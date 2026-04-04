@@ -83,6 +83,17 @@ struct UISettings
 	 * @note Values below 100ms may cause noticeable CPU usage.
 	 */
 	int refreshRateMs = 250;
+
+	/**
+	 * @brief Log file retention period in days.
+	 *
+	 * Log files older than this many days are deleted on startup.
+	 * Set to 0 to disable automatic log cleanup.
+	 *
+	 * @default 7 (one week)
+	 * @range 0-365
+	 */
+	int logRetentionDays = 7;
 };
 
 } // namespace Config

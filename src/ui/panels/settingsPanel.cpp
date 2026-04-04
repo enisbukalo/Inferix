@@ -7,6 +7,7 @@
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -49,6 +50,8 @@ void SettingsPanel::loadFromConfig()
 	m_showSystemPanel = cfg.ui.showSystemPanel;
 	m_refreshRateMs = cfg.ui.refreshRateMs;
 	m_refreshRateMsStr = std::to_string(m_refreshRateMs);
+	m_logRetentionDays = cfg.ui.logRetentionDays;
+	m_logRetentionDaysStr = std::to_string(m_logRetentionDays);
 
 	// Terminal
 	m_defaultShell = cfg.terminal.defaultShell;
@@ -96,6 +99,7 @@ void SettingsPanel::saveConfig()
 	cfg.ui.defaultTab = m_defaultTabIdx;
 	cfg.ui.showSystemPanel = m_showSystemPanel;
 	cfg.ui.refreshRateMs = m_refreshRateMs;
+	cfg.ui.logRetentionDays = m_logRetentionDays;
 
 	// ========================================================================
 	// Update Terminal settings
@@ -112,21 +116,27 @@ void SettingsPanel::saveConfig()
 	// UI refresh rate — SystemMonitorRunner subscribes to this
 	if (oldRefreshRateMs != cfg.ui.refreshRateMs) {
 		EventBus::publish("config.ui.refreshRateMs", &cfg.ui.refreshRateMs);
+		spdlog::info("Config changed: ui.refreshRateMs = {}",
+					 cfg.ui.refreshRateMs);
 	}
 
 	// UI theme — future: ThemeManager could subscribe
 	if (oldTheme != cfg.ui.theme) {
 		EventBus::publish("config.ui.theme", &cfg.ui.theme);
+		spdlog::info("Config changed: ui.theme = {}", cfg.ui.theme);
 	}
 
 	// Default tab — future: TabManager could subscribe
 	if (oldDefaultTab != cfg.ui.defaultTab) {
 		EventBus::publish("config.ui.defaultTab", &cfg.ui.defaultTab);
+		spdlog::info("Config changed: ui.defaultTab = {}", cfg.ui.defaultTab);
 	}
 
 	// System panel visibility — future: UI could subscribe
 	if (oldShowSystemPanel != cfg.ui.showSystemPanel) {
 		EventBus::publish("config.ui.showSystemPanel", &cfg.ui.showSystemPanel);
+		spdlog::info("Config changed: ui.showSystemPanel = {}",
+					 cfg.ui.showSystemPanel);
 	}
 
 	// ========================================================================
@@ -279,6 +289,9 @@ Component SettingsPanel::component()
 	auto [refreshMinus, refreshInput, refreshPlus] =
 		makeIntControls(m_refreshRateMs, m_refreshRateMsStr, 50, 1000, 10);
 
+	auto [retentionMinus, retentionInput, retentionPlus] =
+		makeIntControls(m_logRetentionDays, m_logRetentionDaysStr, 0, 365, 1);
+
 	// -----------------------------------------------------------------------
 	// Terminal components
 	// Creates inputs for embedded terminal emulator configuration
@@ -300,11 +313,12 @@ Component SettingsPanel::component()
 	auto container = Container::Horizontal({
 		Container::Vertical({
 			// Left column: Server, UI
-			hostInput,		 portInput,	   apiKeyInput,		 timeoutMinus,
-			timeoutInput,	 timeoutPlus,  threadsHttpMinus, threadsHttpInput,
-			threadsHttpPlus, webuiCb,	   embeddingCb,		 contBatchCb,
-			cachePromptCb,	 metricsCb,	   themeToggle,		 defaultTabToggle,
-			showSysPanelCb,	 refreshMinus, refreshInput,	 refreshPlus,
+			hostInput,		 portInput,		 apiKeyInput,	   timeoutMinus,
+			timeoutInput,	 timeoutPlus,	 threadsHttpMinus, threadsHttpInput,
+			threadsHttpPlus, webuiCb,		 embeddingCb,	   contBatchCb,
+			cachePromptCb,	 metricsCb,		 themeToggle,	   defaultTabToggle,
+			showSysPanelCb,	 refreshMinus,	 refreshInput,	   refreshPlus,
+			retentionMinus,	 retentionInput, retentionPlus,
 		}),
 		Container::Vertical({
 			// Right column: Terminal
@@ -369,6 +383,10 @@ Component SettingsPanel::component()
 											   refreshMinus->Render(),
 											   refreshInput->Render(),
 											   refreshPlus->Render()));
+			rows.push_back(ui_utils::numberRow("Log Retention (days)",
+											   retentionMinus->Render(),
+											   retentionInput->Render(),
+											   retentionPlus->Render()));
 			leftElements.push_back(
 				window(text("UI Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),

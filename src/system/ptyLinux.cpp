@@ -9,8 +9,10 @@
 #include "ptyHandler.h"
 
 #include <cstdlib>
+#include <errno.h>
 #include <fcntl.h>
 #include <pty.h>
+#include <spdlog/spdlog.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -30,6 +32,7 @@ bool PtyHandler::spawnLinux(int cols, int rows)
 	pid_t pid = forkpty(&master, nullptr, nullptr, &ws);
 
 	if (pid < 0) {
+		spdlog::error("PTY: forkpty failed (errno: {})", errno);
 		return false;
 	}
 
@@ -50,6 +53,7 @@ bool PtyHandler::spawnLinux(int cols, int rows)
 	masterFd_ = master;
 	childPid_ = pid;
 	alive_ = true;
+	spdlog::info("PTY: spawned (pid: {})", pid);
 	return true;
 }
 
@@ -113,6 +117,7 @@ void PtyHandler::closeLinux()
 	}
 
 	alive_ = false;
+	spdlog::debug("PTY: closed");
 }
 
 bool PtyHandler::isAliveLinux()

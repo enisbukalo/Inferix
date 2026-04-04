@@ -8,6 +8,8 @@
 
 #include "ptyHandler.h"
 
+#include <spdlog/spdlog.h>
+
 // ConPTY requires Windows 10 1809+; ensure the SDK version macros are set
 // so that MinGW headers expose CreatePseudoConsole and friends.
 #ifndef NTDDI_VERSION
@@ -32,12 +34,15 @@ bool PtyHandler::spawnWindows(int cols, int rows)
 	HANDLE pipeAppOut = INVALID_HANDLE_VALUE;
 
 	// Create pipes: app writes to pipePtyIn, reads from pipeAppOut
-	if (!CreatePipe(&pipePtyIn, &pipeAppIn, nullptr, 0))
+	if (!CreatePipe(&pipePtyIn, &pipeAppIn, nullptr, 0)) {
+		spdlog::error("PTY: failed to create pipes");
 		return false;
+	}
 
 	if (!CreatePipe(&pipeAppOut, &pipePtyOut, nullptr, 0)) {
 		CloseHandle(pipePtyIn);
 		CloseHandle(pipeAppIn);
+		spdlog::error("PTY: failed to create pipes");
 		return false;
 	}
 
@@ -56,6 +61,8 @@ bool PtyHandler::spawnWindows(int cols, int rows)
 	if (FAILED(hr)) {
 		CloseHandle(pipeAppIn);
 		CloseHandle(pipeAppOut);
+		spdlog::error("PTY: CreatePseudoConsole failed (hr: {})",
+					  static_cast<int>(hr));
 		return false;
 	}
 
@@ -119,11 +126,16 @@ bool PtyHandler::spawnWindows(int cols, int rows)
 	HeapFree(GetProcessHeap(), 0, attrList);
 
 	if (!ok) {
+		DWORD error = GetLastError();
 		ClosePseudoConsole(hpc);
 		CloseHandle(pipeAppIn);
 		CloseHandle(pipeAppOut);
+		spdlog::error("PTY: CreateProcessW failed (error: {})",
+					  static_cast<int>(error));
 		return false;
 	}
+
+	spdlog::info("PTY: spawned (PID: {})", pi.dwProcessId);
 
 	CloseHandle(pi.hThread);
 
@@ -238,6 +250,7 @@ void PtyHandler::closeWindows()
 	}
 
 	alive_ = false;
+	spdlog::debug("PTY: closed");
 }
 
 bool PtyHandler::isAliveWindows()

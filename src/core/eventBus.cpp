@@ -1,5 +1,7 @@
 #include "eventBus.h"
+
 #include <algorithm>
+#include <spdlog/spdlog.h>
 
 /**
  * @file eventBus.cpp
@@ -64,6 +66,8 @@ EventBus::SubscriptionId EventBus::subscribe(const EventId &event,
 	// exists
 	state.subscriptions[event].emplace_back(std::move(handler), id);
 
+	spdlog::debug("Subscribed to '{}' (id: {})", event, id);
+
 	return id;
 }
 
@@ -115,6 +119,7 @@ void EventBus::unsubscribe(SubscriptionId id)
 	}
 
 	// ID not found — safe to ignore (idempotent operation)
+	spdlog::debug("Unsubscribed (id: {})", id);
 }
 
 /**
@@ -169,6 +174,14 @@ void EventBus::publish(const EventId &event, const void *data)
 
 	// Call all handlers outside the lock
 	// This prevents deadlock if a handler tries to subscribe/unsubscribe
+	if (handlersToCall.empty()) {
+		spdlog::debug("Published '{}' - no subscribers", event);
+	} else {
+		spdlog::debug("Published '{}' to {} subscriber(s)",
+					  event,
+					  handlersToCall.size());
+	}
+
 	for (auto &handler : handlersToCall) {
 		handler(event, data);
 	}

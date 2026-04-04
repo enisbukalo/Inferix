@@ -8,9 +8,11 @@
  */
 
 #include "gpuMonitor.h"
+
 #include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
+#include <spdlog/spdlog.h>
 
 #ifdef _WIN32
 #define POPEN _popen
@@ -29,8 +31,10 @@ void GpuMonitor::update()
 		"--query-gpu=index,memory.total,memory.used,memory.free,utilization.gpu"
 		" --format=csv,noheader,nounits",
 		"r");
-	if (!pipe)
+	if (!pipe) {
+		spdlog::error("Failed to query GPU (nvidia-smi not found or error)");
 		return;
+	}
 
 	std::vector<MemoryStats> newStats;
 	std::vector<ProcessorStats> newLoadStats;

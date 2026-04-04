@@ -5,6 +5,7 @@
 #include <cctype>
 #include <filesystem>
 #include <optional>
+#include <spdlog/spdlog.h>
 
 namespace fs = std::filesystem;
 
@@ -35,6 +36,7 @@ std::string ModelDiscovery::expandTilde(const std::string &path)
 	}
 
 	// Fallback: return path as-is if home not found
+	spdlog::debug("Could not expand ~, using as-is");
 	return path;
 }
 
@@ -48,6 +50,7 @@ ModelDiscovery::scanDirectory(const std::string &dirPath)
 
 	// Skip if directory doesn't exist or isn't a directory
 	if (!fs::is_directory(expandedPath)) {
+		spdlog::debug("Skipping invalid directory: '{}'", expandedPath);
 		return models;
 	}
 
@@ -66,6 +69,7 @@ ModelDiscovery::scanDirectory(const std::string &dirPath)
 		}
 	}
 
+	spdlog::debug("Found {} model(s) in '{}'", models.size(), expandedPath);
 	return models;
 }
 
@@ -97,10 +101,13 @@ std::vector<std::string> ModelDiscovery::scanForModels()
 	// Check cache first
 	auto cached = getCachedModels();
 	if (!cached.empty()) {
+		spdlog::debug("Model cache hit, returning {} cached model(s)",
+					  cached.size());
 		return cached;
 	}
 
 	// Cache miss or stale - perform new scan
+	spdlog::debug("Model cache miss, performing fresh scan");
 	return refreshCache();
 }
 
@@ -113,6 +120,8 @@ std::vector<std::string> ModelDiscovery::refreshCache()
 	// Get configured search paths from config
 	auto cfg = ConfigManager::instance().getConfig();
 	const auto &searchPaths = cfg.discovery.modelSearchPaths;
+
+	spdlog::debug("Scanning {} model search path(s)", searchPaths.size());
 
 	// Scan each configured path
 	for (const auto &path : searchPaths) {
@@ -128,6 +137,8 @@ std::vector<std::string> ModelDiscovery::refreshCache()
 	// Update cache
 	m_cachedModels = allModels;
 	m_cacheTime = std::chrono::system_clock::now();
+
+	spdlog::info("Model scan complete: {} model(s) found", allModels.size());
 
 	return m_cachedModels;
 }

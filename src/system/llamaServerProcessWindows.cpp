@@ -8,8 +8,9 @@
 
 #include "configManager.h"
 #include "llamaServerProcess.h"
+
 #include <fstream>
-#include <iostream>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
 #include <windows.h>
@@ -46,28 +47,16 @@ class LlamaServerProcess::Impl
 		// Build command arguments
 		auto args = buildCommandArgs(modelPath, load, inference, server);
 
-		// Log the command for debugging
-		std::string logCmd = "llama-server";
-		for (size_t i = 1; i < args.size(); ++i) {
-			logCmd += " " + args[i];
-		}
-		logDebug("=== launch called ===");
-		logDebug("logCmd: " + logCmd);
-
-		// Convert args to command line string with proper quoting
-		std::string cmdLine = buildCommandLine(args);
-		logDebug("cmdLine: " + cmdLine);
+		spdlog::debug("Building llama-server command");
 
 		// Get log path - redirect to .workbench/logs/llama-server.log
 		std::string logsDir = ConfigManager::getLogsDir();
 		std::string logPath = logsDir + "\\llama-server.log";
-		logDebug("logsDir: " + logsDir);
-		logDebug("logPath: " + logPath);
 
 		// Create logs directory if it doesn't exist
 		CreateDirectoryA(logsDir.c_str(), NULL);
 
-		logDebug("About to launch with cmd /c");
+		spdlog::info("Starting llama-server with model: '{}'", modelPath);
 
 		// Setup for stdout/stderr redirection to log file
 		STARTUPINFOA si = {};
@@ -94,8 +83,9 @@ class LlamaServerProcess::Impl
 
 		// Create the process - use cmd /c to search PATH
 		// Build: "cmd /c llama-server <args>"
+		std::string cmdLine = buildCommandLine(args);
 		std::string fullCmd = "cmd /c " + cmdLine;
-		logDebug("fullCmd: " + fullCmd);
+
 		BOOL success = CreateProcessA(
 			NULL,								 // lpApplicationName
 			fullCmd.data(),						 // lpCommandLine
@@ -116,11 +106,14 @@ class LlamaServerProcess::Impl
 
 		if (!success) {
 			DWORD error = GetLastError();
-			logDebug("CreateProcessA FAILED, error: " + std::to_string(error));
+			spdlog::error(
+				"Failed to start llama-server: CreateProcessA error {}",
+				error);
 			return false;
 		}
 
-		logDebug("CreateProcessA SUCCESS");
+		spdlog::info("llama-server started (PID: {})", pi.dwProcessId);
+
 		// Close thread handle - we only need process handle
 		CloseHandle(pi.hThread);
 
@@ -135,6 +128,8 @@ class LlamaServerProcess::Impl
 			return false;
 		}
 
+		spdlog::info("Terminating llama-server...");
+
 		// Try graceful termination first using GenerateConsoleCtrlEvent
 		// This only works if the process is in the same console
 		// For DETACHED_PROCESS, we need to use TerminateProcess
@@ -146,6 +141,11 @@ class LlamaServerProcess::Impl
 		CloseHandle(processHandle_);
 		processHandle_ = nullptr;
 		running_ = false;
+
+		if (result) {
+			spdlog::info("llama-server terminated");
+		}
+
 		return result != FALSE;
 	}
 
