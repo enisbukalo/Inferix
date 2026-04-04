@@ -11,9 +11,10 @@
 #include "cpuMonitor.h"
 #include "gpuMonitor.h"
 #include "ramMonitor.h"
+
+#include <spdlog/spdlog.h>
 #include <ftxui/component/event.hpp>
 #include <ftxui/component/screen_interactive.hpp>
-#include <iostream>
 
 /**
  * @brief Private constructor for singleton.
@@ -78,9 +79,7 @@ void SystemMonitorRunner::start(ftxui::ScreenInteractive *screen,
 				this->onEvent(event, data);
 			});
 
-		std::cout << "[SystemMonitorRunner] Started with refresh rate: "
-				  << refreshRateMs << "ms, subscription ID: " << subscriptionId_
-				  << std::endl;
+		spdlog::info("SystemMonitorRunner started (refresh: {}ms)", refreshRateMs);
 
 		// Start the background polling thread
 		thread_ = std::thread(&SystemMonitorRunner::run, this);
@@ -101,8 +100,6 @@ void SystemMonitorRunner::stop()
 	if (subscriptionId_ != 0) {
 		EventBus::unsubscribe(subscriptionId_);
 		subscriptionId_ = 0;
-		std::cout << "[SystemMonitorRunner] Unsubscribed from EventBus"
-				  << std::endl;
 	}
 
 	// Signal the background thread to stop
@@ -112,8 +109,7 @@ void SystemMonitorRunner::stop()
 	// Join the background thread
 	if (thread_.joinable()) {
 		thread_.join();
-		std::cout << "[SystemMonitorRunner] Background thread joined"
-				  << std::endl;
+		spdlog::info("SystemMonitorRunner stopped");
 	}
 }
 
@@ -132,8 +128,7 @@ void SystemMonitorRunner::onEvent(const EventBus::EventId &event,
 	if (event == "config.ui.refreshRateMs" && data != nullptr) {
 		int newRate = *static_cast<const int *>(data);
 		refreshRateMs_.store(newRate);
-		std::cout << "[SystemMonitorRunner] Refresh rate updated to: " << newRate
-				  << "ms" << std::endl;
+		spdlog::info("Refresh rate changed to {}ms", newRate);
 	}
 }
 
