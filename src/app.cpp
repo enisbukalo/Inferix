@@ -17,6 +17,7 @@
 #include "terminalPanel.h"
 #include "terminalPresetsPanel.h"
 
+#include <spdlog/spdlog.h>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/event.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -29,6 +30,8 @@ using namespace ftxui;
 
 void App::run()
 {
+	spdlog::info("App::run() - initializing");
+
 	auto screen = ScreenInteractive::Fullscreen();
 
 	// Load config and start the system monitor singleton with the screen
@@ -103,6 +106,8 @@ void App::run()
 		dynamicTerminals.push_back({ std::move(panel), idx, preset.name });
 	}
 
+	spdlog::info("Spawned {} terminal preset(s)", dynamicTerminals.size());
+
 	auto interactive = Container::Vertical({ tabToggle, tabContainer }) | flex;
 
 	// Spawn all terminals eagerly so they're ready when the user switches tabs.
@@ -165,4 +170,6 @@ void App::run()
 		});
 
 	screen.Loop(root);
+
+	spdlog::info("App::run() - exiting");
 }

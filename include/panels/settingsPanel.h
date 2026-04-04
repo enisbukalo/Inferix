@@ -69,6 +69,8 @@ class SettingsPanel
 	bool m_showSystemPanel = true;
 	int m_refreshRateMs = 250;
 	std::string m_refreshRateMsStr = std::to_string(m_refreshRateMs);
+	int m_logRetentionDays = 7;
+	std::string m_logRetentionDaysStr = std::to_string(m_logRetentionDays);
 
 	// --- Terminal state ---
 	std::string m_defaultShell;
