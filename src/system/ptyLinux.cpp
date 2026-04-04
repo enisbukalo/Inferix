@@ -8,11 +8,11 @@
 
 #include "ptyHandler.h"
 
-#include <spdlog/spdlog.h>
 #include <cstdlib>
 #include <errno.h>
 #include <fcntl.h>
 #include <pty.h>
+#include <spdlog/spdlog.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <unistd.h>

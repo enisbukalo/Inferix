@@ -3,11 +3,11 @@
 #include "eventBus.h"
 #include "ui_utils.h"
 
-#include <spdlog/spdlog.h>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -308,12 +308,12 @@ Component SettingsPanel::component()
 	auto container = Container::Horizontal({
 		Container::Vertical({
 			// Left column: Server, UI
-			hostInput,		 portInput,	   apiKeyInput,		 timeoutMinus,
-			timeoutInput,	 timeoutPlus,  threadsHttpMinus, threadsHttpInput,
-			threadsHttpPlus, webuiCb,	   embeddingCb,		 contBatchCb,
-			cachePromptCb,	 metricsCb,	   themeToggle,		 defaultTabToggle,
-			showSysPanelCb,	 refreshMinus, refreshInput,	 refreshPlus,
-			retentionMinus, retentionInput, retentionPlus,
+			hostInput,		 portInput,		 apiKeyInput,	   timeoutMinus,
+			timeoutInput,	 timeoutPlus,	 threadsHttpMinus, threadsHttpInput,
+			threadsHttpPlus, webuiCb,		 embeddingCb,	   contBatchCb,
+			cachePromptCb,	 metricsCb,		 themeToggle,	   defaultTabToggle,
+			showSysPanelCb,	 refreshMinus,	 refreshInput,	   refreshPlus,
+			retentionMinus,	 retentionInput, retentionPlus,
 		}),
 		Container::Vertical({
 			// Right column: Terminal

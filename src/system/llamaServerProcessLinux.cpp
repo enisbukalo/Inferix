@@ -9,13 +9,13 @@
 #include "configManager.h"
 #include "llamaServerProcess.h"
 
-#include <spdlog/spdlog.h>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <filesystem>
 #include <signal.h>
+#include <spdlog/spdlog.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -55,7 +55,8 @@ class LlamaServerProcess::Impl
 		// Fork the process
 		pid_ = fork();
 		if (pid_ < 0) {
-			spdlog::error("Failed to start llama-server: fork() failed: {}", strerror(errno));
+			spdlog::error("Failed to start llama-server: fork() failed: {}",
+						  strerror(errno));
 			return false;
 		}
 

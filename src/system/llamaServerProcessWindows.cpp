@@ -9,8 +9,8 @@
 #include "configManager.h"
 #include "llamaServerProcess.h"
 
-#include <spdlog/spdlog.h>
 #include <fstream>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
 #include <windows.h>
@@ -106,7 +106,9 @@ class LlamaServerProcess::Impl
 
 		if (!success) {
 			DWORD error = GetLastError();
-			spdlog::error("Failed to start llama-server: CreateProcessA error {}", error);
+			spdlog::error(
+				"Failed to start llama-server: CreateProcessA error {}",
+				error);
 			return false;
 		}
 

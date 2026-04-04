@@ -3,11 +3,11 @@
 #include "modelDiscovery.h"
 #include "ui_utils.h"
 
-#include <spdlog/spdlog.h>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <iomanip>

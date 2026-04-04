@@ -1,11 +1,11 @@
 #include "modelDiscovery.h"
 #include "configManager.h"
 
-#include <spdlog/spdlog.h>
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
 #include <optional>
+#include <spdlog/spdlog.h>
 
 namespace fs = std::filesystem;
 
@@ -101,7 +101,8 @@ std::vector<std::string> ModelDiscovery::scanForModels()
 	// Check cache first
 	auto cached = getCachedModels();
 	if (!cached.empty()) {
-		spdlog::debug("Model cache hit, returning {} cached model(s)", cached.size());
+		spdlog::debug("Model cache hit, returning {} cached model(s)",
+					  cached.size());
 		return cached;
 	}
 

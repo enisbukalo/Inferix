@@ -1,7 +1,7 @@
 #include "eventBus.h"
 
-#include <spdlog/spdlog.h>
 #include <algorithm>
+#include <spdlog/spdlog.h>
 
 /**
  * @file eventBus.cpp
@@ -177,7 +177,9 @@ void EventBus::publish(const EventId &event, const void *data)
 	if (handlersToCall.empty()) {
 		spdlog::debug("Published '{}' - no subscribers", event);
 	} else {
-		spdlog::debug("Published '{}' to {} subscriber(s)", event, handlersToCall.size());
+		spdlog::debug("Published '{}' to {} subscriber(s)",
+					  event,
+					  handlersToCall.size());
 	}
 
 	for (auto &handler : handlersToCall) {

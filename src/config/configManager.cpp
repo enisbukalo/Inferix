@@ -29,10 +29,10 @@
 #include "configManager.h"
 #include "eventBus.h"
 
-#include <spdlog/spdlog.h>
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <spdlog/spdlog.h>
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
@@ -86,7 +86,9 @@ bool ConfigManager::load()
 		fs::create_directories(configDir);
 	} catch (const std::exception &e) {
 		// If we can't create the directory, use defaults
-		spdlog::warn("Failed to create config dir '{}', using defaults: {}", configDir, e.what());
+		spdlog::warn("Failed to create config dir '{}', using defaults: {}",
+					 configDir,
+					 e.what());
 		config_ = Config::UserConfig{};
 		loaded_ = true;
 		return true;
@@ -104,7 +106,9 @@ bool ConfigManager::load()
 			spdlog::info("Config loaded from '{}'", configFile);
 		} catch (const std::exception &e) {
 			// Invalid JSON, use defaults
-			spdlog::warn("Config file '{}' corrupted, using defaults: {}", configFile, e.what());
+			spdlog::warn("Config file '{}' corrupted, using defaults: {}",
+						 configFile,
+						 e.what());
 			config_ = Config::UserConfig{};
 		}
 	} else {
@@ -117,7 +121,8 @@ bool ConfigManager::load()
 			spdlog::info("Created default config at '{}'", configFile);
 		} else {
 			// File exists but couldn't be opened, use defaults
-			spdlog::warn("Could not open config file '{}', using defaults", configFile);
+			spdlog::warn("Could not open config file '{}', using defaults",
+						 configFile);
 			config_ = Config::UserConfig{};
 		}
 	}
@@ -134,13 +139,17 @@ bool ConfigManager::save()
 	try {
 		fs::create_directories(configDir);
 	} catch (const std::exception &e) {
-		spdlog::error("Failed to save config: could not create directory '{}': {}", configDir, e.what());
+		spdlog::error(
+			"Failed to save config: could not create directory '{}': {}",
+			configDir,
+			e.what());
 		return false;
 	}
 
 	std::ofstream file(configFile);
 	if (!file.is_open()) {
-		spdlog::error("Failed to save config: could not open file '{}'", configFile);
+		spdlog::error("Failed to save config: could not open file '{}'",
+					  configFile);
 		return false;
 	}
 

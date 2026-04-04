@@ -12,9 +12,9 @@
 #include "gpuMonitor.h"
 #include "ramMonitor.h"
 
-#include <spdlog/spdlog.h>
 #include <ftxui/component/event.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <spdlog/spdlog.h>
 
 /**
  * @brief Private constructor for singleton.
@@ -79,7 +79,8 @@ void SystemMonitorRunner::start(ftxui::ScreenInteractive *screen,
 				this->onEvent(event, data);
 			});
 
-		spdlog::info("SystemMonitorRunner started (refresh: {}ms)", refreshRateMs);
+		spdlog::info("SystemMonitorRunner started (refresh: {}ms)",
+					 refreshRateMs);
 
 		// Start the background polling thread
 		thread_ = std::thread(&SystemMonitorRunner::run, this);

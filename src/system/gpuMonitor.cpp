@@ -9,10 +9,10 @@
 
 #include "gpuMonitor.h"
 
-#include <spdlog/spdlog.h>
 #include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
+#include <spdlog/spdlog.h>
 
 #ifdef _WIN32
 #define POPEN _popen

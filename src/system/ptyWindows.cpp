@@ -61,7 +61,8 @@ bool PtyHandler::spawnWindows(int cols, int rows)
 	if (FAILED(hr)) {
 		CloseHandle(pipeAppIn);
 		CloseHandle(pipeAppOut);
-		spdlog::error("PTY: CreatePseudoConsole failed (hr: {})", static_cast<int>(hr));
+		spdlog::error("PTY: CreatePseudoConsole failed (hr: {})",
+					  static_cast<int>(hr));
 		return false;
 	}
 
@@ -129,7 +130,8 @@ bool PtyHandler::spawnWindows(int cols, int rows)
 		ClosePseudoConsole(hpc);
 		CloseHandle(pipeAppIn);
 		CloseHandle(pipeAppOut);
-		spdlog::error("PTY: CreateProcessW failed (error: {})", static_cast<int>(error));
+		spdlog::error("PTY: CreateProcessW failed (error: {})",
+					  static_cast<int>(error));
 		return false;
 	}
 
