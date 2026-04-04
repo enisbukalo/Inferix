@@ -248,6 +248,17 @@ struct LoadSettings
 	bool kvOffload = true;
 
 	/**
+	 * @brief Use unified KV cache buffer.
+	 *
+	 * Use single unified KV buffer shared across all sequences.
+	 * Improves memory efficiency when using multiple slots.
+	 *
+	 * Corresponds to: `--kv-unified`
+	 * @default true when parallel is auto, false otherwise
+	 */
+	bool kvUnified = true;
+
+	/**
 	 * @name Memory Management
 	 *
 	 * Advanced memory optimization settings.

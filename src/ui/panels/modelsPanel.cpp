@@ -47,6 +47,7 @@ void ModelsPanel::loadFromConfig()
 		m_flashAttnIdx = 0;
 
 	m_kvOffload = cfg.load.kvOffload;
+	m_kvUnified = cfg.load.kvUnified;
 	m_mmap = cfg.load.mmap;
 	m_mlock = cfg.load.mlock;
 	m_fit = cfg.load.fit;
@@ -144,6 +145,7 @@ void ModelsPanel::saveConfig()
 	cfg.load.parallel = m_parallel;
 	cfg.load.flashAttn = m_flashAttnOptions[static_cast<size_t>(m_flashAttnIdx)];
 	cfg.load.kvOffload = m_kvOffload;
+	cfg.load.kvUnified = m_kvUnified;
 	cfg.load.mmap = m_mmap;
 	cfg.load.mlock = m_mlock;
 	cfg.load.fit = m_fit;
@@ -531,6 +533,7 @@ Component ModelsPanel::component()
 	auto chatTemplateInput = Input(&m_chatTemplate, "e.g. chatml", inputOpt);
 
 	auto kvOffloadCb = Checkbox("", &m_kvOffload, cbOpt);
+	auto kvUnifiedCb = Checkbox("", &m_kvUnified, cbOpt);
 	auto mmapCb = Checkbox("", &m_mmap, cbOpt);
 	auto mlockCb = Checkbox("", &m_mlock, cbOpt);
 	auto fitCb = Checkbox("", &m_fit, cbOpt);
@@ -619,6 +622,7 @@ Component ModelsPanel::component()
 			chatTemplateInput,
 			reasoningFormatToggle,
 			kvOffloadCb,
+			kvUnifiedCb,
 			mmapCb,
 			mlockCb,
 			fitCb,
@@ -688,6 +692,8 @@ Component ModelsPanel::component()
 									  reasoningFormatToggle->Render()));
 			rows.push_back(ui_utils::checkboxRow("KV Cache Offload",
 												 kvOffloadCb->Render()));
+			rows.push_back(
+				ui_utils::checkboxRow("KV Unified", kvUnifiedCb->Render()));
 			rows.push_back(
 				ui_utils::checkboxRow("Memory Map", mmapCb->Render()));
 			rows.push_back(

@@ -64,6 +64,10 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 	if (!load.kvOffload) {
 		args.push_back("--no-kv-offload");
 	}
+	// KV unified
+	if (!load.kvUnified) {
+		args.push_back("--no-kv-unified");
+	}
 	// KV cache type K
 	if (!load.cacheTypeK.empty() && load.cacheTypeK != "f16") {
 		args.push_back("-ctk");

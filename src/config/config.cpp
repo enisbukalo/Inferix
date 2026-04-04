@@ -143,6 +143,7 @@ void to_json(json &j, const LoadSettings &v)
 	j["cacheTypeK"] = v.cacheTypeK;
 	j["cacheTypeV"] = v.cacheTypeV;
 	j["kvOffload"] = v.kvOffload;
+	j["kvUnified"] = v.kvUnified;
 
 	j["flashAttn"] = v.flashAttn;
 	j["mlock"] = v.mlock;
@@ -184,6 +185,7 @@ void from_json(const json &j, LoadSettings &v)
 	v.cacheTypeK = j.value("cacheTypeK", v.cacheTypeK);
 	v.cacheTypeV = j.value("cacheTypeV", v.cacheTypeV);
 	v.kvOffload = j.value("kvOffload", v.kvOffload);
+	v.kvUnified = j.value("kvUnified", v.kvUnified);
 
 	v.flashAttn = j.value("flashAttn", v.flashAttn);
 	v.mlock = j.value("mlock", v.mlock);

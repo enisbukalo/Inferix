@@ -81,6 +81,7 @@ class ModelsPanel
 	std::string m_parallelStr = "4";
 	int m_flashAttnIdx = 0; // 0=auto, 1=on, 2=off
 	bool m_kvOffload = true;
+	bool m_kvUnified = true;
 	bool m_mmap = false;
 	bool m_mlock = false;
 	bool m_fit = true;
