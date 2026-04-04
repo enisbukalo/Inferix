@@ -117,7 +117,7 @@ void ModelsPanel::loadFromConfig()
 	m_nPredict = std::to_string(cfg.inference.nPredict);
 	m_seed = std::to_string(cfg.inference.seed);
 
-	// Phase 1: Refresh model list and try to select config.load.modelPath
+	// Refresh model list and try to select config.load.modelPath
 	refreshModelList();
 
 	// Try to select the model matching config.load.modelPath (if found)
@@ -185,7 +185,7 @@ void ModelsPanel::saveConfig()
 }
 
 // =========================================================================
-// Phase 1: Model Discovery Integration
+// Model Discovery Integration
 // =========================================================================
 
 /**
@@ -281,7 +281,7 @@ void ModelsPanel::refreshModelList()
 	m_modelDisplayNames.clear();
 
 	for (const auto &path : models) {
-		// Phase 3: Apply file filter - skip models matching filter patterns
+		// Apply file filter - skip models matching filter patterns
 		if (shouldFilterModel(path)) {
 			continue;
 		}
@@ -539,7 +539,7 @@ Component ModelsPanel::component()
 	auto fitCb = Checkbox("", &m_fit, cbOpt);
 
 	// -----------------------------------------------------------------------
-	// Phase 1: Model Selection Dropdown and LOAD Button
+	// Model Selection Dropdown and LOAD Button
 	// -----------------------------------------------------------------------
 	// Model dropdown - selecting a model updates m_modelPath which is used when
 	// clicking LOAD Note: Using Dropdown component for scrollable list (works

@@ -134,7 +134,7 @@ class ModelsPanel
 	int m_reasoningFormatIdx = 0; // 0 = "auto" (default)
 
 	// =========================================================================
-	// Model Discovery & Selection (Phase 1)
+	// Model Discovery & Selection
 	// =========================================================================
 	std::vector<std::string> m_modelPaths;		  // Full paths from discovery
 	std::vector<std::string> m_modelDisplayNames; // Display names for dropdown
@@ -157,7 +157,7 @@ class ModelsPanel
 	bool shouldFilterModel(const std::string &path) const;
 
 	// =========================================================================
-	// Llama Server Process (Phase 2)
+	// Llama Server Process
 	// =========================================================================
 	/** Handle LOAD button click - launch llama-server with selected model. */
 	void onLoadClicked();
