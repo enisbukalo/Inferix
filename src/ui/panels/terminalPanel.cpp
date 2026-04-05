@@ -333,6 +333,12 @@ bool TerminalPanel::handleEvent(Event event)
 	if (!m_spawned.load() || m_ptyDead.load())
 		return false;
 
+	// Let FTXUI handle mouse events - don't pass mouse escape sequences to PTY.
+	// This prevents raw mouse tracking codes (e.g., \x1b[<...) from appearing
+	// as garbled text in the terminal (see FTXUI issues #844 and #675).
+	if (event.is_mouse())
+		return false;
+
 	// Ctrl+T toggles capture mode — releases input to the UI.
 	// Check both raw input byte and FTXUI character representation.
 	const std::string &raw = event.input();
@@ -487,6 +493,11 @@ Component TerminalPanel::component()
 bool TerminalPanel::wantsEvent(ftxui::Event event) const
 {
 	if (!m_spawned.load() || m_ptyDead.load())
+		return false;
+
+	// Don't capture mouse events - let FTXUI handle them to prevent
+	// mouse escape sequences from leaking to the PTY.
+	if (event.is_mouse())
 		return false;
 
 	// Always intercept Ctrl+T so HandleEvent can toggle capture mode.
