@@ -11,6 +11,7 @@
 #include "configManager.h"
 #include "modelsPanel.h"
 #include "serverInfoPanel.h"
+#include "serverLogPanel.h"
 #include "settingsPanel.h"
 #include "systemMonitorRunner.h"
 #include "systemResourcesPanel.h"
@@ -22,6 +23,7 @@
 #include <ftxui/dom/elements.hpp>
 #include <spdlog/spdlog.h>
 
+#include <fstream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,6 +33,12 @@ using namespace ftxui;
 void App::run()
 {
 	spdlog::info("App::run() - initializing");
+
+	// Clear llama-server log on startup (truncate existing file)
+	{
+		std::string logPath = ConfigManager::getLogsDir() + "/llama-server.log";
+		std::ofstream(logPath, std::ios::trunc).close();
+	}
 
 	auto screen = ScreenInteractive::Fullscreen();
 
@@ -42,6 +50,7 @@ void App::run()
 	TerminalPanel terminalPanel(screen);
 	SettingsPanel settingsPanel;
 	ModelsPanel modelsPanel;
+	ServerLogPanel serverLogPanel(screen);
 
 	std::vector<std::string> tabValues{ "App Settings",
 										"Model Settings",
@@ -76,9 +85,11 @@ void App::run()
 
 	auto terminalContent = terminalPanel.component();
 
-	// Placeholder for when we implement reading live log outputs from llama.cpp
-	auto logOutputContent =
-		Renderer([] { return window(text(""), text(""), ftxui::EMPTY) | flex; });
+	// Server Log tab - shows live output from llama-server
+	auto logOutputContent = serverLogPanel.component();
+
+	// Spawn ServerLogPanel terminal (watching the log file)
+	serverLogPanel.start();
 
 	auto tabContainer = Container::Tab(
 		{ settingsContent, modelContent, logOutputContent, terminalContent },

@@ -3,7 +3,7 @@
  * @brief Linux-specific implementation for launching llama-server.
  *
  * Uses fork() + execve() to spawn the llama-server process.
- * Redirects stdout/stderr to a log file in .workbench/logs/
+ * Captures stdout/stderr via pipes and forwards to a callback.
  */
 
 #include "configManager.h"
@@ -33,6 +33,11 @@ class LlamaServerProcess::Impl
 		}
 	}
 
+	void setOutputCallback(std::function<void(const std::string &)> callback)
+	{
+		outputCallback_ = callback;
+	}
+
 	bool launch(const std::string &modelPath,
 				const Config::LoadSettings &load,
 				const Config::InferenceSettings &inference,
@@ -43,33 +48,78 @@ class LlamaServerProcess::Impl
 
 		spdlog::debug("Building llama-server command");
 
-		// Get log path - redirect to .workbench/logs/llama-server.log
-		std::string logsDir = ConfigManager::getLogsDir();
-		std::string logPath = logsDir + "/llama-server.log";
-
-		// Create logs directory if it doesn't exist
-		std::filesystem::create_directories(logsDir);
-
 		spdlog::info("Starting llama-server with model: '{}'", modelPath);
+
+		// Create pipes for stdout and stderr
+		int stdoutPipe[2];
+		int stderrPipe[2];
+
+		if (pipe(stdoutPipe) < 0) {
+			spdlog::error("Failed to create stdout pipe");
+			return false;
+		}
+
+		if (pipe(stderrPipe) < 0) {
+			close(stdoutPipe[0]);
+			close(stdoutPipe[1]);
+			spdlog::error("Failed to create stderr pipe");
+			return false;
+		}
 
 		// Fork the process
 		pid_ = fork();
 		if (pid_ < 0) {
+			close(stdoutPipe[0]);
+			close(stdoutPipe[1]);
+			close(stderrPipe[0]);
+			close(stderrPipe[1]);
 			spdlog::error("Failed to start llama-server: fork() failed: {}",
 						  strerror(errno));
 			return false;
 		}
 
 		if (pid_ == 0) {
-			// Child process
-			launchChild(args);
-			// If launchChild returns, execve failed
+			// Child process - redirect stdout/stderr and exec
+			close(stdoutPipe[0]); // Close read end
+			close(stderrPipe[0]); // Close read end
+
+			dup2(stdoutPipe[1], STDOUT_FILENO);
+			dup2(stderrPipe[1], STDERR_FILENO);
+			close(stdoutPipe[1]);
+			close(stderrPipe[1]);
+
+			// Detach from controlling terminal
+			setsid();
+
+			// Convert args to char* array
+			std::vector<char *> argv;
+			for (const auto &arg : args) {
+				argv.push_back(const_cast<char *>(arg.c_str()));
+			}
+			argv.push_back(nullptr);
+
+			execve("llama-server", argv.data(), environ);
+			// If we get here, execve failed
 			_exit(1);
 		}
 
-		// Parent process - check if child started successfully
+		// Parent process - close write ends and start reading
+		close(stdoutPipe[1]);
+		close(stderrPipe[1]);
+
 		spdlog::info("llama-server started (PID: {})", pid_);
 		running_ = true;
+
+		// Start background thread to read from pipes
+		// Copy file descriptors to avoid capture issues with arrays
+		int stdoutFd = stdoutPipe[0];
+		int stderrFd = stderrPipe[0];
+		stopPipeReader_.store(false);
+		pipeReadThread_ = std::thread([this, stdoutFd, stderrFd]() {
+			readPipe(stdoutFd);
+			readPipe(stderrFd);
+		});
+
 		return true;
 	}
 
@@ -80,6 +130,12 @@ class LlamaServerProcess::Impl
 		}
 
 		spdlog::info("Terminating llama-server...");
+
+		// Stop the pipe reader first
+		stopPipeReader_.store(true);
+		if (pipeReadThread_.joinable()) {
+			pipeReadThread_.join();
+		}
 
 		// Try graceful termination first with SIGTERM
 		if (kill(pid_, SIGTERM) == 0) {
@@ -128,37 +184,60 @@ class LlamaServerProcess::Impl
 	}
 
   private:
-	void launchChild(const std::vector<std::string> &args)
+	void readPipe(int fd)
 	{
-		// Get log path - redirect to .workbench/logs/llama-server.log
-		std::string logsDir = ConfigManager::getLogsDir();
-		std::string logPath = logsDir + "/llama-server.log";
+		const size_t bufferSize = 4096;
+		char buffer[bufferSize];
+		ssize_t bytesRead;
+		std::string lineBuffer;
 
-		// Create logs directory if it doesn't exist
-		std::filesystem::create_directories(logsDir);
+		while (!stopPipeReader_.load()) {
+			// Use select() for timeout
+			fd_set readfds;
+			FD_ZERO(&readfds);
+			FD_SET(fd, &readfds);
 
-		// Open log file
-		int logfd = open(logPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-		if (logfd >= 0) {
-			dup2(logfd, STDOUT_FILENO);
-			dup2(logfd, STDERR_FILENO);
-			close(logfd);
+			struct timeval tv = { 0, 100000 }; // 100ms timeout
+			int sel = select(fd + 1, &readfds, NULL, NULL, &tv);
+			if (sel <= 0) {
+				continue;
+			}
+
+			bytesRead = read(fd, buffer, bufferSize - 1);
+			if (bytesRead <= 0) {
+				break;
+			}
+
+			buffer[bytesRead] = '\0';
+
+			// Process character by character to handle line breaks
+			for (ssize_t i = 0; i < bytesRead; ++i) {
+				if (buffer[i] == '\n' || buffer[i] == '\r') {
+					if (!lineBuffer.empty()) {
+						if (outputCallback_) {
+							outputCallback_(lineBuffer);
+						}
+						lineBuffer.clear();
+					}
+				} else {
+					lineBuffer += buffer[i];
+				}
+			}
 		}
 
-		// Convert std::vector<std::string> to char* const* for execve
-		std::vector<char *> argv;
-		for (const auto &arg : args) {
-			argv.push_back(const_cast<char *>(arg.c_str()));
+		// Send any remaining data
+		if (!lineBuffer.empty() && outputCallback_) {
+			outputCallback_(lineBuffer);
 		}
-		argv.push_back(nullptr);
 
-		// Execute llama-server
-		execve("llama-server", argv.data(), environ);
-		// If we get here, execve failed
+		close(fd);
 	}
 
 	pid_t pid_;
 	bool running_;
+	std::function<void(const std::string &)> outputCallback_;
+	std::thread pipeReadThread_;
+	std::atomic<bool> stopPipeReader_{ false };
 };
 
 LlamaServerProcess::LlamaServerProcess() : m_impl(std::make_unique<Impl>())
@@ -188,6 +267,12 @@ bool LlamaServerProcess::isRunning() const
 intptr_t LlamaServerProcess::getHandle() const
 {
 	return m_impl->getHandle();
+}
+
+void LlamaServerProcess::setOutputCallback(
+	std::function<void(const std::string &)> callback)
+{
+	m_impl->setOutputCallback(callback);
 }
 
 LlamaServerProcess &LlamaServerProcess::instance()

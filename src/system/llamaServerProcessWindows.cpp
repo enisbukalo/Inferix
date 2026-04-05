@@ -3,27 +3,16 @@
  * @brief Windows-specific implementation for launching llama-server.
  *
  * Uses CreateProcessA() to spawn the llama-server process.
- * Redirects stdout/stderr to a log file in .workbench/logs/
+ * Logging is handled by llama-server via --log-file flag.
  */
 
 #include "configManager.h"
 #include "llamaServerProcess.h"
 
-#include <fstream>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
 #include <windows.h>
-
-namespace {
-void logDebug(const std::string &msg)
-{
-	std::string logsDir = ConfigManager::getLogsDir();
-	std::string debugLogPath = logsDir + "\\debug.log";
-	std::ofstream debugFile(debugLogPath, std::ios::app);
-	debugFile << msg << "\n";
-}
-} // namespace
 
 class LlamaServerProcess::Impl
 {
@@ -44,65 +33,41 @@ class LlamaServerProcess::Impl
 				const Config::InferenceSettings &inference,
 				const Config::ServerSettings &server)
 	{
-		// Build command arguments
+		// Build command arguments (includes --log-file)
 		auto args = buildCommandArgs(modelPath, load, inference, server);
 
 		spdlog::debug("Building llama-server command");
 
-		// Get log path - redirect to .workbench/logs/llama-server.log
-		std::string logsDir = ConfigManager::getLogsDir();
-		std::string logPath = logsDir + "\\llama-server.log";
-
-		// Create logs directory if it doesn't exist
-		CreateDirectoryA(logsDir.c_str(), NULL);
-
 		spdlog::info("Starting llama-server with model: '{}'", modelPath);
 
-		// Setup for stdout/stderr redirection to log file
+		// Build full command for logging
+		std::string exePath =
+			"C:\\Users\\bukal\\Documents\\llama\\llama-server.exe";
+		std::string fullCommand = exePath + " " + buildCommandLine(args);
+		spdlog::info("llama-server command: {}", fullCommand);
+
+		// Setup for hidden window
 		STARTUPINFOA si = {};
 		si.cb = sizeof(si);
-		si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+		si.dwFlags = STARTF_USESHOWWINDOW;
 		si.wShowWindow = SW_HIDE;
-
-		// Create log file handles
-		SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
-		HANDLE hLogFile = CreateFileA(logPath.c_str(),
-									  GENERIC_WRITE,
-									  FILE_SHARE_WRITE,
-									  &sa,
-									  CREATE_ALWAYS,
-									  FILE_ATTRIBUTE_NORMAL,
-									  NULL);
-
-		if (hLogFile != INVALID_HANDLE_VALUE) {
-			si.hStdOutput = hLogFile;
-			si.hStdError = hLogFile;
-		}
 
 		PROCESS_INFORMATION pi = {};
 
-		// Create the process - use cmd /c to search PATH
-		// Build: "cmd /c llama-server <args>"
-		std::string cmdLine = buildCommandLine(args);
-		std::string fullCmd = "cmd /c " + cmdLine;
+		// Use full path to llama-server executable
+		std::string argsOnly = buildCommandLine(args);
 
-		BOOL success = CreateProcessA(
-			NULL,								 // lpApplicationName
-			fullCmd.data(),						 // lpCommandLine
-			nullptr,							 // lpProcessAttributes
-			nullptr,							 // lpThreadAttributes
-			FALSE,								 // bInheritHandles
-			CREATE_NO_WINDOW | DETACHED_PROCESS, // dwCreationFlags
-			nullptr,							 // lpEnvironment
-			nullptr,							 // lpCurrentDirectory
-			&si,								 // lpStartupInfo
-			&pi									 // lpProcessInformation
+		BOOL success = CreateProcessA(exePath.c_str(),	// lpApplicationName
+									  argsOnly.data(),	// lpCommandLine
+									  nullptr,			// lpProcessAttributes
+									  nullptr,			// lpThreadAttributes
+									  FALSE,			// bInheritHandles
+									  CREATE_NO_WINDOW, // dwCreationFlags
+									  nullptr,			// lpEnvironment
+									  nullptr,			// lpCurrentDirectory
+									  &si,				// lpStartupInfo
+									  &pi				// lpProcessInformation
 		);
-
-		// Close log file handle
-		if (hLogFile != INVALID_HANDLE_VALUE) {
-			CloseHandle(hLogFile);
-		}
 
 		if (!success) {
 			DWORD error = GetLastError();
@@ -130,9 +95,6 @@ class LlamaServerProcess::Impl
 
 		spdlog::info("Terminating llama-server...");
 
-		// Try graceful termination first using GenerateConsoleCtrlEvent
-		// This only works if the process is in the same console
-		// For DETACHED_PROCESS, we need to use TerminateProcess
 		BOOL result = TerminateProcess(processHandle_, 1);
 		if (result) {
 			WaitForSingleObject(processHandle_, INFINITE);
@@ -160,7 +122,6 @@ class LlamaServerProcess::Impl
 			if (exitCode == STILL_ACTIVE) {
 				return true;
 			}
-			// Process has exited
 			return false;
 		}
 		return false;
@@ -176,14 +137,12 @@ class LlamaServerProcess::Impl
 	{
 		std::string cmdLine;
 		for (const auto &arg : args) {
-			// Quote arguments that contain spaces
 			if (arg.find(' ') != std::string::npos) {
 				cmdLine += "\"" + arg + "\" ";
 			} else {
 				cmdLine += arg + " ";
 			}
 		}
-		// Remove trailing space
 		if (!cmdLine.empty() && cmdLine.back() == ' ') {
 			cmdLine.pop_back();
 		}
@@ -221,6 +180,13 @@ bool LlamaServerProcess::isRunning() const
 intptr_t LlamaServerProcess::getHandle() const
 {
 	return m_impl->getHandle();
+}
+
+void LlamaServerProcess::setOutputCallback(
+	std::function<void(const std::string &)> callback)
+{
+	// Not used - output goes to log file via --log-file
+	(void)callback;
 }
 
 LlamaServerProcess &LlamaServerProcess::instance()
