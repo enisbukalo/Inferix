@@ -132,7 +132,7 @@ else
       echo "Running tests..."
       if [[ $ENABLE_COVERAGE -eq 1 ]]; then
         # Run tests with coverage
-        ./build_linux/tests/WorkbenchTests --gtest_color=yes
+        ./build_linux/WorkbenchTests --gtest_color=yes
         COVERAGE_DIR="./coverage"
         mkdir -p "$COVERAGE_DIR"
         
@@ -161,7 +161,7 @@ else
           echo "Warning: llvm-profdata or llvm-cov not found, skipping coverage report"
         fi
       else
-        ./build_linux/tests/WorkbenchTests --gtest_color=yes
+        ./build_linux/WorkbenchTests --gtest_color=yes
       fi
     fi
   fi

@@ -3,6 +3,8 @@
 # Create test executable
 add_executable(WorkbenchTests
     main.cpp
+    config/config_serialization_test.cpp
+    config/config_manager_test.cpp
 )
 
 # Set output directory to match main build
