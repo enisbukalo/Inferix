@@ -22,20 +22,20 @@ while [[ $# -gt 0 ]]; do
       ;;
     --test|-t)
       BUILD_TESTS=1
+      ENABLE_COVERAGE=1
       ;;
     --coverage|-cov)
       BUILD_TESTS=1
       ENABLE_COVERAGE=1
       ;;
     --help)
-      echo "Usage: build.sh [--clean|-c] [--windows|-w] [--all|-a] [--test|-t] [--coverage|-cov] [--help]"
+      echo "Usage: build.sh [--clean|-c] [--windows|-w] [--all|-a] [--test|-t] [--help]"
       echo ""
       echo "Options:"
       echo "  --clean, -c       Clean build directories before building"
       echo "  --windows, -w     Build for Windows (cross-compile)"
       echo "  --all, -a         Build for both Windows and Linux in parallel"
-      echo "  --test, -t        Build and run unit tests"
-      echo "  --coverage, -cov Build with coverage instrumentation and generate report"
+      echo "  --test, -t        Build and run unit tests with coverage report"
       exit 0
       ;;
     *)
@@ -130,38 +130,23 @@ else
     # Run tests if requested
     if [[ $BUILD_TESTS -eq 1 ]]; then
       echo "Running tests..."
-      if [[ $ENABLE_COVERAGE -eq 1 ]]; then
-        # Run tests with coverage
-        ./build_linux/WorkbenchTests --gtest_color=yes
-        COVERAGE_DIR="./coverage"
-        mkdir -p "$COVERAGE_DIR"
+      ./build_linux/WorkbenchTests --gtest_color=yes
+      
+      # Generate coverage report using gcov (GCC format)
+      if command -v gcov &> /dev/null; then
+        echo ""
+        echo "========================================"
+        echo "         CODE COVERAGE REPORT"
+        echo "========================================"
         
-        if command -v llvm-profdata &> /dev/null && command -v llvm-cov &> /dev/null; then
-          echo "Generating coverage report..."
-          
-          # Collect all profraw files
-          PROFRAW_FILES=$(find ./build_linux -name "*.profraw" 2>/dev/null)
-          
-          if [[ -n "$PROFRAW_FILES" ]]; then
-            # Merge profraw files into profdata
-            echo "$PROFRAW_FILES" | xargs llvm-profdata merge -o coverage.profdata
-            
-            # Generate HTML report
-            llvm-cov report -instr-profile=coverage.profdata \
-              -object=build_linux/tests/WorkbenchTests \
-              -sources=src/ \
-              -format=html \
-              -output-dir="$COVERAGE_DIR"
-            
-            echo "Coverage report generated at: $COVERAGE_DIR/index.html"
-          else
-            echo "Warning: No .profraw files found"
-          fi
-        else
-          echo "Warning: llvm-profdata or llvm-cov not found, skipping coverage report"
-        fi
-      else
-        ./build_linux/WorkbenchTests --gtest_color=yes
+        cd ./build_linux
+        
+        # Run gcov on all source gcno files, calculate overall coverage
+        gcov -b $(find . -path "./tests/CMakeFiles/WorkbenchTests.dir/__/src/*.gcno" 2>/dev/null) 2>/dev/null \
+          | grep "Lines executed" \
+          | awk -F'[:% of ]+' '{pct=$3; lines=$NF; total+=lines; exec+=lines*pct/100} END {if(total>0) printf "Total lines: %d\nExecuted: %d\nOVERALL COVERAGE: %.1f%%\n", total, exec, exec*100/total; else print "No coverage data"}'
+        
+        cd ..
       fi
     fi
   fi

@@ -96,8 +96,13 @@ target_sources(WorkbenchTests PRIVATE ${TEST_SOURCES})
 # Coverage settings
 if(ENABLE_COVERAGE)
     message(STATUS "Coverage instrumentation enabled for tests")
-    target_compile_options(WorkbenchTests PRIVATE -fprofile-instrs-gen -fcoverage-coverage -fcoverage-mapping)
-    target_link_options(WorkbenchTests PRIVATE -fprofile-instrs-gen -fcoverage)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(WorkbenchTests PRIVATE -fprofile-instrs-gen -fcoverage-coverage -fcoverage-mapping)
+        target_link_options(WorkbenchTests PRIVATE -fprofile-instrs-gen -fcoverage)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(WorkbenchTests PRIVATE -fprofile-arcs -ftest-coverage)
+        target_link_options(WorkbenchTests PRIVATE -fprofile-arcs -ftest-coverage)
+    endif()
 endif()
 
 # Enable testing
