@@ -44,43 +44,27 @@ Component ServerLogPanel::component()
 		// Create content renderer
 		auto content = Renderer([this] { return renderLog(); });
 
-		// Make scrollable with sliders
+		// Make scrollable using frame with focus position
+		// The slider controls m_scrollY which goes from 0 (top) to 1 (bottom)
 		auto scrollable = Renderer(content, [&, content] {
-			return content->Render() |
-				   focusPositionRelative(m_scrollX, m_scrollY) | frame | flex;
+			return content->Render() | focusPositionRelative(0.0f, m_scrollY) |
+				   frame | flex;
 		});
 
-		// Horizontal slider
-		SliderOption<float> optionX;
-		optionX.value = &m_scrollX;
-		optionX.min = 0.0f;
-		optionX.max = 1.0f;
-		optionX.increment = 0.1f;
-		optionX.direction = Direction::Right;
-		optionX.color_active = Color::Blue;
-		optionX.color_inactive = Color::BlueLight;
-		auto scrollbarX = Slider(optionX);
+		// Slider for vertical scrolling
+		SliderOption<float> option;
+		option.value = &m_scrollY;
+		option.min = 0.0f;
+		option.max = 1.0f;
+		option.increment = 0.05f;
+		option.direction = Direction::Down;
+		option.color_active = Color::Yellow;
+		option.color_inactive = Color::GrayDark;
+		auto scrollbar = Slider(option);
 
-		// Vertical slider
-		SliderOption<float> optionY;
-		optionY.value = &m_scrollY;
-		optionY.min = 0.0f;
-		optionY.max = 1.0f;
-		optionY.increment = 0.1f;
-		optionY.direction = Direction::Down;
-		optionY.color_active = Color::Yellow;
-		optionY.color_inactive = Color::YellowLight;
-		auto scrollbarY = Slider(optionY);
-
-		m_component = Container::Vertical({
-			Container::Horizontal({
-				scrollable | flex,
-				scrollbarY,
-			}),
-			Container::Horizontal({
-				scrollbarX,
-				Renderer([] { return text(L""); }),
-			}),
+		m_component = Container::Horizontal({
+			scrollable | flex,
+			scrollbar,
 		});
 
 		// Start polling thread
@@ -144,6 +128,8 @@ void ServerLogPanel::pollLogFile()
 
 		// Only trigger UI update if we actually added new lines
 		if (newLinesCount > 0) {
+			// Auto-scroll to bottom when new content arrives
+			m_scrollY = 1.0f;
 			m_screen.PostEvent(Event::Custom);
 		}
 

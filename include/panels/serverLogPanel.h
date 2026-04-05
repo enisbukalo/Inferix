@@ -68,16 +68,13 @@ class ServerLogPanel
 	std::vector<std::string> m_lines;
 	std::mutex m_linesMutex;
 
-	// Scroll state
-	float m_scrollX = 0.0f;
-	float m_scrollY = 1.0f;
-	ftxui::Box m_box;
+	// Scroll state - controls the slider position
+	float m_scrollY = 1.0f; // Start at bottom (1.0) for auto-scroll
 
 	// File polling
 	std::string m_logPath;
 	std::atomic<bool> m_running{ false };
 	std::thread m_pollThread;
-	size_t m_lastLineCount{ 0 }; // Track how many lines we've read
 
 	// Component
 	ftxui::Component m_component;

@@ -109,7 +109,7 @@ bool PtyHandler::spawnWindows(int cols, int rows)
 	si.lpAttributeList = attrList;
 
 	PROCESS_INFORMATION pi = {};
-	wchar_t cmd[] = L"cmd.exe";
+	wchar_t cmd[] = L"powershell.exe";
 
 	BOOL ok = CreateProcessW(nullptr,
 							 cmd,
