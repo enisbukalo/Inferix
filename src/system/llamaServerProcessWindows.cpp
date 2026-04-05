@@ -81,23 +81,24 @@ class LlamaServerProcess::Impl
 
 		PROCESS_INFORMATION pi = {};
 
-		// Create the process - use cmd /c to search PATH
-		// Build: "cmd /c llama-server <args>"
-		std::string cmdLine = buildCommandLine(args);
-		std::string fullCmd = "cmd /c " + cmdLine;
+		// Use full path to llama-server executable
+		std::string exePath =
+			"C:\\Users\\bukal\\Documents\\llama\\llama-server.exe";
+		std::string argsOnly =
+			buildCommandLine(args); // Just args, no program name
 
-		BOOL success = CreateProcessA(
-			NULL,								 // lpApplicationName
-			fullCmd.data(),						 // lpCommandLine
-			nullptr,							 // lpProcessAttributes
-			nullptr,							 // lpThreadAttributes
-			FALSE,								 // bInheritHandles
-			CREATE_NO_WINDOW | DETACHED_PROCESS, // dwCreationFlags
-			nullptr,							 // lpEnvironment
-			nullptr,							 // lpCurrentDirectory
-			&si,								 // lpStartupInfo
-			&pi									 // lpProcessInformation
-		);
+		BOOL success =
+			CreateProcessA(exePath.c_str(),	 // lpApplicationName - full path
+						   argsOnly.data(),	 // lpCommandLine - just args
+						   nullptr,			 // lpProcessAttributes
+						   nullptr,			 // lpThreadAttributes
+						   FALSE,			 // bInheritHandles
+						   CREATE_NO_WINDOW, // dwCreationFlags - hide window
+						   nullptr,			 // lpEnvironment
+						   nullptr,			 // lpCurrentDirectory
+						   &si,				 // lpStartupInfo
+						   &pi				 // lpProcessInformation
+			);
 
 		// Close log file handle
 		if (hLogFile != INVALID_HANDLE_VALUE) {
