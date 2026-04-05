@@ -185,6 +185,17 @@ class TerminalPanel
 	void setCapturing(bool value);
 
 	/**
+	 * @brief Sends Ctrl+C (ETX byte \x03) to the PTY.
+	 *
+	 * Writing \x03 to the master side of the PTY causes the slave's
+	 * line discipline to generate SIGINT for the foreground process
+	 * group, exactly as if the user typed Ctrl+C in a real terminal.
+	 *
+	 * @note Thread-safe; uses the PTY's internal mutex.
+	 */
+	void sendCtrlC();
+
+	/**
 	 * @brief Handles an FTXUI event and dispatches it to the PTY.
 	 *
 	 * This method processes various types of events:

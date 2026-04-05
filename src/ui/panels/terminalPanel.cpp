@@ -328,16 +328,23 @@ void TerminalPanel::setCapturing(bool value)
 	m_capturing.store(value);
 }
 
+void TerminalPanel::sendCtrlC()
+{
+	// Write ETX byte (\x03) to the PTY master. The slave's line discipline
+	// converts this to SIGINT for the foreground process group.
+	const char etx = '\x03';
+	m_pty.write(&etx, 1);
+}
+
 bool TerminalPanel::handleEvent(Event event)
 {
 	if (!m_spawned.load() || m_ptyDead.load())
 		return false;
 
-	// Let FTXUI handle mouse events - don't pass mouse escape sequences to PTY.
-	// This prevents raw mouse tracking codes (e.g., \x1b[<...) from appearing
-	// as garbled text in the terminal (see FTXUI issues #844 and #675).
+	// Mouse events - don't pass escape sequences to PTY to prevent garbled text.
+	// But always consume them (return true) so they don't go to FTXUI/focus.
 	if (event.is_mouse())
-		return false;
+		return true;
 
 	// Ctrl+T toggles capture mode — releases input to the UI.
 	// Check both raw input byte and FTXUI character representation.
@@ -348,10 +355,8 @@ bool TerminalPanel::handleEvent(Event event)
 		return true;
 	}
 
-	// When not capturing, only Ctrl+T is handled (above). Let everything
-	// else fall through to FTXUI for tab navigation, etc.
-	if (!m_capturing.load())
-		return false;
+	// Terminal always captures all input when spawned - send to PTY.
+	// The m_capturing flag only controls whether we show the "DETACHED" hint.
 
 	std::lock_guard<std::mutex> lock(m_vtermMutex);
 
@@ -495,25 +500,16 @@ bool TerminalPanel::wantsEvent(ftxui::Event event) const
 	if (!m_spawned.load() || m_ptyDead.load())
 		return false;
 
-	// Don't capture mouse events - let FTXUI handle them to prevent
-	// mouse escape sequences from leaking to the PTY.
-	if (event.is_mouse())
-		return false;
-
-	// Always intercept Ctrl+T so HandleEvent can toggle capture mode.
-	if (event.input() == std::string("\x14"))
+	// Always intercept Ctrl+T and Ctrl+C - never let these pass to FTXUI default
+	// handlers. Ctrl+T toggles capture mode, Ctrl+C sends SIGINT to shell
+	// process.
+	if (event.input() == std::string("\x14") || event == Event::CtrlC)
 		return true;
 
-	// When not capturing, let the UI handle input (tab switching, etc.).
+	// When not capturing (detached), let events pass through to the UI.
 	if (!m_capturing.load())
 		return false;
 
-	// Capture mode: claim all keyboard input for the terminal.
-	// Skip null-only events (e.g. Event::Custom used for redraws).
-	if (event.is_character())
-		return true;
-	const std::string &inp = event.input();
-	if (!inp.empty() && inp.find_first_not_of('\0') != std::string::npos)
-		return true;
-	return false;
+	// When capturing, all input goes to the terminal.
+	return true;
 }

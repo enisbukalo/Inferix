@@ -42,6 +42,11 @@ void App::run()
 
 	auto screen = ScreenInteractive::Fullscreen();
 
+	// Disable FTXUI's forced Ctrl-C handling. By default FTXUI generates
+	// SIGABRT for Ctrl-C if unhandled. We intercept it ourselves and forward
+	// the ETX byte (\x03) to the PTY so the shell process gets SIGINT.
+	screen.ForceHandleCtrlC(false);
+
 	// Load config and start the system monitor singleton with the screen
 	// reference This allows it to trigger redraws when monitor data updates
 	auto &config = ConfigManager::instance().getConfig();
@@ -169,6 +174,23 @@ void App::run()
 	// the Toggle component consumes them (e.g. arrow keys, Tab, chars).
 	auto root =
 		container | CatchEvent([&](Event event) {
+			// Ctrl+C — forward ETX byte to the active terminal's PTY so the
+			// shell's line discipline generates SIGINT for the foreground
+			// process group. This prevents FTXUI from quitting the app.
+			if (event == Event::CtrlC) {
+				if (selectedTab == 3 && terminalPanel.isCapturing()) {
+					terminalPanel.sendCtrlC();
+					return true;
+				}
+				for (auto &dt : dynamicTerminals) {
+					if (selectedTab == dt.tabIndex && dt.panel->isCapturing()) {
+						dt.panel->sendCtrlC();
+						return true;
+					}
+				}
+				return false;
+			}
+
 			if (selectedTab == 3 && terminalPanel.wantsEvent(event)) {
 				return terminalPanel.handleEvent(event);
 			}
