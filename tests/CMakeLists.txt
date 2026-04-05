@@ -10,6 +10,7 @@ add_executable(WorkbenchTests
     system/cpu_monitor_test.cpp
     system/memory_monitor_test.cpp
     system/gpu_monitor_test.cpp
+    system/llama_server_args_test.cpp
 )
 
 # Set output directory to match main build
