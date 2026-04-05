@@ -5,6 +5,8 @@ BUILD_DIR_WIN="./build_win"
 BUILD_FOR_WINDOWS=0
 BUILD_ALL=0
 CLEAN_BUILD=0
+BUILD_TESTS=0
+ENABLE_COVERAGE=0
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -18,8 +20,22 @@ while [[ $# -gt 0 ]]; do
     --all|-a)
       BUILD_ALL=1
       ;;
+    --test|-t)
+      BUILD_TESTS=1
+      ;;
+    --coverage|-cov)
+      BUILD_TESTS=1
+      ENABLE_COVERAGE=1
+      ;;
     --help)
-      echo "Usage: build.sh [--clean|-c] [--windows|-w] [--all|-a] [--help]"
+      echo "Usage: build.sh [--clean|-c] [--windows|-w] [--all|-a] [--test|-t] [--coverage|-cov] [--help]"
+      echo ""
+      echo "Options:"
+      echo "  --clean, -c       Clean build directories before building"
+      echo "  --windows, -w     Build for Windows (cross-compile)"
+      echo "  --all, -a         Build for both Windows and Linux in parallel"
+      echo "  --test, -t        Build and run unit tests"
+      echo "  --coverage, -cov Build with coverage instrumentation and generate report"
       exit 0
       ;;
     *)
@@ -83,17 +99,70 @@ else
   # Build for Windows
   if [[ $BUILD_FOR_WINDOWS -eq 1 ]]; then
     echo "Configuring Windows build..."
-    cmake -B"$BUILD_DIR_WIN" -H. \
-      --log-level=VERBOSE \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_SYSTEM_NAME=Windows \
-      -DCMAKE_C_COMPILER="x86_64-w64-mingw32-gcc-posix" \
-      -DCMAKE_CXX_COMPILER="x86_64-w64-mingw32-g++-posix"
+    CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc-posix -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++-posix"
+    
+    if [[ $BUILD_TESTS -eq 1 ]]; then
+      CMAKE_FLAGS="$CMAKE_FLAGS -DBUILD_TESTS=ON"
+    fi
+    
+    if [[ $ENABLE_COVERAGE -eq 1 ]]; then
+      CMAKE_FLAGS="$CMAKE_FLAGS -DENABLE_COVERAGE=ON"
+    fi
+    
+    cmake -B"$BUILD_DIR_WIN" -H. --log-level=VERBOSE $CMAKE_FLAGS
     make -C"$BUILD_DIR_WIN" -j6 VERBOSE=1
   else
     # Default: Linux only
     echo "Configuring Linux build..."
-    cmake -B"$BUILD_DIR_LINUX" -H. --log-level=VERBOSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+    CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20"
+    
+    if [[ $BUILD_TESTS -eq 1 ]]; then
+      CMAKE_FLAGS="$CMAKE_FLAGS -DBUILD_TESTS=ON"
+    fi
+    
+    if [[ $ENABLE_COVERAGE -eq 1 ]]; then
+      CMAKE_FLAGS="$CMAKE_FLAGS -DENABLE_COVERAGE=ON"
+    fi
+    
+    cmake -B"$BUILD_DIR_LINUX" -H. --log-level=VERBOSE $CMAKE_FLAGS
     make -C"$BUILD_DIR_LINUX" -j6 VERBOSE=1
+    
+    # Run tests if requested
+    if [[ $BUILD_TESTS -eq 1 ]]; then
+      echo "Running tests..."
+      if [[ $ENABLE_COVERAGE -eq 1 ]]; then
+        # Run tests with coverage
+        ./build_linux/tests/WorkbenchTests --gtest_color=yes
+        COVERAGE_DIR="./coverage"
+        mkdir -p "$COVERAGE_DIR"
+        
+        if command -v llvm-profdata &> /dev/null && command -v llvm-cov &> /dev/null; then
+          echo "Generating coverage report..."
+          
+          # Collect all profraw files
+          PROFRAW_FILES=$(find ./build_linux -name "*.profraw" 2>/dev/null)
+          
+          if [[ -n "$PROFRAW_FILES" ]]; then
+            # Merge profraw files into profdata
+            echo "$PROFRAW_FILES" | xargs llvm-profdata merge -o coverage.profdata
+            
+            # Generate HTML report
+            llvm-cov report -instr-profile=coverage.profdata \
+              -object=build_linux/tests/WorkbenchTests \
+              -sources=src/ \
+              -format=html \
+              -output-dir="$COVERAGE_DIR"
+            
+            echo "Coverage report generated at: $COVERAGE_DIR/index.html"
+          else
+            echo "Warning: No .profraw files found"
+          fi
+        else
+          echo "Warning: llvm-profdata or llvm-cov not found, skipping coverage report"
+        fi
+      else
+        ./build_linux/tests/WorkbenchTests --gtest_color=yes
+      fi
+    fi
   fi
 fi

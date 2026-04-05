@@ -5,6 +5,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Options
+option(BUILD_TESTS "Build unit tests" OFF)
+option(ENABLE_COVERAGE "Enable code coverage instrumentation" OFF)
+
 # FTXUI
 include(FetchContent)
 FetchContent_Declare(ftxui
@@ -19,6 +23,15 @@ FetchContent_Declare(spdlog
   GIT_TAG v1.12.0
 )
 FetchContent_MakeAvailable(spdlog)
+
+# Google Test (only if BUILD_TESTS is ON)
+if(BUILD_TESTS)
+  FetchContent_Declare(gtest
+    GIT_REPOSITORY https://github.com/google/googletest
+    GIT_TAG v1.14.0
+  )
+  FetchContent_MakeAvailable(gtest)
+endif()
 
 # libvterm third-party library
 add_subdirectory(third_party/libvterm-0.3.3)
@@ -91,3 +104,15 @@ else()
 endif()
 target_compile_options(Workbench PRIVATE -Wall -Wextra -g -O3)
 set_target_properties(Workbench PROPERTIES OUTPUT_NAME "Workbench")
+
+# Coverage instrumentation (Clang)
+if(ENABLE_COVERAGE)
+  message(STATUS "Coverage instrumentation enabled")
+  add_compile_options(-fprofile-instrs-gen -fcoverage-coverage -fcoverage-mapping)
+  add_link_options(-fprofile-instrs-gen -fcoverage)
+endif()
+
+# Tests subdirectory
+if(BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
