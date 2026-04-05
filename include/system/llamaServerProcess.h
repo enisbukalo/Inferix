@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "configManager.h"
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -98,6 +99,12 @@ class LlamaServerProcess
 	 * ~/.workbench/logs/llama-server.log)
 	 */
 	static std::string getLogPath();
+
+	/**
+	 * @brief Set a callback to receive stdout/stderr output from the server.
+	 * @param callback Function that receives each line of output.
+	 */
+	void setOutputCallback(std::function<void(const std::string &)> callback);
 
   private:
 	class Impl; // Forward declaration for pImpl

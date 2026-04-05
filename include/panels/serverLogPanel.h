@@ -46,7 +46,7 @@ class ServerLogPanel
 	ftxui::Component component();
 
 	/**
-	 * @brief Append a line to the log.
+	 * @brief Append a line to the log (called from LlamaServerProcess).
 	 * @param line The line to append.
 	 */
 	void appendLine(const std::string &line);
@@ -62,11 +62,6 @@ class ServerLogPanel
 	 */
 	ftxui::Element renderLog();
 
-	/**
-	 * @brief Polling loop to read new lines from log file.
-	 */
-	void pollLogFile();
-
 	// FTXUI references
 	ftxui::ScreenInteractive &m_screen;
 
@@ -78,12 +73,6 @@ class ServerLogPanel
 	float m_scrollX = 0.0f;
 	float m_scrollY = 1.0f; // Start at bottom for auto-scroll
 	ftxui::Box m_box;
-
-	// File polling
-	std::string m_logPath;
-	std::atomic<bool> m_running{ false };
-	std::thread m_pollThread;
-	std::atomic<std::streamsize> m_lastReadPos{ 0 };
 
 	// Component
 	ftxui::Component m_component;

@@ -3,32 +3,21 @@
  * @brief Windows-specific implementation for launching llama-server.
  *
  * Uses CreateProcessA() to spawn the llama-server process.
- * Redirects stdout/stderr to a log file in .workbench/logs/
+ * Captures stdout/stderr via anonymous pipes and forwards to a callback.
  */
 
 #include "configManager.h"
 #include "llamaServerProcess.h"
 
-#include <fstream>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
 #include <windows.h>
 
-namespace {
-void logDebug(const std::string &msg)
-{
-	std::string logsDir = ConfigManager::getLogsDir();
-	std::string debugLogPath = logsDir + "\\debug.log";
-	std::ofstream debugFile(debugLogPath, std::ios::app);
-	debugFile << msg << "\n";
-}
-} // namespace
-
 class LlamaServerProcess::Impl
 {
   public:
-	Impl() : processHandle_(nullptr), logFileHandle_(nullptr), running_(false)
+	Impl() : processHandle_(nullptr), running_(false)
 	{
 	}
 
@@ -37,6 +26,11 @@ class LlamaServerProcess::Impl
 		if (running_) {
 			terminate();
 		}
+	}
+
+	void setOutputCallback(std::function<void(const std::string &)> callback)
+	{
+		outputCallback_ = callback;
 	}
 
 	bool launch(const std::string &modelPath,
@@ -49,44 +43,42 @@ class LlamaServerProcess::Impl
 
 		spdlog::debug("Building llama-server command");
 
-		// Get log path - redirect to .workbench/logs/llama-server.log
-		std::string logsDir = ConfigManager::getLogsDir();
-		std::string logPath = logsDir + "\\llama-server.log";
-
-		// Create logs directory if it doesn't exist
-		CreateDirectoryA(logsDir.c_str(), NULL);
-
 		spdlog::info("Starting llama-server with model: '{}'", modelPath);
 
-		// Setup for stdout/stderr redirection to log file
+		// Setup for stdout/stderr redirection using pipes
 		STARTUPINFOA si = {};
 		si.cb = sizeof(si);
 		si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
 		si.wShowWindow = SW_HIDE;
 
-		// Create log file handles
+		// Create pipes for stdout and stderr
 		SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
-		HANDLE hLogFile = CreateFileA(logPath.c_str(),
-									  GENERIC_WRITE,
-									  FILE_SHARE_WRITE,
-									  &sa,
-									  CREATE_ALWAYS,
-									  FILE_ATTRIBUTE_NORMAL,
-									  NULL);
 
-		if (hLogFile != INVALID_HANDLE_VALUE) {
-			si.hStdOutput = hLogFile;
-			si.hStdError = hLogFile;
-			logFileHandle_ = hLogFile; // Keep handle open for continuous writes
+		HANDLE hStdoutRead, hStdoutWrite;
+		HANDLE hStderrRead, hStderrWrite;
+
+		if (!CreatePipe(&hStdoutRead, &hStdoutWrite, &sa, 0)) {
+			spdlog::error("Failed to create stdout pipe");
+			return false;
 		}
+
+		if (!CreatePipe(&hStderrRead, &hStderrWrite, &sa, 0)) {
+			CloseHandle(hStdoutRead);
+			CloseHandle(hStdoutWrite);
+			spdlog::error("Failed to create stderr pipe");
+			return false;
+		}
+
+		// Set the write ends as stdout/stderr for the child
+		si.hStdOutput = hStdoutWrite;
+		si.hStdError = hStderrWrite;
 
 		PROCESS_INFORMATION pi = {};
 
 		// Use full path to llama-server executable
 		std::string exePath =
 			"C:\\Users\\bukal\\Documents\\llama\\llama-server.exe";
-		std::string argsOnly =
-			buildCommandLine(args); // Just args, no program name
+		std::string argsOnly = buildCommandLine(args);
 
 		BOOL success =
 			CreateProcessA(exePath.c_str(),	 // lpApplicationName - full path
@@ -101,11 +93,14 @@ class LlamaServerProcess::Impl
 						   &pi				 // lpProcessInformation
 			);
 
-		// NOTE: Do NOT close logFileHandle_ - keep it open for continuous writes
-		// It will be closed in terminate() or destructor
+		// Close the write ends in parent - child has copies
+		CloseHandle(hStdoutWrite);
+		CloseHandle(hStderrWrite);
 
 		if (!success) {
 			DWORD error = GetLastError();
+			CloseHandle(hStdoutRead);
+			CloseHandle(hStderrRead);
 			spdlog::error(
 				"Failed to start llama-server: CreateProcessA error {}",
 				error);
@@ -119,6 +114,14 @@ class LlamaServerProcess::Impl
 
 		processHandle_ = pi.hProcess;
 		running_ = true;
+
+		// Start background thread to read from pipes
+		stopPipeReader_.store(false);
+		pipeReadThread_ = std::thread([this, hStdoutRead, hStderrRead]() {
+			readPipe(hStdoutRead);
+			readPipe(hStderrRead);
+		});
+
 		return true;
 	}
 
@@ -130,9 +133,13 @@ class LlamaServerProcess::Impl
 
 		spdlog::info("Terminating llama-server...");
 
-		// Try graceful termination first using GenerateConsoleCtrlEvent
-		// This only works if the process is in the same console
-		// For DETACHED_PROCESS, we need to use TerminateProcess
+		// Stop the pipe reader first
+		stopPipeReader_.store(true);
+		if (pipeReadThread_.joinable()) {
+			pipeReadThread_.join();
+		}
+
+		// Then terminate the process
 		BOOL result = TerminateProcess(processHandle_, 1);
 		if (result) {
 			WaitForSingleObject(processHandle_, INFINITE);
@@ -140,14 +147,6 @@ class LlamaServerProcess::Impl
 
 		CloseHandle(processHandle_);
 		processHandle_ = nullptr;
-
-		// Close log file handle
-		if (logFileHandle_ != nullptr &&
-			logFileHandle_ != INVALID_HANDLE_VALUE) {
-			CloseHandle(logFileHandle_);
-			logFileHandle_ = nullptr;
-		}
-
 		running_ = false;
 
 		if (result) {
@@ -168,7 +167,6 @@ class LlamaServerProcess::Impl
 			if (exitCode == STILL_ACTIVE) {
 				return true;
 			}
-			// Process has exited
 			return false;
 		}
 		return false;
@@ -180,18 +178,55 @@ class LlamaServerProcess::Impl
 	}
 
   private:
+	void readPipe(HANDLE hRead)
+	{
+		const size_t bufferSize = 4096;
+		char buffer[bufferSize];
+		DWORD bytesRead;
+		std::string lineBuffer;
+
+		while (!stopPipeReader_.load()) {
+			BOOL result =
+				ReadFile(hRead, buffer, bufferSize - 1, &bytesRead, NULL);
+			if (!result || bytesRead == 0) {
+				break;
+			}
+
+			buffer[bytesRead] = '\0';
+
+			// Process character by character to handle line breaks
+			for (DWORD i = 0; i < bytesRead; ++i) {
+				if (buffer[i] == '\n' || buffer[i] == '\r') {
+					if (!lineBuffer.empty()) {
+						if (outputCallback_) {
+							outputCallback_(lineBuffer);
+						}
+						lineBuffer.clear();
+					}
+				} else {
+					lineBuffer += buffer[i];
+				}
+			}
+		}
+
+		// Send any remaining data
+		if (!lineBuffer.empty() && outputCallback_) {
+			outputCallback_(lineBuffer);
+		}
+
+		CloseHandle(hRead);
+	}
+
 	std::string buildCommandLine(const std::vector<std::string> &args)
 	{
 		std::string cmdLine;
 		for (const auto &arg : args) {
-			// Quote arguments that contain spaces
 			if (arg.find(' ') != std::string::npos) {
 				cmdLine += "\"" + arg + "\" ";
 			} else {
 				cmdLine += arg + " ";
 			}
 		}
-		// Remove trailing space
 		if (!cmdLine.empty() && cmdLine.back() == ' ') {
 			cmdLine.pop_back();
 		}
@@ -199,8 +234,10 @@ class LlamaServerProcess::Impl
 	}
 
 	HANDLE processHandle_;
-	HANDLE logFileHandle_; // Keep open for continuous writes
 	bool running_;
+	std::function<void(const std::string &)> outputCallback_;
+	std::thread pipeReadThread_;
+	std::atomic<bool> stopPipeReader_{ false };
 };
 
 LlamaServerProcess::LlamaServerProcess() : m_impl(std::make_unique<Impl>())
@@ -230,6 +267,12 @@ bool LlamaServerProcess::isRunning() const
 intptr_t LlamaServerProcess::getHandle() const
 {
 	return m_impl->getHandle();
+}
+
+void LlamaServerProcess::setOutputCallback(
+	std::function<void(const std::string &)> callback)
+{
+	m_impl->setOutputCallback(callback);
 }
 
 LlamaServerProcess &LlamaServerProcess::instance()

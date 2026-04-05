@@ -45,6 +45,10 @@ void App::run()
 	ModelsPanel modelsPanel;
 	ServerLogPanel serverLogPanel(screen);
 
+	// Set up callback to pipe llama-server output to the log panel
+	LlamaServerProcess::instance().setOutputCallback(
+		[&](const std::string &line) { serverLogPanel.appendLine(line); });
+
 	std::vector<std::string> tabValues{ "App Settings",
 										"Model Settings",
 										"Server Log",

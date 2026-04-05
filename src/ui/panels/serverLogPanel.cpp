@@ -4,15 +4,9 @@
  */
 
 #include "serverLogPanel.h"
-#include "llamaServerProcess.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
-
-#include <chrono>
-#include <fstream>
-#include <string>
-#include <thread>
 
 using namespace ftxui;
 
@@ -21,18 +15,12 @@ using namespace ftxui;
 // ---------------------------------------------------------------------------
 
 ServerLogPanel::ServerLogPanel(ftxui::ScreenInteractive &screen)
-	: m_screen(screen), m_logPath(LlamaServerProcess::getLogPath())
+	: m_screen(screen)
 {
 	// Component will be created on first access to component()
 }
 
-ServerLogPanel::~ServerLogPanel()
-{
-	m_running.store(false);
-	if (m_pollThread.joinable()) {
-		m_pollThread.join();
-	}
-}
+ServerLogPanel::~ServerLogPanel() = default;
 
 // ---------------------------------------------------------------------------
 // Component creation
@@ -82,10 +70,6 @@ Component ServerLogPanel::component()
 				Renderer([] { return text(L""); }),
 			}),
 		});
-
-		// Start polling thread
-		m_running.store(true);
-		m_pollThread = std::thread(&ServerLogPanel::pollLogFile, this);
 	}
 
 	return m_component;
@@ -105,63 +89,12 @@ Element ServerLogPanel::renderLog()
 	}
 
 	if (elements.empty()) {
-		return window(text("Server Log"), text("No log output yet...") | dim) |
+		return window(text("Server Log"),
+					  text("Waiting for server output...") | dim) |
 			   flex;
 	}
 
 	return window(text("Server Log"), vbox(std::move(elements)) | flex) | flex;
-}
-
-// ---------------------------------------------------------------------------
-// Log file polling
-// ---------------------------------------------------------------------------
-
-void ServerLogPanel::pollLogFile()
-{
-	std::ifstream file;
-
-	while (m_running.load()) {
-		// Open file if not open
-		if (!file.is_open()) {
-			file.open(m_logPath, std::ios::in);
-			if (!file.is_open()) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(500));
-				continue;
-			}
-			// Seek to end to only read new content
-			file.seekg(0, std::ios::end);
-			m_lastReadPos.store(file.tellg());
-		}
-
-		// Read new lines
-		std::string line;
-		bool newContent = false;
-
-		while (std::getline(file, line)) {
-			if (!line.empty()) {
-				{
-					std::lock_guard<std::mutex> lock(m_linesMutex);
-					m_lines.push_back(line);
-				}
-				newContent = true;
-			}
-		}
-
-		// Update position and trigger redraw if new content
-		if (file.good()) {
-			m_lastReadPos.store(file.tellg());
-		} else {
-			// Clear fail state and reopen
-			file.close();
-		}
-
-		if (newContent) {
-			m_screen.PostEvent(Event::Custom);
-		}
-
-		// Sleep before next poll
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	}
 }
 
 // ---------------------------------------------------------------------------
