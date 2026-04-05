@@ -40,6 +40,12 @@ class LlamaServerProcess::Impl
 
 		spdlog::info("Starting llama-server with model: '{}'", modelPath);
 
+		// Build full command for logging
+		std::string exePath =
+			"C:\\Users\\bukal\\Documents\\llama\\llama-server.exe";
+		std::string fullCommand = exePath + " " + buildCommandLine(args);
+		spdlog::info("llama-server command: {}", fullCommand);
+
 		// Setup for hidden window
 		STARTUPINFOA si = {};
 		si.cb = sizeof(si);
