@@ -130,21 +130,21 @@ void ServerLogPanel::pollLogFile()
 
 		// Read all lines from the file
 		std::string line;
+		size_t newLinesCount = 0;
 		while (std::getline(file, line)) {
+			// Only add lines we haven't seen yet
 			if (!line.empty()) {
 				std::lock_guard<std::mutex> lock(m_linesMutex);
 				m_lines.push_back(line);
+				newLinesCount++;
 			}
 		}
 
 		file.close();
 
-		// If we added new lines, trigger UI update
-		{
-			std::lock_guard<std::mutex> lock(m_linesMutex);
-			if (!m_lines.empty()) {
-				m_screen.PostEvent(Event::Custom);
-			}
+		// Only trigger UI update if we actually added new lines
+		if (newLinesCount > 0) {
+			m_screen.PostEvent(Event::Custom);
 		}
 
 		// Sleep before next poll

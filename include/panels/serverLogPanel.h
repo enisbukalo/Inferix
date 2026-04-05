@@ -77,6 +77,7 @@ class ServerLogPanel
 	std::string m_logPath;
 	std::atomic<bool> m_running{ false };
 	std::thread m_pollThread;
+	size_t m_lastLineCount{ 0 }; // Track how many lines we've read
 
 	// Component
 	ftxui::Component m_component;
