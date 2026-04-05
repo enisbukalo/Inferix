@@ -55,8 +55,6 @@ class LlamaServerProcess::Impl
 		PROCESS_INFORMATION pi = {};
 
 		// Use full path to llama-server executable
-		std::string exePath =
-			"C:\\Users\\bukal\\Documents\\llama\\llama-server.exe";
 		std::string argsOnly = buildCommandLine(args);
 
 		BOOL success = CreateProcessA(exePath.c_str(),	// lpApplicationName
