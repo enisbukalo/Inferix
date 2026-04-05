@@ -5,6 +5,8 @@ add_executable(WorkbenchTests
     main.cpp
     config/config_serialization_test.cpp
     config/config_manager_test.cpp
+    core/event_bus_test.cpp
+    utility/model_discovery_test.cpp
 )
 
 # Set output directory to match main build
