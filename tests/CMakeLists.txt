@@ -7,6 +7,9 @@ add_executable(WorkbenchTests
     config/config_manager_test.cpp
     core/event_bus_test.cpp
     utility/model_discovery_test.cpp
+    system/cpu_monitor_test.cpp
+    system/memory_monitor_test.cpp
+    system/gpu_monitor_test.cpp
 )
 
 # Set output directory to match main build
@@ -57,9 +60,6 @@ list(REMOVE_ITEM TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcess.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcessLinux.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcessWindows.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/cpuMonitor.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/ramMonitor.cpp"
-    "${CMAKE_SOURCE_DIR}/src/system/gpuMonitor.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/systemMonitorRunner.cpp"
 )
 
@@ -72,6 +72,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         "${CMAKE_SOURCE_DIR}/src/system/ptyWindows.cpp"
         "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcess.cpp"
         "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcessWindows.cpp"
+        "${CMAKE_SOURCE_DIR}/src/system/cpuMonitor.cpp"
+        "${CMAKE_SOURCE_DIR}/src/system/ramMonitor.cpp"
+        "${CMAKE_SOURCE_DIR}/src/system/gpuMonitor.cpp"
     )
 else()
     list(APPEND TEST_SOURCES
@@ -81,6 +84,9 @@ else()
         "${CMAKE_SOURCE_DIR}/src/system/ptyLinux.cpp"
         "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcess.cpp"
         "${CMAKE_SOURCE_DIR}/src/system/llamaServerProcessLinux.cpp"
+        "${CMAKE_SOURCE_DIR}/src/system/cpuMonitor.cpp"
+        "${CMAKE_SOURCE_DIR}/src/system/ramMonitor.cpp"
+        "${CMAKE_SOURCE_DIR}/src/system/gpuMonitor.cpp"
     )
 endif()
 
