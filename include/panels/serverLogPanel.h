@@ -1,24 +1,29 @@
 #pragma once
 
+#include <atomic>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
+
+#include "llamaServerProcess.h"
+#include "terminalPanel.h"
+
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/component_options.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/box.hpp>
 
-#include <atomic>
-#include <mutex>
-#include <string>
-#include <thread>
-#include <vector>
-
 /**
  * @file serverLogPanel.h
- * @brief Scrollable log panel for displaying llama-server output.
+ * @brief Live log panel for displaying llama-server output.
  *
- * Displays log output from llama-server in a scrollable window with
- * horizontal and vertical sliders. Auto-scrolls to bottom when new
- * content arrives. Reads from the log file.
+ * Uses a TerminalPanel internally to display the log file output in
+ * real-time using native file watching (Get-Content -Wait on Windows,
+ * tail -f on Linux). This provides proper auto-scrolling and real-time
+ * updates without manual polling.
  */
 class ServerLogPanel
 {
@@ -31,7 +36,7 @@ class ServerLogPanel
 	explicit ServerLogPanel(ftxui::ScreenInteractive &screen);
 
 	/**
-	 * @brief Destructor - stops polling thread.
+	 * @brief Destructor - shuts down the internal terminal.
 	 */
 	~ServerLogPanel();
 
@@ -46,35 +51,34 @@ class ServerLogPanel
 	ftxui::Component component();
 
 	/**
-	 * @brief Clear all log lines.
+	 * @brief Start the log viewer (spawn the internal terminal).
+	 */
+	void start();
+
+	/**
+	 * @brief Stop the log viewer (shutdown the internal terminal).
+	 */
+	void stop();
+
+	/**
+	 * @brief Check if the log viewer is running.
+	 */
+	bool isRunning() const;
+
+	/**
+	 * @brief Clear the log display.
 	 */
 	void clear();
 
   private:
-	/**
-	 * @brief Render the log content.
-	 */
-	ftxui::Element renderLog();
-
-	/**
-	 * @brief Polling loop to read new lines from log file.
-	 */
-	void pollLogFile();
-
 	// FTXUI references
 	ftxui::ScreenInteractive &m_screen;
 
-	// Log content
-	std::vector<std::string> m_lines;
-	std::mutex m_linesMutex;
+	// Internal terminal for displaying log output
+	std::unique_ptr<TerminalPanel> m_terminal;
 
-	// Scroll state - controls the slider position
-	float m_scrollY = 1.0f; // Start at bottom (1.0) for auto-scroll
-
-	// File polling
+	// Log file path
 	std::string m_logPath;
-	std::atomic<bool> m_running{ false };
-	std::thread m_pollThread;
 
 	// Component
 	ftxui::Component m_component;

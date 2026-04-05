@@ -1,20 +1,40 @@
 /**
  * @file serverLogPanel.cpp
- * @brief Implementation of scrollable log panel for llama-server output.
+ * @brief Implementation of live log panel using TerminalPanel.
+ *
+ * Uses TerminalPanel internally to watch the llama-server log file
+ * in real-time using native file watching commands.
  */
 
 #include "serverLogPanel.h"
-#include "llamaServerProcess.h"
+
+#include <spdlog/spdlog.h>
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
 
-#include <chrono>
-#include <fstream>
-#include <string>
-#include <thread>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
 using namespace ftxui;
+
+// ---------------------------------------------------------------------------
+// Platform-specific log watching command
+// ---------------------------------------------------------------------------
+
+static std::string getLogWatchCommand(const std::string &logPath)
+{
+#ifdef _WIN32
+	// Windows PowerShell: Get-Content with -Wait for real-time streaming
+	return "Get-Content -Path \"" + logPath + "\" -Wait";
+#else
+	// Linux: tail -f for real-time streaming
+	return "tail -f \"" + logPath + "\"";
+#endif
+}
 
 // ---------------------------------------------------------------------------
 // Construction / destruction
@@ -23,15 +43,12 @@ using namespace ftxui;
 ServerLogPanel::ServerLogPanel(ftxui::ScreenInteractive &screen)
 	: m_screen(screen), m_logPath(LlamaServerProcess::getLogPath())
 {
-	// Component will be created on first access to component()
+	spdlog::debug("ServerLogPanel: log path = {}", m_logPath);
 }
 
 ServerLogPanel::~ServerLogPanel()
 {
-	m_running.store(false);
-	if (m_pollThread.joinable()) {
-		m_pollThread.join();
-	}
+	stop();
 }
 
 // ---------------------------------------------------------------------------
@@ -41,101 +58,45 @@ ServerLogPanel::~ServerLogPanel()
 Component ServerLogPanel::component()
 {
 	if (m_component == nullptr) {
-		// Create content renderer
-		auto content = Renderer([this] { return renderLog(); });
+		// Create the internal terminal with the log-watching command
+		std::string watchCmd = getLogWatchCommand(m_logPath);
+		spdlog::debug("ServerLogPanel: watch command = {}", watchCmd);
 
-		// Make scrollable using frame with focus position
-		// The slider controls m_scrollY which goes from 0 (top) to 1 (bottom)
-		auto scrollable = Renderer(content, [&, content] {
-			return content->Render() | focusPositionRelative(0.0f, m_scrollY) |
-				   frame | flex;
-		});
+		m_terminal = std::make_unique<TerminalPanel>(m_screen, watchCmd);
 
-		// Slider for vertical scrolling
-		SliderOption<float> option;
-		option.value = &m_scrollY;
-		option.min = 0.0f;
-		option.max = 1.0f;
-		option.increment = 0.05f;
-		option.direction = Direction::Down;
-		option.color_active = Color::Yellow;
-		option.color_inactive = Color::GrayDark;
-		auto scrollbar = Slider(option);
+		// Create component that wraps the terminal
+		m_component = m_terminal->component();
 
-		m_component = Container::Horizontal({
-			scrollable | flex,
-			scrollbar,
-		});
-
-		// Start polling thread
-		m_running.store(true);
-		m_pollThread = std::thread(&ServerLogPanel::pollLogFile, this);
+		// Auto-start the log viewer
+		start();
 	}
 
 	return m_component;
 }
 
 // ---------------------------------------------------------------------------
-// Rendering
+// Start/Stop
 // ---------------------------------------------------------------------------
 
-Element ServerLogPanel::renderLog()
+void ServerLogPanel::start()
 {
-	std::lock_guard<std::mutex> lock(m_linesMutex);
-
-	std::vector<Element> elements;
-	for (const auto &line : m_lines) {
-		elements.push_back(text(line));
+	if (m_terminal && !m_terminal->isSpawned()) {
+		spdlog::info("ServerLogPanel: starting log viewer");
+		m_terminal->spawn();
 	}
-
-	if (elements.empty()) {
-		return window(text("Server Log"),
-					  text("Waiting for server output...") | dim) |
-			   flex;
-	}
-
-	return window(text("Server Log"), vbox(std::move(elements)) | flex) | flex;
 }
 
-// ---------------------------------------------------------------------------
-// Log file polling
-// ---------------------------------------------------------------------------
-
-void ServerLogPanel::pollLogFile()
+void ServerLogPanel::stop()
 {
-	while (m_running.load()) {
-		// Open file fresh each iteration to detect new content
-		std::ifstream file(m_logPath, std::ios::in);
-
-		if (!file.is_open()) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
-			continue;
-		}
-
-		// Read all lines from the file
-		std::string line;
-		size_t newLinesCount = 0;
-		while (std::getline(file, line)) {
-			// Only add lines we haven't seen yet
-			if (!line.empty()) {
-				std::lock_guard<std::mutex> lock(m_linesMutex);
-				m_lines.push_back(line);
-				newLinesCount++;
-			}
-		}
-
-		file.close();
-
-		// Only trigger UI update if we actually added new lines
-		if (newLinesCount > 0) {
-			// Auto-scroll to bottom when new content arrives
-			m_scrollY = 1.0f;
-			m_screen.PostEvent(Event::Custom);
-		}
-
-		// Sleep before next poll
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	if (m_terminal && m_terminal->isSpawned()) {
+		spdlog::info("ServerLogPanel: stopping log viewer");
+		m_terminal->shutdown();
 	}
+}
+
+bool ServerLogPanel::isRunning() const
+{
+	return m_terminal && m_terminal->isSpawned();
 }
 
 // ---------------------------------------------------------------------------
@@ -144,7 +105,7 @@ void ServerLogPanel::pollLogFile()
 
 void ServerLogPanel::clear()
 {
-	std::lock_guard<std::mutex> lock(m_linesMutex);
-	m_lines.clear();
-	m_screen.PostEvent(Event::Custom);
+	// The terminal handles its own display; no need to clear anything here.
+	// If needed, we could restart the terminal to clear its buffer.
+	spdlog::debug("ServerLogPanel: clear requested (no-op)");
 }

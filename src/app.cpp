@@ -23,6 +23,7 @@
 #include <ftxui/dom/elements.hpp>
 #include <spdlog/spdlog.h>
 
+#include <fstream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -33,10 +34,10 @@ void App::run()
 {
 	spdlog::info("App::run() - initializing");
 
-	// Delete old llama-server log on startup
+	// Clear llama-server log on startup (truncate existing file)
 	{
 		std::string logPath = ConfigManager::getLogsDir() + "/llama-server.log";
-		std::remove(logPath.c_str());
+		std::ofstream(logPath, std::ios::trunc).close();
 	}
 
 	auto screen = ScreenInteractive::Fullscreen();
@@ -86,6 +87,9 @@ void App::run()
 
 	// Server Log tab - shows live output from llama-server
 	auto logOutputContent = serverLogPanel.component();
+
+	// Spawn ServerLogPanel terminal (watching the log file)
+	serverLogPanel.start();
 
 	auto tabContainer = Container::Tab(
 		{ settingsContent, modelContent, logOutputContent, terminalContent },
