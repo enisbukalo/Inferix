@@ -145,6 +145,9 @@ class LlamaServerProcess::Impl
 			close(logfd);
 		}
 
+		// Detach from controlling terminal - prevents terminal window spawn
+		setsid();
+
 		// Convert std::vector<std::string> to char* const* for execve
 		std::vector<char *> argv;
 		for (const auto &arg : args) {

@@ -28,7 +28,7 @@ void logDebug(const std::string &msg)
 class LlamaServerProcess::Impl
 {
   public:
-	Impl() : processHandle_(nullptr), running_(false)
+	Impl() : processHandle_(nullptr), logFileHandle_(nullptr), running_(false)
 	{
 	}
 
@@ -77,6 +77,7 @@ class LlamaServerProcess::Impl
 		if (hLogFile != INVALID_HANDLE_VALUE) {
 			si.hStdOutput = hLogFile;
 			si.hStdError = hLogFile;
+			logFileHandle_ = hLogFile; // Keep handle open for continuous writes
 		}
 
 		PROCESS_INFORMATION pi = {};
@@ -100,10 +101,8 @@ class LlamaServerProcess::Impl
 						   &pi				 // lpProcessInformation
 			);
 
-		// Close log file handle
-		if (hLogFile != INVALID_HANDLE_VALUE) {
-			CloseHandle(hLogFile);
-		}
+		// NOTE: Do NOT close logFileHandle_ - keep it open for continuous writes
+		// It will be closed in terminate() or destructor
 
 		if (!success) {
 			DWORD error = GetLastError();
@@ -141,6 +140,14 @@ class LlamaServerProcess::Impl
 
 		CloseHandle(processHandle_);
 		processHandle_ = nullptr;
+
+		// Close log file handle
+		if (logFileHandle_ != nullptr &&
+			logFileHandle_ != INVALID_HANDLE_VALUE) {
+			CloseHandle(logFileHandle_);
+			logFileHandle_ = nullptr;
+		}
+
 		running_ = false;
 
 		if (result) {
@@ -192,6 +199,7 @@ class LlamaServerProcess::Impl
 	}
 
 	HANDLE processHandle_;
+	HANDLE logFileHandle_; // Keep open for continuous writes
 	bool running_;
 };
 

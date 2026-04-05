@@ -11,6 +11,7 @@
 #include "configManager.h"
 #include "modelsPanel.h"
 #include "serverInfoPanel.h"
+#include "serverLogPanel.h"
 #include "settingsPanel.h"
 #include "systemMonitorRunner.h"
 #include "systemResourcesPanel.h"
@@ -42,6 +43,7 @@ void App::run()
 	TerminalPanel terminalPanel(screen);
 	SettingsPanel settingsPanel;
 	ModelsPanel modelsPanel;
+	ServerLogPanel serverLogPanel(screen);
 
 	std::vector<std::string> tabValues{ "App Settings",
 										"Model Settings",
@@ -76,9 +78,8 @@ void App::run()
 
 	auto terminalContent = terminalPanel.component();
 
-	// Placeholder for when we implement reading live log outputs from llama.cpp
-	auto logOutputContent =
-		Renderer([] { return window(text(""), text(""), ftxui::EMPTY) | flex; });
+	// Server Log tab - shows live output from llama-server
+	auto logOutputContent = serverLogPanel.component();
 
 	auto tabContainer = Container::Tab(
 		{ settingsContent, modelContent, logOutputContent, terminalContent },
