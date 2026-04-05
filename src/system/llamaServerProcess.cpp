@@ -174,7 +174,6 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 	args.push_back(ConfigManager::getLogsDir() + "/llama-server.log");
 	args.push_back("--log-timestamps");
 	args.push_back("--log-prefix");
-	args.push_back("on");
 	args.push_back("--log-colors");
 	args.push_back("on");
 
