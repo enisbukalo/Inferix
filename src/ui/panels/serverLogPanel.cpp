@@ -28,11 +28,12 @@ using namespace ftxui;
 static std::string getLogWatchCommand(const std::string &logPath)
 {
 #ifdef _WIN32
-	// Windows PowerShell: Get-Content with -Wait for real-time streaming
-	return "Get-Content -Path \"" + logPath + "\" -Wait";
+	// Windows: cls to clear screen, then Get-Content with -Wait for real-time
+	// streaming
+	return "cls; Get-Content -Path \"" + logPath + "\" -Wait";
 #else
-	// Linux: tail -f for real-time streaming
-	return "tail -f \"" + logPath + "\"";
+	// Linux: clear to clear screen, then tail -f for real-time streaming
+	return "clear; tail -f \"" + logPath + "\"";
 #endif
 }
 
