@@ -18,7 +18,7 @@
  *
  * Displays log output from llama-server in a scrollable window with
  * horizontal and vertical sliders. Auto-scrolls to bottom when new
- * content arrives.
+ * content arrives. Reads from the log file.
  */
 class ServerLogPanel
 {
@@ -46,12 +46,6 @@ class ServerLogPanel
 	ftxui::Component component();
 
 	/**
-	 * @brief Append a line to the log (called from LlamaServerProcess).
-	 * @param line The line to append.
-	 */
-	void appendLine(const std::string &line);
-
-	/**
 	 * @brief Clear all log lines.
 	 */
 	void clear();
@@ -62,6 +56,11 @@ class ServerLogPanel
 	 */
 	ftxui::Element renderLog();
 
+	/**
+	 * @brief Polling loop to read new lines from log file.
+	 */
+	void pollLogFile();
+
 	// FTXUI references
 	ftxui::ScreenInteractive &m_screen;
 
@@ -71,8 +70,13 @@ class ServerLogPanel
 
 	// Scroll state
 	float m_scrollX = 0.0f;
-	float m_scrollY = 1.0f; // Start at bottom for auto-scroll
+	float m_scrollY = 1.0f;
 	ftxui::Box m_box;
+
+	// File polling
+	std::string m_logPath;
+	std::atomic<bool> m_running{ false };
+	std::thread m_pollThread;
 
 	// Component
 	ftxui::Component m_component;

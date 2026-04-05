@@ -33,6 +33,12 @@ void App::run()
 {
 	spdlog::info("App::run() - initializing");
 
+	// Delete old llama-server log on startup
+	{
+		std::string logPath = ConfigManager::getLogsDir() + "/llama-server.log";
+		std::remove(logPath.c_str());
+	}
+
 	auto screen = ScreenInteractive::Fullscreen();
 
 	// Load config and start the system monitor singleton with the screen
@@ -44,10 +50,6 @@ void App::run()
 	SettingsPanel settingsPanel;
 	ModelsPanel modelsPanel;
 	ServerLogPanel serverLogPanel(screen);
-
-	// Set up callback to pipe llama-server output to the log panel
-	LlamaServerProcess::instance().setOutputCallback(
-		[&](const std::string &line) { serverLogPanel.appendLine(line); });
 
 	std::vector<std::string> tabValues{ "App Settings",
 										"Model Settings",
