@@ -109,6 +109,17 @@ struct ServerSettings
 	int threadsHttp = -1;
 
 	/**
+	 * @brief Reuse existing port if already bound.
+	 *
+	 * Allows binding to a port that is already in use by setting
+	 * SO_REUSEADDR before binding.
+	 *
+	 * Corresponds to: `--reuse-port`
+	 * @default false
+	 */
+	bool reusePort = false;
+
+	/**
 	 * @name SSL/TLS Settings
 	 *
 	 * These fields enable HTTPS by providing certificate and key files.
@@ -198,6 +209,44 @@ struct ServerSettings
 	 * @default true
 	 */
 	bool webui = true;
+
+	/**
+	 * @brief Inline WebUI configuration.
+	 *
+	 * JSON configuration string for the web UI.
+	 *
+	 * Corresponds to: `--webui-config JSON`
+	 */
+	std::string webuiConfig;
+
+	/**
+	 * @brief Path to WebUI configuration file.
+	 *
+	 * File containing JSON configuration for the web UI.
+	 *
+	 * Corresponds to: `--webui-config-file FNAME`
+	 */
+	std::string webuiConfigFile;
+
+	/**
+	 * @brief Enable WebUI MCP proxy.
+	 *
+	 * Enables the Model Context Protocol proxy in the WebUI.
+	 *
+	 * Corresponds to: `--webui-mcp-proxy` (enable) or `--no-webui-mcp-proxy` (disable)
+	 * @default false
+	 */
+	bool webuiMcpProxy = false;
+
+	/**
+	 * @brief Enable tools endpoint.
+	 *
+	 * Enables the tools/calling endpoint for function calling.
+	 * Value can be "all" or a comma-separated list of tool names.
+	 *
+	 * Corresponds to: `--tools TOOLS`
+	 */
+	std::string tools;
 
 	/**
 	 * @brief Run in embedding mode.
