@@ -14,3 +14,9 @@ MemoryStats MemoryMonitor::getStats() const
 	std::lock_guard<std::mutex> lock(statsMutex_);
 	return stats_;
 }
+
+std::optional<MemoryStats> MemoryMonitor::tryUpdate()
+{
+	update();
+	return getStats();
+}
