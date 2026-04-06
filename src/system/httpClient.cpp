@@ -15,12 +15,12 @@ class HttpClient::Impl
 	{
 		try {
 			// Create client for this request (host extracted from URL)
-			auto [host, path] = parseUrl(url);
+			auto [host, port, path] = parseUrl(url);
 			if (host.empty()) {
 				return { false, "Invalid URL: could not parse host" };
 			}
 
-			httplib::Client cli(host.c_str(), 80);
+			httplib::Client cli(host.c_str(), port);
 			cli.set_connection_timeout(m_timeout);
 			cli.set_read_timeout(m_timeout);
 
@@ -45,12 +45,12 @@ class HttpClient::Impl
 									  std::string_view jsonBody)
 	{
 		try {
-			auto [host, path] = parseUrl(url);
+			auto [host, port, path] = parseUrl(url);
 			if (host.empty()) {
 				return { false, "Invalid URL: could not parse host" };
 			}
 
-			httplib::Client cli(host.c_str(), 80);
+			httplib::Client cli(host.c_str(), port);
 			cli.set_connection_timeout(m_timeout);
 			cli.set_read_timeout(m_timeout);
 			cli.set_write_timeout(m_timeout);
@@ -80,11 +80,13 @@ class HttpClient::Impl
 	}
 
   private:
-	// Simple URL parser - extracts host and path from full URL
+	// Simple URL parser - extracts host, port, and path from full URL
 	// Expected format: http://host:port/path or http://host/path
-	static std::pair<std::string, std::string> parseUrl(std::string_view url)
+	static std::tuple<std::string, int, std::string>
+	parseUrl(std::string_view url)
 	{
 		std::string host;
+		int port = 80;
 		std::string path = "/";
 
 		// Skip "http://"
@@ -92,6 +94,7 @@ class HttpClient::Impl
 			url = url.substr(7);
 		} else if (url.starts_with("https://")) {
 			url = url.substr(8);
+			port = 443;
 		}
 
 		// Find first / to separate host:port from path
@@ -104,10 +107,10 @@ class HttpClient::Impl
 			path = std::string(url.substr(slashPos));
 		}
 
-		// Remove port from host if present
+		// Extract port from host if present (e.g., "127.0.0.1:8080")
 		auto colonPos = host.rfind(':');
 		if (colonPos != std::string::npos) {
-			// Could be port - simplistic check
+			// Check if what follows colon is digits (port number)
 			bool isPort = true;
 			for (size_t i = colonPos + 1; i < host.size(); ++i) {
 				if (!std::isdigit(host[i])) {
@@ -116,11 +119,17 @@ class HttpClient::Impl
 				}
 			}
 			if (isPort) {
+				std::string portStr = host.substr(colonPos + 1);
 				host = host.substr(0, colonPos);
+				try {
+					port = std::stoi(portStr);
+				} catch (...) {
+					port = 80;
+				}
 			}
 		}
 
-		return { host, path };
+		return { host, port, path };
 	}
 
 	httplib::Client m_client;

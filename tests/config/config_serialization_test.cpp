@@ -326,21 +326,19 @@ TEST(ConfigSerialization, DiscoverySettings_DefaultRoundtrip) {
     auto j = serializeRoundtrip(original);
     auto restored = deserializeRoundtrip<DiscoverySettings>(j);
 
-    EXPECT_EQ(original.modelSearchPaths, restored.modelSearchPaths);
+    EXPECT_EQ(original.modelSearchPath, restored.modelSearchPath);
     EXPECT_EQ(original.fileFilter, restored.fileFilter);
 }
 
 TEST(ConfigSerialization, DiscoverySettings_ModifiedValues) {
     DiscoverySettings original;
-    original.modelSearchPaths = {"/path/to/models", "~/llama-models"};
+    original.modelSearchPath = "/path/to/models";
     original.fileFilter = {"mmproj*", "*draft*"};
 
     auto j = serializeRoundtrip(original);
     auto restored = deserializeRoundtrip<DiscoverySettings>(j);
 
-    EXPECT_EQ(restored.modelSearchPaths.size(), 2);
-    EXPECT_EQ(restored.modelSearchPaths[0], "/path/to/models");
-    EXPECT_EQ(restored.modelSearchPaths[1], "~/llama-models");
+    EXPECT_EQ(restored.modelSearchPath, "/path/to/models");
     EXPECT_EQ(restored.fileFilter.size(), 2);
 }
 
@@ -360,7 +358,7 @@ TEST(ConfigSerialization, UserConfig_DefaultRoundtrip) {
     EXPECT_EQ(original.inference.temperature, restored.inference.temperature);
     EXPECT_EQ(original.ui.theme, restored.ui.theme);
     EXPECT_EQ(original.terminal.defaultShell, restored.terminal.defaultShell);
-    EXPECT_EQ(original.discovery.modelSearchPaths, restored.discovery.modelSearchPaths);
+    EXPECT_EQ(original.discovery.modelSearchPath, restored.discovery.modelSearchPath);
     EXPECT_EQ(original.presets.size(), restored.presets.size());
     EXPECT_EQ(original.terminalPresets.size(), restored.terminalPresets.size());
 }
@@ -376,7 +374,7 @@ TEST(ConfigSerialization, UserConfig_ModifiedValues) {
     original.ui.theme = "light";
     original.ui.defaultTab = 1;  // int, not string
     original.terminal.defaultShell = "/usr/bin/bash";
-    original.discovery.modelSearchPaths = {"/models"};
+    original.discovery.modelSearchPath = "/models";
 
     ModelPreset preset;
     preset.name = "Test Preset";
@@ -401,7 +399,7 @@ TEST(ConfigSerialization, UserConfig_ModifiedValues) {
     EXPECT_EQ(restored.ui.theme, "light");
     EXPECT_EQ(restored.ui.defaultTab, 1);
     EXPECT_EQ(restored.terminal.defaultShell, "/usr/bin/bash");
-    EXPECT_EQ(restored.discovery.modelSearchPaths.size(), 1);
+    EXPECT_EQ(restored.discovery.modelSearchPath, "/models");
     EXPECT_EQ(restored.presets.size(), 1);
     EXPECT_EQ(restored.presets[0].name, "Test Preset");
     EXPECT_EQ(restored.terminalPresets.size(), 1);

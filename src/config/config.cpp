@@ -383,13 +383,13 @@ void from_json(const json &j, TerminalPreset &v)
 
 void to_json(json &j, const DiscoverySettings &v)
 {
-	j["modelSearchPaths"] = v.modelSearchPaths;
+	j["modelSearchPath"] = v.modelSearchPath;
 	j["fileFilter"] = v.fileFilter;
 }
 
 void from_json(const json &j, DiscoverySettings &v)
 {
-	v.modelSearchPaths = j.value("modelSearchPaths", std::vector<std::string>{});
+	v.modelSearchPath = j.value("modelSearchPath", std::string{});
 	v.fileFilter = j.value("fileFilter", std::vector<std::string>{ "mmproj*" });
 }
 

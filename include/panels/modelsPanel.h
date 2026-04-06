@@ -164,7 +164,7 @@ class ModelsPanel
 	void onLoadClicked();
 
 	// =========================================================================
-	// Server/Model State Tracking (for Start/Stop and Load/Unload buttons)
+	// Server/Model State Tracking (for single server button)
 	// =========================================================================
 	/** Current server running state */
 	bool m_serverRunning = false;
@@ -173,15 +173,13 @@ class ModelsPanel
 	/** Path of currently loaded model (if any) */
 	std::string m_loadedModelPath;
 
-	/** Dynamic label for Start/Stop button */
-	std::string m_startStopLabel = "START";
-	/** Dynamic label for Load/Unload button */
-	std::string m_loadUnloadLabel = "LOAD";
+	/** Dynamic label for server button: LOAD -> STOP */
+	std::string m_startStopLabel = "LOAD";
 
-	/** Handle START/STOP button click */
+	/** Handle server button click */
 	void onStartStopClicked();
 
-	/** Handle LOAD/UNLOAD button click */
+	/** Handle LOAD/UNLOAD (when server running) */
 	void onLoadUnloadClicked();
 
 	/** Refresh server and model state from API */

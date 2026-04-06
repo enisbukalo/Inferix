@@ -26,12 +26,18 @@ TEST(LlamaServerProcess, BuildCommandArgsModelPathIsSecond) {
     InferenceSettings inference;
     ServerSettings server;
     
+    // Router mode now uses --models-dir instead of -m
+    // The modelPath parameter is no longer used (router mode loads dynamically)
     auto args = LlamaServerProcess::buildCommandArgs("/path/to/model.gguf", load, inference, server);
     
-    // Should have -m flag followed by model path
-    ASSERT_GE(args.size(), 3);
-    EXPECT_EQ(args[1], "-m");
-    EXPECT_EQ(args[2], "/path/to/model.gguf");
+    // Should have --models-dir flag (from discovery.modelSearchPath in config)
+    // But since config is empty in test, --models-dir won't be added
+    ASSERT_FALSE(args.empty());
+    EXPECT_EQ(args[0], "llama-server");
+    // -m should NOT be present in router mode
+    for (size_t i = 1; i < args.size(); i++) {
+        EXPECT_NE(args[i], "-m");
+    }
 }
 
 TEST(LlamaServerProcess, BuildCommandArgsEmptyModelPath) {
@@ -647,8 +653,7 @@ TEST(LlamaServerProcess, BuildCommandArgsFullSettings) {
     
     auto args = LlamaServerProcess::buildCommandArgs("test.gguf", load, inference, server);
     
-    // Verify key args are present
-    EXPECT_NE(std::find(args.begin(), args.end(), "-m"), args.end());
+    // Verify key args are present (router mode uses --models-dir instead of -m)
     EXPECT_NE(std::find(args.begin(), args.end(), "-ngl"), args.end());
     EXPECT_NE(std::find(args.begin(), args.end(), "-c"), args.end());
     EXPECT_NE(std::find(args.begin(), args.end(), "-np"), args.end());
@@ -658,6 +663,8 @@ TEST(LlamaServerProcess, BuildCommandArgsFullSettings) {
     EXPECT_NE(std::find(args.begin(), args.end(), "-n"), args.end());
     EXPECT_NE(std::find(args.begin(), args.end(), "--host"), args.end());
     EXPECT_NE(std::find(args.begin(), args.end(), "--port"), args.end());
+    // -m should NOT be present in router mode
+    EXPECT_EQ(std::find(args.begin(), args.end(), "-m"), args.end());
 }
 
 // =============================================================================

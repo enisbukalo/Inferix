@@ -245,7 +245,7 @@ class LlamaServerProcess::Impl
 			return false;
 		auto &cfg = ConfigManager::instance().getConfig();
 		std::string url = "http://" + cfg.server.host + ":" +
-						  std::to_string(cfg.server.port) + "/props";
+						  std::to_string(cfg.server.port) + "/models/unload";
 		std::string body = "{\"model\":\"\"}";
 		auto [success, response] = httpClient_.post(url, body);
 		if (success) {
@@ -260,13 +260,19 @@ class LlamaServerProcess::Impl
 	{
 		if (!isServerHealthy())
 			return false;
+		// Extract just the filename for router mode (e.g., "model.gguf")
+		std::string filename = modelPath;
+		size_t lastSlash = filename.find_last_of("/\\");
+		if (lastSlash != std::string::npos) {
+			filename = filename.substr(lastSlash + 1);
+		}
 		auto &cfg = ConfigManager::instance().getConfig();
 		std::string url = "http://" + cfg.server.host + ":" +
-						  std::to_string(cfg.server.port) + "/props";
-		std::string body = "{\"model\":\"" + modelPath + "\"}";
+						  std::to_string(cfg.server.port) + "/models/load";
+		std::string body = "{\"model\":\"" + filename + "\"}";
 		auto [success, response] = httpClient_.post(url, body);
 		if (success) {
-			spdlog::info("Model loaded: {}", modelPath);
+			spdlog::info("Model loaded: {}", filename);
 		} else {
 			spdlog::error("Failed to load model: {}", response);
 		}

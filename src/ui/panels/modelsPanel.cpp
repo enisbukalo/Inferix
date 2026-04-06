@@ -332,6 +332,10 @@ Component ModelsPanel::component()
 	if (m_component)
 		return m_component;
 
+	// Refresh server state on first creation (server may already be running from
+	// app startup)
+	refreshServerState();
+
 	auto onChange = [this] { saveConfig(); };
 
 	// -----------------------------------------------------------------------
@@ -367,19 +371,16 @@ Component ModelsPanel::component()
 		return e | center;
 	};
 
-	// Start/Stop button style (green when start, red when stop)
+	// Start/Stop button style - Green text when stopped (LOAD), Red when running
+	// (UNLOAD/STOP)
 	auto startStopBtnStyle = ButtonOption::Animated();
 	startStopBtnStyle.transform = [=](const EntryState &s) {
-		auto e = text(s.label) | color(toggleOnColor);
+		// Green when LOAD, Red when UNLOAD or STOP
+		Color textColor =
+			(s.label == "LOAD") ? Color::GreenLight : Color::RedLight;
+		auto e = text(s.label) | color(textColor);
 		if (s.focused)
 			e |= bold;
-		// Green for START, Red for STOP
-		auto label = s.label;
-		if (label == "STOP") {
-			e |= bgcolor(Color::RedLight);
-		} else {
-			e |= bgcolor(Color::GreenLight);
-		}
 		return e | center;
 	};
 
@@ -584,20 +585,25 @@ Component ModelsPanel::component()
 	// (works with 100+ models)
 	auto modelDropdown = Dropdown(&m_modelDisplayNames, &m_modelDropdownIndex);
 
-	// START/STOP button - toggles llama-server process
-	// Text is dynamic based on m_serverRunning state
-	auto startStopButton = Button(
+	// Single button that changes based on server state:
+	// - Server not running: shows "LOAD" (green) - starts the server
+	// - Server running, no model: shows "LOAD" (green) - loads selected model
+	// via API
+	// - Server running, model loaded: shows "UNLOAD" (red) - unloads current
+	// model
+	auto serverButton = Button(
 		&m_startStopLabel,
-		[this] { onStartStopClicked(); },
+		[this] {
+			auto &process = LlamaServerProcess::instance();
+			if (!process.isRunning()) {
+				// Server not running - START it
+				onStartStopClicked();
+			} else {
+				// Server is running - LOAD or UNLOAD model
+				onLoadUnloadClicked();
+			}
+		},
 		startStopBtnStyle);
-
-	// LOAD/UNLOAD button - loads/unloads model via API
-	// Text is dynamic based on m_modelLoaded state
-	// Disabled when server not running
-	auto loadUnloadButton = Button(
-		&m_loadUnloadLabel,
-		[this] { onLoadUnloadClicked(); },
-		loadUnloadBtnStyle);
 
 	// -----------------------------------------------------------------------
 	// Inference components
@@ -669,10 +675,9 @@ Component ModelsPanel::component()
 			mmapCb,
 			mlockCb,
 			fitCb,
-			// Footer: model dropdown and START/STOP + LOAD/UNLOAD buttons
+			// Footer: model dropdown and single server button
 			modelDropdown,
-			startStopButton,
-			loadUnloadButton,
+			serverButton,
 		}),
 		Container::Vertical({
 			// Right column: Inference Settings
@@ -796,22 +801,19 @@ Component ModelsPanel::component()
 		auto leftCol = vbox(std::move(leftElements)) | flex;
 		auto rightCol = vbox(std::move(rightElements)) | flex;
 
-		// Footer section with model dropdown above START/STOP and LOAD/UNLOAD
-		// buttons
+		// Footer section with model dropdown and single server button
+		// Button state:
+		// - Server not running: LOAD (green text)
+		// - Server running, no model: LOAD (green text)
+		// - Server running, model loaded: UNLOAD (red text)
+		// Note: Button text color changes via style, no background color
+
 		auto footerRow = hbox({
 			filler(),
 			vbox({
 				modelDropdown->Render(),
 				separatorLight(),
-				hbox({
-					startStopButton->Render() |
-						bgcolor(m_serverRunning ? Color::RedLight
-												: Color::GreenLight),
-					separator(),
-					loadUnloadButton->Render() |
-						bgcolor(m_modelLoaded ? Color::YellowLight
-											  : Color::MagentaLight),
-				}) | (m_serverRunning ? nothing : dim),
+				serverButton->Render(),
 			}) | flex,
 			filler(),
 		});
@@ -835,8 +837,7 @@ void ModelsPanel::onStartStopClicked()
 		m_serverRunning = false;
 		m_modelLoaded = false;
 		m_loadedModelPath.clear();
-		m_startStopLabel = "START";
-		m_loadUnloadLabel = "LOAD";
+		m_startStopLabel = "LOAD"; // Ready to start again
 		spdlog::info("Server stopped");
 	} else {
 		// Start: launch server (without model initially)
@@ -854,8 +855,7 @@ void ModelsPanel::onStartStopClicked()
 			std::this_thread::sleep_for(std::chrono::seconds(2));
 			m_serverRunning = LlamaServerProcess::instance().isRunning();
 			m_modelLoaded = false;
-			m_startStopLabel = "STOP";
-			m_loadUnloadLabel = "LOAD";
+			m_startStopLabel = "LOAD";
 			spdlog::info("Server started (no model)");
 		} else {
 			spdlog::error("Failed to start server");
@@ -881,7 +881,7 @@ void ModelsPanel::onLoadUnloadClicked()
 		if (process.unloadModel()) {
 			m_modelLoaded = false;
 			m_loadedModelPath.clear();
-			m_loadUnloadLabel = "LOAD";
+			m_startStopLabel = "LOAD";
 			spdlog::info("Model unloaded");
 		} else {
 			spdlog::error("Failed to unload model");
@@ -899,7 +899,7 @@ void ModelsPanel::onLoadUnloadClicked()
 		if (process.loadModel(selectedModel)) {
 			m_modelLoaded = true;
 			m_loadedModelPath = selectedModel;
-			m_loadUnloadLabel = "UNLOAD";
+			m_startStopLabel = "UNLOAD";
 			spdlog::info("Model loaded: {}", selectedModel);
 		} else {
 			spdlog::error("Failed to load model: {}", selectedModel);

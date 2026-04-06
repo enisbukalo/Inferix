@@ -946,17 +946,19 @@ struct ModelPreset
 struct DiscoverySettings
 {
 	/**
-	 * @brief Directories to scan for model files.
+	 * @brief Directory to scan for model files.
 	 *
-	 * List of directory paths to recursively search for .gguf files.
-	 * Paths can be absolute or relative, and may use ~ for home directory.
+	 * Directory path to recursively search for .gguf files.
+	 * Path can be absolute or relative, and may use ~ for home directory.
 	 *
-	 * @note Empty by default - user must explicitly configure search paths.
+	 * @note Empty by default - user must explicitly configure search path.
 	 * @note Tilde (~) is expanded to the user's home directory.
 	 * @note Non-existent directories are silently skipped during scanning.
 	 * @note Scanning is recursive - subdirectories are included.
+	 *
+	 * @note This path is also used as --models-dir for llama-server router mode.
 	 */
-	std::vector<std::string> modelSearchPaths;
+	std::string modelSearchPath;
 
 	/**
 	 * @brief File filter patterns to exclude from model discovery.

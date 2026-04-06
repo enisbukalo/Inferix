@@ -12,10 +12,12 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 	// Base command
 	args.push_back("llama-server");
 
-	// Model (required)
-	if (!modelPath.empty()) {
-		args.push_back("-m");
-		args.push_back(modelPath);
+	// Router mode: use --models-dir instead of -m
+	// Get the model search path from discovery settings
+	auto &cfg = ConfigManager::instance().getConfig();
+	if (!cfg.discovery.modelSearchPath.empty()) {
+		args.push_back("--models-dir");
+		args.push_back(cfg.discovery.modelSearchPath);
 	}
 
 	// === Load Settings ===

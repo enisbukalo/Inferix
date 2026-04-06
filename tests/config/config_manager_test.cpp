@@ -135,7 +135,7 @@ TEST(ConfigSerialization, FullConfigFromJson) {
         "inference": {"temperature": 0.5, "nPredict": 100},
         "ui": {"theme": "dark", "refreshRateMs": 1000},
         "terminal": {"defaultShell": "/bin/sh"},
-        "discovery": {"modelSearchPaths": ["/tmp"]},
+        "discovery": {"modelSearchPath": "/tmp"},
         "presets": [],
         "terminalPresets": []
     })"_json;
@@ -153,5 +153,5 @@ TEST(ConfigSerialization, FullConfigFromJson) {
     EXPECT_EQ(config.ui.theme, "dark");
     EXPECT_EQ(config.ui.refreshRateMs, 1000);
     EXPECT_EQ(config.terminal.defaultShell, "/bin/sh");
-    EXPECT_EQ(config.discovery.modelSearchPaths.size(), 1);
+    EXPECT_EQ(config.discovery.modelSearchPath, "/tmp");
 }
