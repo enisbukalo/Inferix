@@ -38,6 +38,9 @@ TEST(ConfigSerialization, ServerSettings_DefaultRoundtrip) {
     EXPECT_EQ(original.threadsHttp, restored.threadsHttp);
     EXPECT_EQ(original.webui, restored.webui);
     EXPECT_EQ(original.embedding, restored.embedding);
+    EXPECT_EQ(original.reusePort, restored.reusePort);
+    EXPECT_EQ(original.webuiMcpProxy, restored.webuiMcpProxy);
+    EXPECT_EQ(original.tools, restored.tools);
 }
 
 TEST(ConfigSerialization, ServerSettings_ModifiedValues) {
@@ -47,10 +50,22 @@ TEST(ConfigSerialization, ServerSettings_ModifiedValues) {
     original.apiKey = "secret-key-123";
     original.timeout = 300;
     original.threadsHttp = 4;
+    original.reusePort = true;
     original.webui = false;
+    original.webuiConfig = R"({"theme":"dark"})";
+    original.webuiConfigFile = "/path/to/config.json";
+    original.webuiMcpProxy = true;
+    original.tools = "all";
     original.embedding = true;
     original.sslKeyFile = "/path/to/key.pem";
     original.sslCertFile = "/path/to/cert.pem";
+    original.path = "/var/www/html";
+    original.apiPrefix = "/api";
+    original.mediaPath = "/path/to/media";
+    original.alias = "test-server";
+    original.metrics = true;
+    original.props = true;
+    original.slots = false;
 
     auto j = serializeRoundtrip(original);
     auto restored = deserializeRoundtrip<ServerSettings>(j);
@@ -60,10 +75,22 @@ TEST(ConfigSerialization, ServerSettings_ModifiedValues) {
     EXPECT_EQ(restored.apiKey, "secret-key-123");
     EXPECT_EQ(restored.timeout, 300);
     EXPECT_EQ(restored.threadsHttp, 4);
+    EXPECT_EQ(restored.reusePort, true);
     EXPECT_EQ(restored.webui, false);
+    EXPECT_EQ(restored.webuiConfig, R"({"theme":"dark"})");
+    EXPECT_EQ(restored.webuiConfigFile, "/path/to/config.json");
+    EXPECT_EQ(restored.webuiMcpProxy, true);
+    EXPECT_EQ(restored.tools, "all");
     EXPECT_EQ(restored.embedding, true);
     EXPECT_EQ(restored.sslKeyFile, "/path/to/key.pem");
     EXPECT_EQ(restored.sslCertFile, "/path/to/cert.pem");
+    EXPECT_EQ(restored.path, "/var/www/html");
+    EXPECT_EQ(restored.apiPrefix, "/api");
+    EXPECT_EQ(restored.mediaPath, "/path/to/media");
+    EXPECT_EQ(restored.alias, "test-server");
+    EXPECT_EQ(restored.metrics, true);
+    EXPECT_EQ(restored.props, true);
+    EXPECT_EQ(restored.slots, false);
 }
 
 // =============================================================================

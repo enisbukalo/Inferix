@@ -233,6 +233,398 @@ TEST(LlamaServerProcess, BuildCommandArgsWithServerPort) {
     EXPECT_EQ(*it, "8080");
 }
 
+TEST(LlamaServerProcess, BuildCommandArgsWithApiKey) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.apiKey = "secret-key";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--api-key");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "secret-key");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithApiKeyFile) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.apiKeyFile = "/path/to/keyfile";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--api-key-file");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "/path/to/keyfile");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithTimeout) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.timeout = 300;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--timeout");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "300");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithThreadsHttp) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.threadsHttp = 4;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--threads-http");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "4");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithReusePort) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.reusePort = true;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--reuse-port"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithSslKeyFile) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.sslKeyFile = "/path/to/key.pem";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--ssl-key-file");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "/path/to/key.pem");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithSslCertFile) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.sslCertFile = "/path/to/cert.pem";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--ssl-cert-file");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "/path/to/cert.pem");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithStaticPath) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.path = "/var/www/html";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--path");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "/var/www/html");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithApiPrefix) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.apiPrefix = "/api";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--api-prefix");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "/api");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithMediaPath) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.mediaPath = "/path/to/media";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--media-path");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "/path/to/media");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithAlias) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.alias = "test-server";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--alias");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "test-server");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithNoWebui) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.webui = false;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--no-webui"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithWebuiConfig) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.webuiConfig = R"({"theme":"dark"})";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--webui-config");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, R"({"theme":"dark"})");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithWebuiConfigFile) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.webuiConfigFile = "/path/to/config.json";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--webui-config-file");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "/path/to/config.json");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithNoWebuiMcpProxy) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.webuiMcpProxy = false;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--no-webui-mcp-proxy"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithTools) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.tools = "all";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--tools");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "all");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithEmbedding) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.embedding = true;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--embedding"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithReranking) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.reranking = true;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--rerank"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithNoContBatching) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.contBatching = false;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--no-cont-batching"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithNoCachePrompt) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.cachePrompt = false;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--no-cache-prompt"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithCacheReuse) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.cacheReuse = 10;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--cache-reuse");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "10");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithContextShift) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.contextShift = true;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--context-shift"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithNoWarmup) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.warmup = false;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--no-warmup"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithNoJinja) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.jinja = false;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--no-jinja"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithNoPrefillAssistant) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.prefillAssistant = false;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--no-prefill-assistant"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithSlotPromptSimilarity) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.slotPromptSimilarity = 0.5;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--slot-prompt-similarity");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "0.5");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithSleepIdleSeconds) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.sleepIdleSeconds = 60;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--sleep-idle-seconds");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "60");
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithMetrics) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.metrics = true;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--metrics"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithProps) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.props = true;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--props"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithNoSlots) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.slots = false;
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    ASSERT_NE(std::find(args.begin(), args.end(), "--no-slots"), args.end());
+}
+
+TEST(LlamaServerProcess, BuildCommandArgsWithSlotSavePath) {
+    LoadSettings load;
+    InferenceSettings inference;
+    ServerSettings server;
+    server.slotSavePath = "/path/to/slots";
+    
+    auto args = LlamaServerProcess::buildCommandArgs("model.gguf", load, inference, server);
+    
+    auto it = std::find(args.begin(), args.end(), "--slot-save-path");
+    ASSERT_NE(it, args.end());
+    ++it;
+    EXPECT_EQ(*it, "/path/to/slots");
+}
+
 TEST(LlamaServerProcess, BuildCommandArgsFullSettings) {
     LoadSettings load;
     load.ngpuLayers = "33";
