@@ -229,7 +229,8 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 		args.push_back("--webui-config-file");
 		args.push_back(server.webuiConfigFile);
 	}
-	args.push_back(server.webuiMcpProxy ? "--webui-mcp-proxy" : "--no-webui-mcp-proxy");
+	args.push_back(server.webuiMcpProxy ? "--webui-mcp-proxy"
+										: "--no-webui-mcp-proxy");
 	if (!server.tools.empty()) {
 		args.push_back("--tools");
 		args.push_back(server.tools);
@@ -240,17 +241,21 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 	if (server.reranking) {
 		args.push_back("--rerank");
 	}
-	args.push_back(server.contBatching ? "--cont-batching" : "--no-cont-batching");
+	args.push_back(server.contBatching ? "--cont-batching"
+									   : "--no-cont-batching");
 	args.push_back(server.cachePrompt ? "--cache-prompt" : "--no-cache-prompt");
 	if (server.cacheReuse > 0) {
 		args.push_back("--cache-reuse");
 		args.push_back(std::to_string(server.cacheReuse));
 	}
-	args.push_back(server.contextShift ? "--context-shift" : "--no-context-shift");
+	args.push_back(server.contextShift ? "--context-shift"
+									   : "--no-context-shift");
 	args.push_back(server.warmup ? "--warmup" : "--no-warmup");
 	args.push_back(server.jinja ? "--jinja" : "--no-jinja");
-	args.push_back(server.prefillAssistant ? "--prefill-assistant" : "--no-prefill-assistant");
-	if (server.slotPromptSimilarity >= 0.0 && server.slotPromptSimilarity <= 1.0) {
+	args.push_back(server.prefillAssistant ? "--prefill-assistant"
+										   : "--no-prefill-assistant");
+	if (server.slotPromptSimilarity >= 0.0 &&
+		server.slotPromptSimilarity <= 1.0) {
 		args.push_back("--slot-prompt-similarity");
 		args.push_back(std::to_string(server.slotPromptSimilarity));
 	}

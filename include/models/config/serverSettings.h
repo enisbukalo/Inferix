@@ -233,7 +233,8 @@ struct ServerSettings
 	 *
 	 * Enables the Model Context Protocol proxy in the WebUI.
 	 *
-	 * Corresponds to: `--webui-mcp-proxy` (enable) or `--no-webui-mcp-proxy` (disable)
+	 * Corresponds to: `--webui-mcp-proxy` (enable) or `--no-webui-mcp-proxy`
+	 * (disable)
 	 * @default false
 	 */
 	bool webuiMcpProxy = false;
