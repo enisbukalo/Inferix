@@ -26,10 +26,16 @@ class HttpClient::Impl
 
 			auto response = cli.Get(path.data());
 
-			if (!response || response->status != 200) {
-				std::string err =
-					response ? "HTTP " + std::to_string(response->status)
-							 : "No response";
+			if (!response) {
+				spdlog::debug("HTTP GET {} failed: No response", url);
+				return { false, "No response" };
+			}
+			if (response->status != 200) {
+				std::string err = "HTTP " + std::to_string(response->status);
+				// Include response body for error details
+				if (!response->body.empty()) {
+					err += ": " + response->body;
+				}
 				spdlog::debug("HTTP GET {} failed: {}", url, err);
 				return { false, err };
 			}
@@ -58,11 +64,16 @@ class HttpClient::Impl
 			auto response =
 				cli.Post(path.data(), jsonBody.data(), "application/json");
 
-			if (!response ||
-				(response->status != 200 && response->status != 201)) {
-				std::string err =
-					response ? "HTTP " + std::to_string(response->status)
-							 : "No response";
+			if (!response) {
+				spdlog::debug("HTTP POST {} failed: No response", url);
+				return { false, "No response" };
+			}
+			if (response->status != 200 && response->status != 201) {
+				std::string err = "HTTP " + std::to_string(response->status);
+				// Include response body for error details
+				if (!response->body.empty()) {
+					err += ": " + response->body;
+				}
 				spdlog::debug("HTTP POST {} failed: {}", url, err);
 				return { false, err };
 			}

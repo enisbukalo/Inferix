@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <signal.h>
 #include <spdlog/spdlog.h>
+#include <sys/prctl.h>
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
@@ -89,6 +90,9 @@ class LlamaServerProcess::Impl
 			dup2(stderrPipe[1], STDERR_FILENO);
 			close(stdoutPipe[1]);
 			close(stderrPipe[1]);
+
+			// Ask the kernel to send SIGKILL to this child when the parent dies
+			prctl(PR_SET_PDEATHSIG, SIGKILL);
 
 			// Detach from controlling terminal
 			setsid();
@@ -202,11 +206,14 @@ class LlamaServerProcess::Impl
 			return false;
 		auto &cfg = ConfigManager::instance().getConfig();
 		std::string url = "http://" + cfg.server.host + ":" +
-						  std::to_string(cfg.server.port) + "/slots";
+						  std::to_string(cfg.server.port) + "/models";
 		auto [success, response] = httpClient_.get(url);
-		if (!success)
+		if (!success) {
+			spdlog::debug("isModelLoaded failed: {}", response);
 			return false;
-		return response.find("\"slots\":[]") == std::string::npos;
+		}
+		// Check if any model has status "loaded"
+		return response.find("\"loaded\"") != std::string::npos;
 	}
 
 	std::string getLoadedModelPath()
@@ -215,16 +222,25 @@ class LlamaServerProcess::Impl
 			return "";
 		auto &cfg = ConfigManager::instance().getConfig();
 		std::string url = "http://" + cfg.server.host + ":" +
-						  std::to_string(cfg.server.port) + "/slots";
+						  std::to_string(cfg.server.port) + "/models";
 		auto [success, response] = httpClient_.get(url);
-		if (!success)
+		if (!success) {
+			spdlog::debug("getLoadedModelPath failed: {}", response);
 			return "";
-		auto modelPos = response.find("\"model\"");
-		if (modelPos == std::string::npos)
+		}
+		spdlog::debug("/models response: {}", response);
+		// Find a model with status "loaded" and extract its "id"
+		auto loadedPos = response.find("\"loaded\"");
+		if (loadedPos == std::string::npos)
 			return "";
-		auto colonPos = response.find(":", modelPos);
+		// Search backwards from "loaded" to find the nearest "id" field
+		auto idPos = response.rfind("\"id\"", loadedPos);
+		if (idPos == std::string::npos)
+			return "";
+		auto colonPos = response.find(":", idPos);
 		if (colonPos == std::string::npos)
 			return "";
+		// Find start of value (skip whitespace and quotes)
 		size_t pos = colonPos + 1;
 		while (pos < response.size() &&
 			   (response[pos] == ' ' || response[pos] == '"'))
