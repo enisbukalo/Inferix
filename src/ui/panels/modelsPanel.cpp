@@ -121,14 +121,15 @@ void ModelsPanel::loadFromConfig()
 	m_nPredict = std::to_string(cfg.inference.nPredict);
 	m_seed = std::to_string(cfg.inference.seed);
 
-	// Refresh model list and try to select config.load.modelPath
+	// Refresh model list from models.ini
 	refreshModelList();
 
 	// Try to select the model matching config.load.modelPath (if found)
-	for (size_t i = 0; i < m_modelPaths.size(); ++i) {
-		if (m_modelPaths[i] == cfg.load.modelPath) {
+	// Note: config.load.modelPath stores the section name from models.ini
+	for (size_t i = 0; i < m_modelNames.size(); ++i) {
+		if (m_modelNames[i] == cfg.load.modelPath) {
 			m_modelDropdownIndex = static_cast<int>(i);
-			m_selectedModelPath = m_modelPaths[i];
+			m_selectedModelName = m_modelNames[i];
 			break;
 		}
 	}
@@ -280,45 +281,30 @@ bool ModelsPanel::shouldFilterModel(const std::string &path) const
 
 void ModelsPanel::refreshModelList()
 {
-	// Scan for models using ModelDiscovery singleton
-	auto models = ModelDiscovery::instance().scanForModels();
-
-	m_modelPaths.clear();
-	m_modelDisplayNames.clear();
-
-	for (const auto &path : models) {
-		// Apply file filter - skip models matching filter patterns
-		if (shouldFilterModel(path)) {
-			continue;
-		}
-
-		m_modelPaths.push_back(path);
-		m_modelDisplayNames.push_back(
-			ModelDiscovery::instance().pathToDisplayName(path));
-	}
+	// Load models from models.ini
+	m_modelNames = ModelsIni::instance().getModelNames();
+	m_modelDisplayNames = m_modelNames; // Section names are display names
 
 	// Sort by display name for user-friendly dropdown
-	// Keep paths and names in sync
-	std::vector<size_t> indices(m_modelPaths.size());
+	std::vector<size_t> indices(m_modelNames.size());
 	std::iota(indices.begin(), indices.end(), 0);
 	std::sort(indices.begin(), indices.end(), [this](size_t a, size_t b) {
 		return m_modelDisplayNames[a] < m_modelDisplayNames[b];
 	});
 
-	std::vector<std::string> sortedPaths, sortedNames;
+	std::vector<std::string> sortedNames;
 	for (auto idx : indices) {
-		sortedPaths.push_back(m_modelPaths[idx]);
-		sortedNames.push_back(m_modelDisplayNames[idx]);
+		sortedNames.push_back(m_modelNames[idx]);
 	}
-	m_modelPaths = std::move(sortedPaths);
-	m_modelDisplayNames = std::move(sortedNames);
+	m_modelNames = std::move(sortedNames);
+	m_modelDisplayNames = m_modelNames; // Re-sync after sort
 
 	// Reset dropdown index if it's now out of bounds
 	if (m_modelDropdownIndex < 0 ||
-		m_modelDropdownIndex >= static_cast<int>(m_modelPaths.size())) {
+		m_modelDropdownIndex >= static_cast<int>(m_modelNames.size())) {
 		m_modelDropdownIndex = 0;
-		if (!m_modelPaths.empty()) {
-			m_selectedModelPath = m_modelPaths[0];
+		if (!m_modelNames.empty()) {
+			m_selectedModelName = m_modelNames[0];
 		}
 	}
 }
@@ -335,6 +321,7 @@ Component ModelsPanel::component()
 	// Refresh server state on first creation (server may already be running from
 	// app startup)
 	refreshServerState();
+	updateStartStopLabel();
 
 	auto onChange = [this] { saveConfig(); };
 
@@ -853,9 +840,8 @@ void ModelsPanel::onStartStopClicked()
 		if (success) {
 			// Wait briefly for server to start
 			std::this_thread::sleep_for(std::chrono::seconds(2));
-			m_serverRunning = LlamaServerProcess::instance().isRunning();
-			m_modelLoaded = false;
-			m_startStopLabel = "LOAD";
+			// Refresh state and update label
+			updateStartStopLabel();
 			spdlog::info("Server started (no model)");
 		} else {
 			spdlog::error("Failed to start server");
@@ -868,16 +854,18 @@ void ModelsPanel::onLoadUnloadClicked()
 	auto &process = LlamaServerProcess::instance();
 
 	// Validate model selection
-	if (m_modelPaths.empty() || m_modelDropdownIndex < 0 ||
-		m_modelDropdownIndex >= static_cast<int>(m_modelPaths.size())) {
+	if (m_modelNames.empty() || m_modelDropdownIndex < 0 ||
+		m_modelDropdownIndex >= static_cast<int>(m_modelNames.size())) {
 		spdlog::warn("No model selected, cannot load");
 		return;
 	}
 
-	std::string selectedModel = m_modelPaths[m_modelDropdownIndex];
+	// Use section name from models.ini for the API call
+	std::string selectedModel = m_modelNames[m_modelDropdownIndex];
 
-	if (m_modelLoaded) {
-		// Unload: call unloadModel API
+	// Button label determines action, not m_modelLoaded state
+	if (m_startStopLabel == "UNLOAD") {
+		// Unload: call unloadModel API (unload whatever is currently loaded)
 		if (process.unloadModel()) {
 			m_modelLoaded = false;
 			m_loadedModelPath.clear();
@@ -887,7 +875,7 @@ void ModelsPanel::onLoadUnloadClicked()
 			spdlog::error("Failed to unload model");
 		}
 	} else {
-		// Load: ensure server running, then load model via API
+		// LOAD: load the selected model (switches if different model is loaded)
 		if (!process.isRunning()) {
 			// Auto-start server if not running
 			onStartStopClicked();
@@ -895,7 +883,7 @@ void ModelsPanel::onLoadUnloadClicked()
 			std::this_thread::sleep_for(std::chrono::seconds(2));
 		}
 
-		// Now load the model via API
+		// Load the model via API - pass section name, not path
 		if (process.loadModel(selectedModel)) {
 			m_modelLoaded = true;
 			m_loadedModelPath = selectedModel;
@@ -919,17 +907,46 @@ void ModelsPanel::refreshServerState()
 	}
 }
 
+void ModelsPanel::updateStartStopLabel()
+{
+	// First refresh state from server
+	refreshServerState();
+
+	// Get the currently selected model in dropdown
+	std::string selectedModel;
+	if (m_modelDropdownIndex >= 0 &&
+		m_modelDropdownIndex < static_cast<int>(m_modelNames.size())) {
+		selectedModel = m_modelNames[m_modelDropdownIndex];
+	}
+
+	if (!m_serverRunning) {
+		// Server not running - show LOAD
+		m_startStopLabel = "LOAD";
+	} else if (!m_modelLoaded) {
+		// Server running but no model loaded - show LOAD
+		m_startStopLabel = "LOAD";
+	} else {
+		// Server running with model loaded
+		// Show UNLOAD if the loaded model matches selected model, else LOAD
+		if (m_loadedModelPath == selectedModel) {
+			m_startStopLabel = "UNLOAD";
+		} else {
+			m_startStopLabel = "LOAD";
+		}
+	}
+}
+
 void ModelsPanel::onLoadClicked()
 {
 	// Validate model selection
-	if (m_modelPaths.empty() || m_modelDropdownIndex < 0 ||
-		m_modelDropdownIndex >= static_cast<int>(m_modelPaths.size())) {
+	if (m_modelNames.empty() || m_modelDropdownIndex < 0 ||
+		m_modelDropdownIndex >= static_cast<int>(m_modelNames.size())) {
 		spdlog::warn("No model selected, cannot load");
 		return;
 	}
 
-	// Get selected model path
-	std::string modelPath = m_modelPaths[m_modelDropdownIndex];
+	// Get selected model name (section name from models.ini)
+	std::string modelName = m_modelNames[m_modelDropdownIndex];
 
 	// Get current config
 	auto &cfg = ConfigManager::instance().getConfig();
@@ -940,14 +957,15 @@ void ModelsPanel::onLoadClicked()
 	}
 
 	// Launch the server using singleton for global access during cleanup
-	bool success = LlamaServerProcess::instance().launch(modelPath,
+	// Pass empty string - model is loaded via API after server starts
+	bool success = LlamaServerProcess::instance().launch("",
 														 cfg.load,
 														 cfg.inference,
 														 cfg.server);
 
 	if (success) {
-		spdlog::info("Loading model: '{}'", modelPath);
+		spdlog::info("Starting server for model: '{}'", modelName);
 	} else {
-		spdlog::error("Failed to load model: '{}'", modelPath);
+		spdlog::error("Failed to start server for model: '{}'", modelName);
 	}
 }

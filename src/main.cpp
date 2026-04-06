@@ -9,6 +9,7 @@
 #include "app.h"
 #include "configManager.h"
 #include "llamaServerProcess.h"
+#include "modelsIni.h"
 #include "systemMonitorRunner.h"
 
 #include <chrono>
@@ -136,6 +137,12 @@ int main()
 
 	// Load configuration from disk
 	ConfigManager::instance().load();
+
+	// Initialize models.ini (create if doesn't exist)
+	if (!ModelsIni::instance().load()) {
+		spdlog::info("Creating default models.ini");
+		ModelsIni::instance().createDefault();
+	}
 
 	// Clean up old log files based on retention policy
 	cleanupOldLogs(ConfigManager::instance().getLogsDir(),

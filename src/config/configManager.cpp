@@ -52,7 +52,11 @@ std::string ConfigManager::getConfigDir()
 #endif
 	if (!home)
 		return ".workbench";
+#ifdef _WIN32
+	return std::string(home) + "\\.workbench";
+#else
 	return std::string(home) + "/.workbench";
+#endif
 }
 
 std::string ConfigManager::getConfigFilePath()

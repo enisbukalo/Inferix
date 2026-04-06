@@ -197,10 +197,16 @@ class LlamaServerProcess::Impl
 	{
 		if (!isServerHealthy())
 			return false;
+		// Get the currently loaded model name to send in the unload request
+		std::string loadedModel = getLoadedModelPath();
+		if (loadedModel.empty()) {
+			spdlog::warn("No model loaded, nothing to unload");
+			return false;
+		}
 		auto &cfg = ConfigManager::instance().getConfig();
 		std::string url = "http://" + cfg.server.host + ":" +
 						  std::to_string(cfg.server.port) + "/models/unload";
-		std::string body = "{\"model\":\"\"}";
+		std::string body = "{\"model\":\"" + loadedModel + "\"}";
 		auto [success, response] = httpClient_.post(url, body);
 		if (success) {
 			spdlog::info("Model unloaded successfully");
@@ -210,23 +216,19 @@ class LlamaServerProcess::Impl
 		return success;
 	}
 
-	bool loadModel(const std::string &modelPath)
+	bool loadModel(const std::string &modelIdentifier)
 	{
 		if (!isServerHealthy())
 			return false;
-		// Extract just the filename for router mode (e.g., "model.gguf")
-		std::string filename = modelPath;
-		size_t lastSlash = filename.find_last_of("/\\");
-		if (lastSlash != std::string::npos) {
-			filename = filename.substr(lastSlash + 1);
-		}
+		// modelIdentifier is now the section name from models.ini (e.g.,
+		// "orchestrator") Use it directly for the API call
 		auto &cfg = ConfigManager::instance().getConfig();
 		std::string url = "http://" + cfg.server.host + ":" +
 						  std::to_string(cfg.server.port) + "/models/load";
-		std::string body = "{\"model\":\"" + filename + "\"}";
+		std::string body = "{\"model\":\"" + modelIdentifier + "\"}";
 		auto [success, response] = httpClient_.post(url, body);
 		if (success) {
-			spdlog::info("Model loaded: {}", filename);
+			spdlog::info("Model loaded: {}", modelIdentifier);
 		} else {
 			spdlog::error("Failed to load model: {}", response);
 		}
@@ -238,11 +240,7 @@ class LlamaServerProcess::Impl
 	{
 		std::string cmdLine;
 		for (const auto &arg : args) {
-			if (arg.find(' ') != std::string::npos) {
-				cmdLine += "\"" + arg + "\" ";
-			} else {
-				cmdLine += arg + " ";
-			}
+			cmdLine += "\"" + arg + "\" ";
 		}
 		if (!cmdLine.empty() && cmdLine.back() == ' ') {
 			cmdLine.pop_back();

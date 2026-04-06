@@ -2,7 +2,7 @@
 
 #include "configManager.h"
 #include "llamaServerProcess.h"
-#include "modelDiscovery.h"
+#include "modelsIni.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -135,14 +135,16 @@ class ModelsPanel
 	int m_reasoningFormatIdx = 0; // 0 = "auto" (default)
 
 	// =========================================================================
-	// Model Discovery & Selection
+	// Model Selection (from models.ini)
 	// =========================================================================
-	std::vector<std::string> m_modelPaths;		  // Full paths from discovery
+	std::vector<std::string> m_modelNames; // Section names from models.ini (used
+										   // for /models/load API)
 	std::vector<std::string> m_modelDisplayNames; // Display names for dropdown
+												  // (same as names for now)
 	int m_modelDropdownIndex = 0;				  // Selected index in dropdown
-	std::string m_selectedModelPath;			  // Full path of selected model
+	std::string m_selectedModelName; // Section name of selected model
 
-	/** Refresh model list from ModelDiscovery singleton. */
+	/** Refresh model list from ModelsIni singleton. */
 	void refreshModelList();
 
 	/**
@@ -184,4 +186,7 @@ class ModelsPanel
 
 	/** Refresh server and model state from API */
 	void refreshServerState();
+
+	/** Update button label based on server state and selected model */
+	void updateStartStopLabel();
 };

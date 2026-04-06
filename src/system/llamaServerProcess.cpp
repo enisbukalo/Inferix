@@ -1,4 +1,7 @@
 #include "llamaServerProcess.h"
+#include "modelsIni.h"
+#include <filesystem>
+#include <spdlog/spdlog.h>
 #include <vector>
 
 std::vector<std::string>
@@ -12,12 +15,14 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 	// Base command
 	args.push_back("llama-server");
 
-	// Router mode: use --models-dir instead of -m
-	// Get the model search path from discovery settings
-	auto &cfg = ConfigManager::instance().getConfig();
-	if (!cfg.discovery.modelSearchPath.empty()) {
-		args.push_back("--models-dir");
-		args.push_back(cfg.discovery.modelSearchPath);
+	// Router mode: use --models-preset to point to models.ini
+	// The INI file defines all available models
+	std::string iniPath = ModelsIni::instance().getPath();
+	if (!iniPath.empty() && std::filesystem::exists(iniPath)) {
+		args.push_back("--models-preset");
+		args.push_back(iniPath);
+	} else if (!iniPath.empty()) {
+		spdlog::warn("models.ini path set but file does not exist: {}", iniPath);
 	}
 
 	// === Load Settings ===
