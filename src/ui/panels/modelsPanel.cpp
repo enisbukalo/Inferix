@@ -10,9 +10,11 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <chrono>
 #include <iomanip>
 #include <numeric>
 #include <sstream>
+#include <thread>
 
 using namespace ftxui;
 
@@ -365,6 +367,38 @@ Component ModelsPanel::component()
 		return e | center;
 	};
 
+	// Start/Stop button style (green when start, red when stop)
+	auto startStopBtnStyle = ButtonOption::Animated();
+	startStopBtnStyle.transform = [=](const EntryState &s) {
+		auto e = text(s.label) | color(toggleOnColor);
+		if (s.focused)
+			e |= bold;
+		// Green for START, Red for STOP
+		auto label = s.label;
+		if (label == "STOP") {
+			e |= bgcolor(Color::RedLight);
+		} else {
+			e |= bgcolor(Color::GreenLight);
+		}
+		return e | center;
+	};
+
+	// Load/Unload button style (magenta LOAD, yellow UNLOAD)
+	auto loadUnloadBtnStyle = ButtonOption::Animated();
+	loadUnloadBtnStyle.transform = [=](const EntryState &s) {
+		auto e = text(s.label) | color(toggleOnColor);
+		if (s.focused)
+			e |= bold;
+		// Magenta for LOAD, Yellow for UNLOAD
+		auto label = s.label;
+		if (label == "UNLOAD") {
+			e |= bgcolor(Color::YellowLight);
+		} else {
+			e |= bgcolor(Color::MagentaLight);
+		}
+		return e | center;
+	};
+
 	CheckboxOption cbOpt;
 	cbOpt.on_change = onChange;
 	cbOpt.transform = [=](const EntryState &s) {
@@ -543,22 +577,27 @@ Component ModelsPanel::component()
 	auto fitCb = Checkbox("", &m_fit, cbOpt);
 
 	// -----------------------------------------------------------------------
-	// Model Selection Dropdown and LOAD Button
+	// Model Selection Dropdown, START/STOP, and LOAD/UNLOAD Buttons
 	// -----------------------------------------------------------------------
 	// Model dropdown - selecting a model updates m_modelPath which is used when
-	// clicking LOAD Note: Using Dropdown component for scrollable list (works
-	// with 100+ models)
+	// clicking LOAD/UNLOAD Note: Using Dropdown component for scrollable list
+	// (works with 100+ models)
 	auto modelDropdown = Dropdown(&m_modelDisplayNames, &m_modelDropdownIndex);
 
-	// Custom on_change handler for dropdown - using a separate Button to trigger
-	// the sync Since Dropdown doesn't have on_change, we update m_modelPath in
-	// onLoadClicked() But we need to make sure it's updated BEFORE launch
+	// START/STOP button - toggles llama-server process
+	// Text is dynamic based on m_serverRunning state
+	auto startStopButton = Button(
+		&m_startStopLabel,
+		[this] { onStartStopClicked(); },
+		startStopBtnStyle);
 
-	// LOAD button - launches llama-server with selected model
-	auto loadButton = Button(
-		"LOAD",
-		[this] { onLoadClicked(); },
-		loadBtnStyle);
+	// LOAD/UNLOAD button - loads/unloads model via API
+	// Text is dynamic based on m_modelLoaded state
+	// Disabled when server not running
+	auto loadUnloadButton = Button(
+		&m_loadUnloadLabel,
+		[this] { onLoadUnloadClicked(); },
+		loadUnloadBtnStyle);
 
 	// -----------------------------------------------------------------------
 	// Inference components
@@ -630,9 +669,10 @@ Component ModelsPanel::component()
 			mmapCb,
 			mlockCb,
 			fitCb,
-			// Footer: model dropdown and load button
+			// Footer: model dropdown and START/STOP + LOAD/UNLOAD buttons
 			modelDropdown,
-			loadButton,
+			startStopButton,
+			loadUnloadButton,
 		}),
 		Container::Vertical({
 			// Right column: Inference Settings
@@ -756,14 +796,23 @@ Component ModelsPanel::component()
 		auto leftCol = vbox(std::move(leftElements)) | flex;
 		auto rightCol = vbox(std::move(rightElements)) | flex;
 
-		// Footer section with model dropdown above LOAD button
+		// Footer section with model dropdown above START/STOP and LOAD/UNLOAD
+		// buttons
 		auto footerRow = hbox({
 			filler(),
 			vbox({
 				modelDropdown->Render(),
 				separatorLight(),
-				loadButton->Render() | bgcolor(Color::MagentaLight),
-			}),
+				hbox({
+					startStopButton->Render() |
+						bgcolor(m_serverRunning ? Color::RedLight
+												: Color::GreenLight),
+					separator(),
+					loadUnloadButton->Render() |
+						bgcolor(m_modelLoaded ? Color::YellowLight
+											  : Color::MagentaLight),
+				}) | (m_serverRunning ? nothing : dim),
+			}) | flex,
 			filler(),
 		});
 
@@ -776,6 +825,98 @@ Component ModelsPanel::component()
 	});
 
 	return m_component;
+}
+
+void ModelsPanel::onStartStopClicked()
+{
+	if (LlamaServerProcess::instance().isRunning()) {
+		// Stop: terminate process
+		LlamaServerProcess::instance().terminate();
+		m_serverRunning = false;
+		m_modelLoaded = false;
+		m_loadedModelPath.clear();
+		m_startStopLabel = "START";
+		m_loadUnloadLabel = "LOAD";
+		spdlog::info("Server stopped");
+	} else {
+		// Start: launch server (without model initially)
+		auto &cfg = ConfigManager::instance().getConfig();
+
+		// Launch with empty model path = server only, no model
+		bool success = LlamaServerProcess::instance().launch(
+			"", // Empty model path = no model
+			cfg.load,
+			cfg.inference,
+			cfg.server);
+
+		if (success) {
+			// Wait briefly for server to start
+			std::this_thread::sleep_for(std::chrono::seconds(2));
+			m_serverRunning = LlamaServerProcess::instance().isRunning();
+			m_modelLoaded = false;
+			m_startStopLabel = "STOP";
+			m_loadUnloadLabel = "LOAD";
+			spdlog::info("Server started (no model)");
+		} else {
+			spdlog::error("Failed to start server");
+		}
+	}
+}
+
+void ModelsPanel::onLoadUnloadClicked()
+{
+	auto &process = LlamaServerProcess::instance();
+
+	// Validate model selection
+	if (m_modelPaths.empty() || m_modelDropdownIndex < 0 ||
+		m_modelDropdownIndex >= static_cast<int>(m_modelPaths.size())) {
+		spdlog::warn("No model selected, cannot load");
+		return;
+	}
+
+	std::string selectedModel = m_modelPaths[m_modelDropdownIndex];
+
+	if (m_modelLoaded) {
+		// Unload: call unloadModel API
+		if (process.unloadModel()) {
+			m_modelLoaded = false;
+			m_loadedModelPath.clear();
+			m_loadUnloadLabel = "LOAD";
+			spdlog::info("Model unloaded");
+		} else {
+			spdlog::error("Failed to unload model");
+		}
+	} else {
+		// Load: ensure server running, then load model via API
+		if (!process.isRunning()) {
+			// Auto-start server if not running
+			onStartStopClicked();
+			// Wait briefly for server to start
+			std::this_thread::sleep_for(std::chrono::seconds(2));
+		}
+
+		// Now load the model via API
+		if (process.loadModel(selectedModel)) {
+			m_modelLoaded = true;
+			m_loadedModelPath = selectedModel;
+			m_loadUnloadLabel = "UNLOAD";
+			spdlog::info("Model loaded: {}", selectedModel);
+		} else {
+			spdlog::error("Failed to load model: {}", selectedModel);
+		}
+	}
+}
+
+void ModelsPanel::refreshServerState()
+{
+	auto &process = LlamaServerProcess::instance();
+	m_serverRunning = process.isRunning() && process.isServerHealthy();
+	m_modelLoaded = m_serverRunning && process.isModelLoaded();
+	if (m_modelLoaded) {
+		m_loadedModelPath = process.getLoadedModelPath();
+	} else {
+		m_loadedModelPath.clear();
+	}
 }
 
 void ModelsPanel::onLoadClicked()

@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <thread>
 
 /**
  * @file modelsPanel.h
@@ -161,4 +162,28 @@ class ModelsPanel
 	// =========================================================================
 	/** Handle LOAD button click - launch llama-server with selected model. */
 	void onLoadClicked();
+
+	// =========================================================================
+	// Server/Model State Tracking (for Start/Stop and Load/Unload buttons)
+	// =========================================================================
+	/** Current server running state */
+	bool m_serverRunning = false;
+	/** Current model loaded state */
+	bool m_modelLoaded = false;
+	/** Path of currently loaded model (if any) */
+	std::string m_loadedModelPath;
+
+	/** Dynamic label for Start/Stop button */
+	std::string m_startStopLabel = "START";
+	/** Dynamic label for Load/Unload button */
+	std::string m_loadUnloadLabel = "LOAD";
+
+	/** Handle START/STOP button click */
+	void onStartStopClicked();
+
+	/** Handle LOAD/UNLOAD button click */
+	void onLoadUnloadClicked();
+
+	/** Refresh server and model state from API */
+	void refreshServerState();
 };

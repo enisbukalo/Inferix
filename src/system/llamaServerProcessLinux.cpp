@@ -9,6 +9,7 @@
 #include "configManager.h"
 #include "llamaServerProcess.h"
 
+#include <atomic>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -17,12 +18,13 @@
 #include <signal.h>
 #include <spdlog/spdlog.h>
 #include <sys/wait.h>
+#include <thread>
 #include <unistd.h>
 
 class LlamaServerProcess::Impl
 {
   public:
-	Impl() : pid_(-1), running_(false)
+	Impl() : pid_(-1), running_(false), httpClient_()
 	{
 	}
 
@@ -183,6 +185,94 @@ class LlamaServerProcess::Impl
 		return static_cast<intptr_t>(pid_);
 	}
 
+	bool isServerHealthy()
+	{
+		if (!running_)
+			return false;
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/health";
+		auto [success, response] = httpClient_.get(url);
+		return success && response.find("ok") != std::string::npos;
+	}
+
+	bool isModelLoaded()
+	{
+		if (!isServerHealthy())
+			return false;
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/slots";
+		auto [success, response] = httpClient_.get(url);
+		if (!success)
+			return false;
+		return response.find("\"slots\":[]") == std::string::npos;
+	}
+
+	std::string getLoadedModelPath()
+	{
+		if (!isServerHealthy())
+			return "";
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/slots";
+		auto [success, response] = httpClient_.get(url);
+		if (!success)
+			return "";
+		auto modelPos = response.find("\"model\"");
+		if (modelPos == std::string::npos)
+			return "";
+		auto colonPos = response.find(":", modelPos);
+		if (colonPos == std::string::npos)
+			return "";
+		size_t pos = colonPos + 1;
+		while (pos < response.size() &&
+			   (response[pos] == ' ' || response[pos] == '"'))
+			pos++;
+		size_t end = pos;
+		while (end < response.size() && response[end] != '"' &&
+			   response[end] != ',')
+			end++;
+		if (end > pos) {
+			return response.substr(pos, end - pos);
+		}
+		return "";
+	}
+
+	bool unloadModel()
+	{
+		if (!isServerHealthy())
+			return false;
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/props";
+		std::string body = "{\"model\":\"\"}";
+		auto [success, response] = httpClient_.post(url, body);
+		if (success) {
+			spdlog::info("Model unloaded successfully");
+		} else {
+			spdlog::error("Failed to unload model: {}", response);
+		}
+		return success;
+	}
+
+	bool loadModel(const std::string &modelPath)
+	{
+		if (!isServerHealthy())
+			return false;
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/props";
+		std::string body = "{\"model\":\"" + modelPath + "\"}";
+		auto [success, response] = httpClient_.post(url, body);
+		if (success) {
+			spdlog::info("Model loaded: {}", modelPath);
+		} else {
+			spdlog::error("Failed to load model: {}", response);
+		}
+		return success;
+	}
+
   private:
 	void readPipe(int fd)
 	{
@@ -238,6 +328,7 @@ class LlamaServerProcess::Impl
 	std::function<void(const std::string &)> outputCallback_;
 	std::thread pipeReadThread_;
 	std::atomic<bool> stopPipeReader_{ false };
+	HttpClient httpClient_;
 };
 
 LlamaServerProcess::LlamaServerProcess() : m_impl(std::make_unique<Impl>())
@@ -284,4 +375,29 @@ LlamaServerProcess &LlamaServerProcess::instance()
 std::string LlamaServerProcess::getLogPath()
 {
 	return ConfigManager::getLogsDir() + "/llama-server.log";
+}
+
+bool LlamaServerProcess::isModelLoaded()
+{
+	return m_impl->isModelLoaded();
+}
+
+std::string LlamaServerProcess::getLoadedModelPath()
+{
+	return m_impl->getLoadedModelPath();
+}
+
+bool LlamaServerProcess::unloadModel()
+{
+	return m_impl->unloadModel();
+}
+
+bool LlamaServerProcess::loadModel(const std::string &modelPath)
+{
+	return m_impl->loadModel(modelPath);
+}
+
+bool LlamaServerProcess::isServerHealthy()
+{
+	return m_impl->isServerHealthy();
 }

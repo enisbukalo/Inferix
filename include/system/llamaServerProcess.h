@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "configManager.h"
+#include "httpClient.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -105,6 +106,37 @@ class LlamaServerProcess
 	 * @param callback Function that receives each line of output.
 	 */
 	void setOutputCallback(std::function<void(const std::string &)> callback);
+
+	/**
+	 * @brief Check if a model is currently loaded via API.
+	 * @return true if server running and model loaded, false otherwise
+	 */
+	bool isModelLoaded();
+
+	/**
+	 * @brief Get the path of the currently loaded model.
+	 * @return Model path, empty if no model loaded
+	 */
+	std::string getLoadedModelPath();
+
+	/**
+	 * @brief Unload the currently loaded model via API.
+	 * @return true if unload succeeded, false on failure
+	 */
+	bool unloadModel();
+
+	/**
+	 * @brief Load a model via API (hot-swap without restart).
+	 * @param modelPath Path to the .gguf model file
+	 * @return true if load succeeded, false on failure
+	 */
+	bool loadModel(const std::string &modelPath);
+
+	/**
+	 * @brief Check if llama-server is responding via HTTP.
+	 * @return true if server is healthy, false otherwise
+	 */
+	bool isServerHealthy();
 
   private:
 	class Impl; // Forward declaration for pImpl

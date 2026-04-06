@@ -9,15 +9,19 @@
 #include "configManager.h"
 #include "llamaServerProcess.h"
 
+#include <chrono>
+#include <iomanip>
 #include <spdlog/spdlog.h>
+#include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 #include <windows.h>
 
 class LlamaServerProcess::Impl
 {
   public:
-	Impl() : processHandle_(nullptr), running_(false)
+	Impl() : processHandle_(nullptr), running_(false), httpClient_()
 	{
 	}
 
@@ -132,6 +136,97 @@ class LlamaServerProcess::Impl
 		return reinterpret_cast<intptr_t>(processHandle_);
 	}
 
+	bool isServerHealthy()
+	{
+		if (!running_)
+			return false;
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/health";
+		auto [success, response] = httpClient_.get(url);
+		return success && response.find("ok") != std::string::npos;
+	}
+
+	bool isModelLoaded()
+	{
+		if (!isServerHealthy())
+			return false;
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/slots";
+		auto [success, response] = httpClient_.get(url);
+		if (!success)
+			return false;
+		// Response contains "slots" array - if not empty, model is loaded
+		return response.find("\"slots\":[]") == std::string::npos;
+	}
+
+	std::string getLoadedModelPath()
+	{
+		if (!isServerHealthy())
+			return "";
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/slots";
+		auto [success, response] = httpClient_.get(url);
+		if (!success)
+			return "";
+		// Simple parsing: look for "model" field in JSON
+		auto modelPos = response.find("\"model\"");
+		if (modelPos == std::string::npos)
+			return "";
+		auto colonPos = response.find(":", modelPos);
+		if (colonPos == std::string::npos)
+			return "";
+		// Find start of value (skip whitespace and quotes)
+		size_t pos = colonPos + 1;
+		while (pos < response.size() &&
+			   (response[pos] == ' ' || response[pos] == '"'))
+			pos++;
+		size_t end = pos;
+		while (end < response.size() && response[end] != '"' &&
+			   response[end] != ',')
+			end++;
+		if (end > pos) {
+			return response.substr(pos, end - pos);
+		}
+		return "";
+	}
+
+	bool unloadModel()
+	{
+		if (!isServerHealthy())
+			return false;
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/props";
+		std::string body = "{\"model\":\"\"}";
+		auto [success, response] = httpClient_.post(url, body);
+		if (success) {
+			spdlog::info("Model unloaded successfully");
+		} else {
+			spdlog::error("Failed to unload model: {}", response);
+		}
+		return success;
+	}
+
+	bool loadModel(const std::string &modelPath)
+	{
+		if (!isServerHealthy())
+			return false;
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/props";
+		std::string body = "{\"model\":\"" + modelPath + "\"}";
+		auto [success, response] = httpClient_.post(url, body);
+		if (success) {
+			spdlog::info("Model loaded: {}", modelPath);
+		} else {
+			spdlog::error("Failed to load model: {}", response);
+		}
+		return success;
+	}
+
   private:
 	std::string buildCommandLine(const std::vector<std::string> &args)
 	{
@@ -151,6 +246,7 @@ class LlamaServerProcess::Impl
 
 	HANDLE processHandle_;
 	bool running_;
+	HttpClient httpClient_;
 };
 
 LlamaServerProcess::LlamaServerProcess() : m_impl(std::make_unique<Impl>())
@@ -198,4 +294,29 @@ LlamaServerProcess &LlamaServerProcess::instance()
 std::string LlamaServerProcess::getLogPath()
 {
 	return ConfigManager::getLogsDir() + "/llama-server.log";
+}
+
+bool LlamaServerProcess::isModelLoaded()
+{
+	return m_impl->isModelLoaded();
+}
+
+std::string LlamaServerProcess::getLoadedModelPath()
+{
+	return m_impl->getLoadedModelPath();
+}
+
+bool LlamaServerProcess::unloadModel()
+{
+	return m_impl->unloadModel();
+}
+
+bool LlamaServerProcess::loadModel(const std::string &modelPath)
+{
+	return m_impl->loadModel(modelPath);
+}
+
+bool LlamaServerProcess::isServerHealthy()
+{
+	return m_impl->isServerHealthy();
 }
