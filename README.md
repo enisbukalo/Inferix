@@ -1,5 +1,5 @@
 # Workbench
-A TUI frontend for llama.cpp, built with FTXUI, nlohmann/json, cpp-httplib.
+A TUI frontend for llama.cpp, built with FTXUI, nlohmann/json, cpp-httplib, libvterm, gtest.
 
 ## Building
 
