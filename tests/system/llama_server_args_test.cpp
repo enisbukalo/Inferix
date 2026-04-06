@@ -561,7 +561,7 @@ TEST(LlamaServerProcess, BuildCommandArgsWithSlotPromptSimilarity) {
     auto it = std::find(args.begin(), args.end(), "--slot-prompt-similarity");
     ASSERT_NE(it, args.end());
     ++it;
-    EXPECT_EQ(*it, "0.5");
+    EXPECT_EQ(*it, "0.500000");
 }
 
 TEST(LlamaServerProcess, BuildCommandArgsWithSleepIdleSeconds) {
