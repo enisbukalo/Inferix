@@ -31,6 +31,12 @@ Add `--clean` (or `-c`) to delete build directories before building:
 docker-compose run --rm cpp-app ./build.sh --clean --all
 ```
 
+### Build tests and coverage for Liunx
+
+```bash
+docker-compose run --rm cpp-app ./build.sh --test
+```
+
 ### Options
 
 | Flag | Short | Description |
@@ -38,4 +44,5 @@ docker-compose run --rm cpp-app ./build.sh --clean --all
 | `--clean` | `-c` | Delete build directories before building |
 | `--windows` | `-w` | Cross-compile for Windows |
 | `--all` | `-a` | Build for both Linux and Windows |
+| `--test` | `-t` | Builds tests and coverage in Linux |
 | `--help` | | Show usage information |
