@@ -162,12 +162,115 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 	}
 
 	// === Server Settings ===
+	// Network
 	if (!server.host.empty()) {
 		args.push_back("--host");
 		args.push_back(server.host);
 	}
 	args.push_back("--port");
 	args.push_back(std::to_string(server.port));
+
+	// Authentication
+	if (!server.apiKey.empty()) {
+		args.push_back("--api-key");
+		args.push_back(server.apiKey);
+	}
+	if (!server.apiKeyFile.empty()) {
+		args.push_back("--api-key-file");
+		args.push_back(server.apiKeyFile);
+	}
+	if (server.timeout > 0) {
+		args.push_back("--timeout");
+		args.push_back(std::to_string(server.timeout));
+	}
+	if (server.threadsHttp > 0) {
+		args.push_back("--threads-http");
+		args.push_back(std::to_string(server.threadsHttp));
+	}
+	if (server.reusePort) {
+		args.push_back("--reuse-port");
+	}
+
+	// SSL/TLS
+	if (!server.sslKeyFile.empty()) {
+		args.push_back("--ssl-key-file");
+		args.push_back(server.sslKeyFile);
+	}
+	if (!server.sslCertFile.empty()) {
+		args.push_back("--ssl-cert-file");
+		args.push_back(server.sslCertFile);
+	}
+
+	// Static file serving
+	if (!server.path.empty()) {
+		args.push_back("--path");
+		args.push_back(server.path);
+	}
+	if (!server.apiPrefix.empty()) {
+		args.push_back("--api-prefix");
+		args.push_back(server.apiPrefix);
+	}
+	if (!server.mediaPath.empty()) {
+		args.push_back("--media-path");
+		args.push_back(server.mediaPath);
+	}
+
+	// Server behavior
+	if (!server.alias.empty()) {
+		args.push_back("--alias");
+		args.push_back(server.alias);
+	}
+	args.push_back(server.webui ? "--webui" : "--no-webui");
+	if (!server.webuiConfig.empty()) {
+		args.push_back("--webui-config");
+		args.push_back(server.webuiConfig);
+	}
+	if (!server.webuiConfigFile.empty()) {
+		args.push_back("--webui-config-file");
+		args.push_back(server.webuiConfigFile);
+	}
+	args.push_back(server.webuiMcpProxy ? "--webui-mcp-proxy" : "--no-webui-mcp-proxy");
+	if (!server.tools.empty()) {
+		args.push_back("--tools");
+		args.push_back(server.tools);
+	}
+	if (server.embedding) {
+		args.push_back("--embedding");
+	}
+	if (server.reranking) {
+		args.push_back("--rerank");
+	}
+	args.push_back(server.contBatching ? "--cont-batching" : "--no-cont-batching");
+	args.push_back(server.cachePrompt ? "--cache-prompt" : "--no-cache-prompt");
+	if (server.cacheReuse > 0) {
+		args.push_back("--cache-reuse");
+		args.push_back(std::to_string(server.cacheReuse));
+	}
+	args.push_back(server.contextShift ? "--context-shift" : "--no-context-shift");
+	args.push_back(server.warmup ? "--warmup" : "--no-warmup");
+	args.push_back(server.jinja ? "--jinja" : "--no-jinja");
+	args.push_back(server.prefillAssistant ? "--prefill-assistant" : "--no-prefill-assistant");
+	if (server.slotPromptSimilarity >= 0.0 && server.slotPromptSimilarity <= 1.0) {
+		args.push_back("--slot-prompt-similarity");
+		args.push_back(std::to_string(server.slotPromptSimilarity));
+	}
+	if (server.sleepIdleSeconds >= 0) {
+		args.push_back("--sleep-idle-seconds");
+		args.push_back(std::to_string(server.sleepIdleSeconds));
+	}
+
+	// Endpoints
+	if (server.metrics) {
+		args.push_back("--metrics");
+	}
+	if (server.props) {
+		args.push_back("--props");
+	}
+	args.push_back(server.slots ? "--slots" : "--no-slots");
+	if (!server.slotSavePath.empty()) {
+		args.push_back("--slot-save-path");
+		args.push_back(server.slotSavePath);
+	}
 
 	// Log file - use llama-server's built-in logging with timestamps
 	args.push_back("--log-file");
