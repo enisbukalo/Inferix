@@ -53,6 +53,7 @@ void to_json(json &j, const ServerSettings &v)
 	j["apiKeyFile"] = v.apiKeyFile;
 	j["timeout"] = v.timeout;
 	j["threadsHttp"] = v.threadsHttp;
+	j["reusePort"] = v.reusePort;
 
 	j["sslKeyFile"] = v.sslKeyFile;
 	j["sslCertFile"] = v.sslCertFile;
@@ -63,6 +64,10 @@ void to_json(json &j, const ServerSettings &v)
 
 	j["alias"] = v.alias;
 	j["webui"] = v.webui;
+	j["webuiConfig"] = v.webuiConfig;
+	j["webuiConfigFile"] = v.webuiConfigFile;
+	j["webuiMcpProxy"] = v.webuiMcpProxy;
+	j["tools"] = v.tools;
 	j["embedding"] = v.embedding;
 	j["reranking"] = v.reranking;
 	j["contBatching"] = v.contBatching;
@@ -89,6 +94,7 @@ void from_json(const json &j, ServerSettings &v)
 	v.apiKeyFile = j.value("apiKeyFile", v.apiKeyFile);
 	v.timeout = j.value("timeout", v.timeout);
 	v.threadsHttp = j.value("threadsHttp", v.threadsHttp);
+	v.reusePort = j.value("reusePort", v.reusePort);
 
 	v.sslKeyFile = j.value("sslKeyFile", v.sslKeyFile);
 	v.sslCertFile = j.value("sslCertFile", v.sslCertFile);
@@ -99,6 +105,10 @@ void from_json(const json &j, ServerSettings &v)
 
 	v.alias = j.value("alias", v.alias);
 	v.webui = j.value("webui", v.webui);
+	v.webuiConfig = j.value("webuiConfig", v.webuiConfig);
+	v.webuiConfigFile = j.value("webuiConfigFile", v.webuiConfigFile);
+	v.webuiMcpProxy = j.value("webuiMcpProxy", v.webuiMcpProxy);
+	v.tools = j.value("tools", v.tools);
 	v.embedding = j.value("embedding", v.embedding);
 	v.reranking = j.value("reranking", v.reranking);
 	v.contBatching = j.value("contBatching", v.contBatching);
@@ -373,13 +383,13 @@ void from_json(const json &j, TerminalPreset &v)
 
 void to_json(json &j, const DiscoverySettings &v)
 {
-	j["modelSearchPaths"] = v.modelSearchPaths;
+	j["modelSearchPath"] = v.modelSearchPath;
 	j["fileFilter"] = v.fileFilter;
 }
 
 void from_json(const json &j, DiscoverySettings &v)
 {
-	v.modelSearchPaths = j.value("modelSearchPaths", std::vector<std::string>{});
+	v.modelSearchPath = j.value("modelSearchPath", std::string{});
 	v.fileFilter = j.value("fileFilter", std::vector<std::string>{ "mmproj*" });
 }
 

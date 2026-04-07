@@ -38,6 +38,9 @@ TEST(ConfigSerialization, ServerSettings_DefaultRoundtrip) {
     EXPECT_EQ(original.threadsHttp, restored.threadsHttp);
     EXPECT_EQ(original.webui, restored.webui);
     EXPECT_EQ(original.embedding, restored.embedding);
+    EXPECT_EQ(original.reusePort, restored.reusePort);
+    EXPECT_EQ(original.webuiMcpProxy, restored.webuiMcpProxy);
+    EXPECT_EQ(original.tools, restored.tools);
 }
 
 TEST(ConfigSerialization, ServerSettings_ModifiedValues) {
@@ -47,10 +50,22 @@ TEST(ConfigSerialization, ServerSettings_ModifiedValues) {
     original.apiKey = "secret-key-123";
     original.timeout = 300;
     original.threadsHttp = 4;
+    original.reusePort = true;
     original.webui = false;
+    original.webuiConfig = R"({"theme":"dark"})";
+    original.webuiConfigFile = "/path/to/config.json";
+    original.webuiMcpProxy = true;
+    original.tools = "all";
     original.embedding = true;
     original.sslKeyFile = "/path/to/key.pem";
     original.sslCertFile = "/path/to/cert.pem";
+    original.path = "/var/www/html";
+    original.apiPrefix = "/api";
+    original.mediaPath = "/path/to/media";
+    original.alias = "test-server";
+    original.metrics = true;
+    original.props = true;
+    original.slots = false;
 
     auto j = serializeRoundtrip(original);
     auto restored = deserializeRoundtrip<ServerSettings>(j);
@@ -60,10 +75,22 @@ TEST(ConfigSerialization, ServerSettings_ModifiedValues) {
     EXPECT_EQ(restored.apiKey, "secret-key-123");
     EXPECT_EQ(restored.timeout, 300);
     EXPECT_EQ(restored.threadsHttp, 4);
+    EXPECT_EQ(restored.reusePort, true);
     EXPECT_EQ(restored.webui, false);
+    EXPECT_EQ(restored.webuiConfig, R"({"theme":"dark"})");
+    EXPECT_EQ(restored.webuiConfigFile, "/path/to/config.json");
+    EXPECT_EQ(restored.webuiMcpProxy, true);
+    EXPECT_EQ(restored.tools, "all");
     EXPECT_EQ(restored.embedding, true);
     EXPECT_EQ(restored.sslKeyFile, "/path/to/key.pem");
     EXPECT_EQ(restored.sslCertFile, "/path/to/cert.pem");
+    EXPECT_EQ(restored.path, "/var/www/html");
+    EXPECT_EQ(restored.apiPrefix, "/api");
+    EXPECT_EQ(restored.mediaPath, "/path/to/media");
+    EXPECT_EQ(restored.alias, "test-server");
+    EXPECT_EQ(restored.metrics, true);
+    EXPECT_EQ(restored.props, true);
+    EXPECT_EQ(restored.slots, false);
 }
 
 // =============================================================================
@@ -299,21 +326,19 @@ TEST(ConfigSerialization, DiscoverySettings_DefaultRoundtrip) {
     auto j = serializeRoundtrip(original);
     auto restored = deserializeRoundtrip<DiscoverySettings>(j);
 
-    EXPECT_EQ(original.modelSearchPaths, restored.modelSearchPaths);
+    EXPECT_EQ(original.modelSearchPath, restored.modelSearchPath);
     EXPECT_EQ(original.fileFilter, restored.fileFilter);
 }
 
 TEST(ConfigSerialization, DiscoverySettings_ModifiedValues) {
     DiscoverySettings original;
-    original.modelSearchPaths = {"/path/to/models", "~/llama-models"};
+    original.modelSearchPath = "/path/to/models";
     original.fileFilter = {"mmproj*", "*draft*"};
 
     auto j = serializeRoundtrip(original);
     auto restored = deserializeRoundtrip<DiscoverySettings>(j);
 
-    EXPECT_EQ(restored.modelSearchPaths.size(), 2);
-    EXPECT_EQ(restored.modelSearchPaths[0], "/path/to/models");
-    EXPECT_EQ(restored.modelSearchPaths[1], "~/llama-models");
+    EXPECT_EQ(restored.modelSearchPath, "/path/to/models");
     EXPECT_EQ(restored.fileFilter.size(), 2);
 }
 
@@ -333,7 +358,7 @@ TEST(ConfigSerialization, UserConfig_DefaultRoundtrip) {
     EXPECT_EQ(original.inference.temperature, restored.inference.temperature);
     EXPECT_EQ(original.ui.theme, restored.ui.theme);
     EXPECT_EQ(original.terminal.defaultShell, restored.terminal.defaultShell);
-    EXPECT_EQ(original.discovery.modelSearchPaths, restored.discovery.modelSearchPaths);
+    EXPECT_EQ(original.discovery.modelSearchPath, restored.discovery.modelSearchPath);
     EXPECT_EQ(original.presets.size(), restored.presets.size());
     EXPECT_EQ(original.terminalPresets.size(), restored.terminalPresets.size());
 }
@@ -349,7 +374,7 @@ TEST(ConfigSerialization, UserConfig_ModifiedValues) {
     original.ui.theme = "light";
     original.ui.defaultTab = 1;  // int, not string
     original.terminal.defaultShell = "/usr/bin/bash";
-    original.discovery.modelSearchPaths = {"/models"};
+    original.discovery.modelSearchPath = "/models";
 
     ModelPreset preset;
     preset.name = "Test Preset";
@@ -374,7 +399,7 @@ TEST(ConfigSerialization, UserConfig_ModifiedValues) {
     EXPECT_EQ(restored.ui.theme, "light");
     EXPECT_EQ(restored.ui.defaultTab, 1);
     EXPECT_EQ(restored.terminal.defaultShell, "/usr/bin/bash");
-    EXPECT_EQ(restored.discovery.modelSearchPaths.size(), 1);
+    EXPECT_EQ(restored.discovery.modelSearchPath, "/models");
     EXPECT_EQ(restored.presets.size(), 1);
     EXPECT_EQ(restored.presets[0].name, "Test Preset");
     EXPECT_EQ(restored.terminalPresets.size(), 1);

@@ -117,15 +117,15 @@ std::vector<std::string> ModelDiscovery::refreshCache()
 
 	std::vector<std::string> allModels;
 
-	// Get configured search paths from config
+	// Get configured search path from config
 	auto cfg = ConfigManager::instance().getConfig();
-	const auto &searchPaths = cfg.discovery.modelSearchPaths;
+	const auto &searchPath = cfg.discovery.modelSearchPath;
 
-	spdlog::debug("Scanning {} model search path(s)", searchPaths.size());
+	spdlog::debug("Scanning model search path: '{}'", searchPath);
 
-	// Scan each configured path
-	for (const auto &path : searchPaths) {
-		auto models = scanDirectory(path);
+	// Scan the configured path if non-empty
+	if (!searchPath.empty()) {
+		auto models = scanDirectory(searchPath);
 		allModels.insert(allModels.end(), models.begin(), models.end());
 	}
 

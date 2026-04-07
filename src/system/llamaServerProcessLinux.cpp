@@ -9,6 +9,7 @@
 #include "configManager.h"
 #include "llamaServerProcess.h"
 
+#include <atomic>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -16,13 +17,15 @@
 #include <filesystem>
 #include <signal.h>
 #include <spdlog/spdlog.h>
+#include <sys/prctl.h>
 #include <sys/wait.h>
+#include <thread>
 #include <unistd.h>
 
 class LlamaServerProcess::Impl
 {
   public:
-	Impl() : pid_(-1), running_(false)
+	Impl() : pid_(-1), running_(false), httpClient_()
 	{
 	}
 
@@ -87,6 +90,9 @@ class LlamaServerProcess::Impl
 			dup2(stderrPipe[1], STDERR_FILENO);
 			close(stdoutPipe[1]);
 			close(stderrPipe[1]);
+
+			// Ask the kernel to send SIGKILL to this child when the parent dies
+			prctl(PR_SET_PDEATHSIG, SIGKILL);
 
 			// Detach from controlling terminal
 			setsid();
@@ -183,6 +189,114 @@ class LlamaServerProcess::Impl
 		return static_cast<intptr_t>(pid_);
 	}
 
+	bool isServerHealthy()
+	{
+		if (!running_)
+			return false;
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/health";
+		auto [success, response] = httpClient_.get(url);
+		return success && response.find("ok") != std::string::npos;
+	}
+
+	bool isModelLoaded()
+	{
+		if (!isServerHealthy())
+			return false;
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/models";
+		auto [success, response] = httpClient_.get(url);
+		if (!success) {
+			spdlog::debug("isModelLoaded failed: {}", response);
+			return false;
+		}
+		// Check if any model has status "loaded"
+		return response.find("\"loaded\"") != std::string::npos;
+	}
+
+	std::string getLoadedModelPath()
+	{
+		if (!isServerHealthy())
+			return "";
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/models";
+		auto [success, response] = httpClient_.get(url);
+		if (!success) {
+			spdlog::debug("getLoadedModelPath failed: {}", response);
+			return "";
+		}
+		spdlog::debug("/models response: {}", response);
+		// Find a model with status "loaded" and extract its "id"
+		auto loadedPos = response.find("\"loaded\"");
+		if (loadedPos == std::string::npos)
+			return "";
+		// Search backwards from "loaded" to find the nearest "id" field
+		auto idPos = response.rfind("\"id\"", loadedPos);
+		if (idPos == std::string::npos)
+			return "";
+		auto colonPos = response.find(":", idPos);
+		if (colonPos == std::string::npos)
+			return "";
+		// Find start of value (skip whitespace and quotes)
+		size_t pos = colonPos + 1;
+		while (pos < response.size() &&
+			   (response[pos] == ' ' || response[pos] == '"'))
+			pos++;
+		size_t end = pos;
+		while (end < response.size() && response[end] != '"' &&
+			   response[end] != ',')
+			end++;
+		if (end > pos) {
+			return response.substr(pos, end - pos);
+		}
+		return "";
+	}
+
+	bool unloadModel()
+	{
+		if (!isServerHealthy())
+			return false;
+		// Get the currently loaded model name to send in the unload request
+		std::string loadedModel = getLoadedModelPath();
+		if (loadedModel.empty()) {
+			spdlog::warn("No model loaded, nothing to unload");
+			return false;
+		}
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/models/unload";
+		std::string body = "{\"model\":\"" + loadedModel + "\"}";
+		auto [success, response] = httpClient_.post(url, body);
+		if (success) {
+			spdlog::info("Model unloaded successfully");
+		} else {
+			spdlog::error("Failed to unload model: {}", response);
+		}
+		return success;
+	}
+
+	bool loadModel(const std::string &modelIdentifier)
+	{
+		if (!isServerHealthy())
+			return false;
+		// modelIdentifier is now the section name from models.ini (e.g.,
+		// "orchestrator") Use it directly for the API call
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) + "/models/load";
+		std::string body = "{\"model\":\"" + modelIdentifier + "\"}";
+		auto [success, response] = httpClient_.post(url, body);
+		if (success) {
+			spdlog::info("Model loaded: {}", modelIdentifier);
+		} else {
+			spdlog::error("Failed to load model: {}", response);
+		}
+		return success;
+	}
+
   private:
 	void readPipe(int fd)
 	{
@@ -238,6 +352,7 @@ class LlamaServerProcess::Impl
 	std::function<void(const std::string &)> outputCallback_;
 	std::thread pipeReadThread_;
 	std::atomic<bool> stopPipeReader_{ false };
+	HttpClient httpClient_;
 };
 
 LlamaServerProcess::LlamaServerProcess() : m_impl(std::make_unique<Impl>())
@@ -284,4 +399,29 @@ LlamaServerProcess &LlamaServerProcess::instance()
 std::string LlamaServerProcess::getLogPath()
 {
 	return ConfigManager::getLogsDir() + "/llama-server.log";
+}
+
+bool LlamaServerProcess::isModelLoaded()
+{
+	return m_impl->isModelLoaded();
+}
+
+std::string LlamaServerProcess::getLoadedModelPath()
+{
+	return m_impl->getLoadedModelPath();
+}
+
+bool LlamaServerProcess::unloadModel()
+{
+	return m_impl->unloadModel();
+}
+
+bool LlamaServerProcess::loadModel(const std::string &modelPath)
+{
+	return m_impl->loadModel(modelPath);
+}
+
+bool LlamaServerProcess::isServerHealthy()
+{
+	return m_impl->isServerHealthy();
 }

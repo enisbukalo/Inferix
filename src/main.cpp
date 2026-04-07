@@ -9,6 +9,7 @@
 #include "app.h"
 #include "configManager.h"
 #include "llamaServerProcess.h"
+#include "modelsIni.h"
 #include "systemMonitorRunner.h"
 
 #include <chrono>
@@ -137,10 +138,31 @@ int main()
 	// Load configuration from disk
 	ConfigManager::instance().load();
 
+	// Initialize models.ini (create if doesn't exist)
+	if (!ModelsIni::instance().load()) {
+		spdlog::info("Creating default models.ini");
+		ModelsIni::instance().createDefault();
+	}
+
 	// Clean up old log files based on retention policy
 	cleanupOldLogs(ConfigManager::instance().getLogsDir(),
 				   ConfigManager::instance().getConfig().ui.logRetentionDays,
 				   logFilename);
+
+	// Auto-start llama-server on app launch
+	auto &cfg = ConfigManager::instance().getConfig();
+	bool serverStarted = LlamaServerProcess::instance().launch(
+		"", // Empty model path = no model initially
+		cfg.load,
+		cfg.inference,
+		cfg.server);
+
+	if (serverStarted) {
+		std::this_thread::sleep_for(std::chrono::seconds(2));
+		spdlog::info("Llama-server auto-started on app launch");
+	} else {
+		spdlog::warn("Failed to auto-start llama-server");
+	}
 
 	// Run the main application UI loop
 	App::run();
