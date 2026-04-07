@@ -183,12 +183,6 @@ class ModelsPanel
 	bool shouldFilterModel(const std::string &path) const;
 
 	// =========================================================================
-	// Llama Server Process
-	// =========================================================================
-	/** Handle LOAD button click - launch llama-server with selected model. */
-	void onLoadClicked();
-
-	// =========================================================================
 	// Server/Model State Tracking (for single server button)
 	// =========================================================================
 	/** True while waiting for server to become healthy after launch */

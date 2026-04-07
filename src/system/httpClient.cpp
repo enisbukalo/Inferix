@@ -7,7 +7,7 @@
 class HttpClient::Impl
 {
   public:
-	Impl() : m_client("127.0.0.1", 80), m_timeout(5)
+	Impl() : m_timeout(5)
 	{
 	}
 
@@ -143,7 +143,6 @@ class HttpClient::Impl
 		return { host, port, path };
 	}
 
-	httplib::Client m_client;
 	int m_timeout;
 };
 

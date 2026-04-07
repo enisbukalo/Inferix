@@ -43,8 +43,6 @@ void cleanupOldLogs(const std::string &logDir,
 			return;
 		}
 
-		// Current time as time_t
-		time_t nowTimeT = std::time(nullptr);
 		int deletedCount = 0;
 
 		for (const auto &entry : std::filesystem::directory_iterator(logsPath)) {
@@ -61,14 +59,13 @@ void cleanupOldLogs(const std::string &logDir,
 			if (filename == currentLogFile)
 				continue;
 
-			// Get file modification time as time_t using C library
+			// Calculate file age using file_clock directly (avoids
+			// non-portable epoch conversions between clocks)
 			auto fileTime = std::filesystem::last_write_time(entry.path());
-			time_t fileTimeT = std::chrono::duration_cast<std::chrono::seconds>(
-								   fileTime.time_since_epoch())
-								   .count();
-
-			// Calculate age in hours using difftime
-			double ageHours = difftime(nowTimeT, fileTimeT) / 3600.0;
+			auto fileAge =
+				std::filesystem::file_time_type::clock::now() - fileTime;
+			double ageHours =
+				std::chrono::duration<double, std::ratio<3600>>(fileAge).count();
 
 			if (ageHours >= retentionDays * 24) {
 				std::filesystem::remove(entry.path());

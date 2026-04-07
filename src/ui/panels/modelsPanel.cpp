@@ -1305,37 +1305,3 @@ void ModelsPanel::updateStartStopLabel()
 		}
 	}
 }
-
-void ModelsPanel::onLoadClicked()
-{
-	// Validate model selection
-	if (m_modelNames.empty() || m_modelDropdownIndex < 0 ||
-		m_modelDropdownIndex >= static_cast<int>(m_modelNames.size())) {
-		spdlog::warn("No model selected, cannot load");
-		return;
-	}
-
-	// Get selected model name (section name from models.ini)
-	std::string modelName = m_modelNames[m_modelDropdownIndex];
-
-	// Get current config
-	auto &cfg = ConfigManager::instance().getConfig();
-
-	// If already running, terminate first
-	if (LlamaServerProcess::instance().isRunning()) {
-		LlamaServerProcess::instance().terminate();
-	}
-
-	// Launch the server using singleton for global access during cleanup
-	// Pass empty string - model is loaded via API after server starts
-	bool success = LlamaServerProcess::instance().launch("",
-														 cfg.load,
-														 cfg.inference,
-														 cfg.server);
-
-	if (success) {
-		spdlog::info("Starting server for model: '{}'", modelName);
-	} else {
-		spdlog::error("Failed to start server for model: '{}'", modelName);
-	}
-}
