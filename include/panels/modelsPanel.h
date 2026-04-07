@@ -8,6 +8,7 @@
 #include <ftxui/dom/elements.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <iomanip>
 #include <sstream>
 #include <thread>
@@ -141,7 +142,9 @@ class ModelsPanel
 										   // for /models/load API)
 	std::vector<std::string> m_modelDisplayNames; // Display names for dropdown
 												  // (same as names for now)
-	int m_modelDropdownIndex = 0;				  // Selected index in dropdown
+	std::vector<std::string>
+		m_modelPaths;				 // GGUF file paths parallel to m_modelNames
+	int m_modelDropdownIndex = 0;	 // Selected index in dropdown
 	std::string m_selectedModelName; // Section name of selected model
 
 	/** Refresh model list from ModelsIni singleton. */
@@ -182,14 +185,11 @@ class ModelsPanel
 	bool shouldFilterModel(const std::string &path) const;
 
 	// =========================================================================
-	// Llama Server Process
-	// =========================================================================
-	/** Handle LOAD button click - launch llama-server with selected model. */
-	void onLoadClicked();
-
-	// =========================================================================
 	// Server/Model State Tracking (for single server button)
 	// =========================================================================
+	/** True while waiting for server to become healthy after launch */
+	std::atomic<bool> m_serverStarting{ false };
+
 	/** Current server running state */
 	bool m_serverRunning = false;
 	/** Current model loaded state */

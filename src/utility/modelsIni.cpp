@@ -583,6 +583,23 @@ ModelsIni::getPresetsForModel(const std::string &modelPath) const
 	return result;
 }
 
+std::vector<ModelsIni::ModelEntry> ModelsIni::getUniqueModelEntries() const
+{
+	std::vector<ModelEntry> result;
+	std::set<std::string> seenPaths;
+	for (const auto &[name, kv] : m_sections) {
+		if (name == "*")
+			continue;
+		auto modelIt = kv.find("model");
+		if (modelIt == kv.end() || modelIt->second.empty())
+			continue;
+		if (seenPaths.insert(modelIt->second).second) {
+			result.push_back({ name, modelIt->second });
+		}
+	}
+	return result;
+}
+
 // =========================================================================
 // Preset write methods
 // =========================================================================

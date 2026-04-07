@@ -50,6 +50,7 @@ class SettingsPanel
 	void saveConfig();
 
 	// --- Server state ---
+	std::string m_executablePath;
 	std::string m_host;
 	std::string m_port;
 	std::string m_apiKey;

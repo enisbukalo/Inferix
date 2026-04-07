@@ -27,6 +27,7 @@ void SettingsPanel::loadFromConfig()
 	auto &cfg = ConfigManager::instance().getConfig();
 
 	// Server
+	m_executablePath = cfg.server.executablePath;
 	m_host = cfg.server.host;
 	m_port = std::to_string(cfg.server.port);
 	m_apiKey = cfg.server.apiKey;
@@ -78,6 +79,7 @@ void SettingsPanel::saveConfig()
 	// ========================================================================
 	// Update Server settings
 	// ========================================================================
+	cfg.server.executablePath = m_executablePath;
 	cfg.server.host = m_host;
 	try {
 		cfg.server.port = std::stoi(m_port);
@@ -252,6 +254,8 @@ Component SettingsPanel::component()
 	// Creates FTXUI input components for server configuration
 	// API key uses password mode for privacy
 	// -----------------------------------------------------------------------
+	auto exePathInput =
+		Input(&m_executablePath, "path/to/llama-server", inputOpt);
 	auto hostInput = Input(&m_host, "127.0.0.1", inputOpt);
 	auto portInput = Input(&m_port, "8080", inputOpt);
 
@@ -313,12 +317,12 @@ Component SettingsPanel::component()
 	auto container = Container::Horizontal({
 		Container::Vertical({
 			// Left column: Server, UI
-			hostInput,		 portInput,		 apiKeyInput,	   timeoutMinus,
-			timeoutInput,	 timeoutPlus,	 threadsHttpMinus, threadsHttpInput,
-			threadsHttpPlus, webuiCb,		 embeddingCb,	   contBatchCb,
-			cachePromptCb,	 metricsCb,		 themeToggle,	   defaultTabToggle,
-			showSysPanelCb,	 refreshMinus,	 refreshInput,	   refreshPlus,
-			retentionMinus,	 retentionInput, retentionPlus,
+			exePathInput,	  hostInput,	   portInput,	   apiKeyInput,
+			timeoutMinus,	  timeoutInput,	   timeoutPlus,	   threadsHttpMinus,
+			threadsHttpInput, threadsHttpPlus, webuiCb,		   embeddingCb,
+			contBatchCb,	  cachePromptCb,   metricsCb,	   themeToggle,
+			defaultTabToggle, showSysPanelCb,  refreshMinus,   refreshInput,
+			refreshPlus,	  retentionMinus,  retentionInput, retentionPlus,
 		}),
 		Container::Vertical({
 			// Right column: Terminal
@@ -341,6 +345,9 @@ Component SettingsPanel::component()
 		// Server Settings
 		{
 			Elements rows;
+			rows.push_back(
+				ui_utils::settingRowComponent("Executable Path",
+											  exePathInput->Render()));
 			rows.push_back(
 				ui_utils::settingRowComponent("Host", hostInput->Render()));
 			rows.push_back(

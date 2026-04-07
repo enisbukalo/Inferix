@@ -92,6 +92,24 @@ class ModelsIni
 	std::vector<Config::ModelPreset>
 	getPresetsForModel(const std::string &modelPath) const;
 
+	/**
+	 * @brief A unique model entry: one record per distinct GGUF path.
+	 */
+	struct ModelEntry
+	{
+		std::string displayName; // section name (first section found for this path)
+		std::string modelPath;   // the GGUF file path
+	};
+
+	/**
+	 * @brief Return one entry per unique GGUF path in models.ini.
+	 *
+	 * Sections that share the same "model" path (i.e. presets) are deduplicated;
+	 * only the first section encountered for each path is returned.
+	 * @return Vector of unique model entries
+	 */
+	std::vector<ModelEntry> getUniqueModelEntries() const;
+
 	// ----- Preset write methods -----
 
 	/**

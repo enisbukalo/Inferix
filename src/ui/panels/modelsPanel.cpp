@@ -12,11 +12,22 @@
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
-#include <numeric>
 #include <sstream>
 #include <thread>
 
 using namespace ftxui;
+
+/**
+ * @brief Find the index of a value in an options vector, or 0 if not found.
+ */
+static int findOptionIndex(const std::vector<std::string> &options,
+						   const std::string &value)
+{
+	for (size_t i = 0; i < options.size(); ++i)
+		if (options[i] == value)
+			return static_cast<int>(i);
+	return 0;
+}
 
 // =========================================================================
 // Constructor and Config Methods
@@ -67,41 +78,12 @@ void ModelsPanel::loadFromConfig()
 	m_chatTemplate = cfg.load.chatTemplate;
 	m_reasoningFormat = cfg.load.reasoningFormat;
 
-	// Split mode dropdown index
-	m_splitModeIdx = 0;
-	for (size_t i = 0; i < m_splitModeOptions.size(); ++i) {
-		if (m_splitModeOptions[i] == cfg.load.splitMode) {
-			m_splitModeIdx = static_cast<int>(i);
-			break;
-		}
-	}
-
-	// Cache type K dropdown index
-	m_cacheTypeKIdx = 0;
-	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
-		if (m_cacheTypeOptions[i] == cfg.load.cacheTypeK) {
-			m_cacheTypeKIdx = static_cast<int>(i);
-			break;
-		}
-	}
-
-	// Cache type V dropdown index
-	m_cacheTypeVIdx = 0;
-	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
-		if (m_cacheTypeOptions[i] == cfg.load.cacheTypeV) {
-			m_cacheTypeVIdx = static_cast<int>(i);
-			break;
-		}
-	}
-
-	// Reasoning format dropdown index
-	m_reasoningFormatIdx = 0;
-	for (size_t i = 0; i < m_reasoningFormatOptions.size(); ++i) {
-		if (m_reasoningFormatOptions[i] == cfg.load.reasoningFormat) {
-			m_reasoningFormatIdx = static_cast<int>(i);
-			break;
-		}
-	}
+	// Dropdown indices
+	m_splitModeIdx = findOptionIndex(m_splitModeOptions, cfg.load.splitMode);
+	m_cacheTypeKIdx = findOptionIndex(m_cacheTypeOptions, cfg.load.cacheTypeK);
+	m_cacheTypeVIdx = findOptionIndex(m_cacheTypeOptions, cfg.load.cacheTypeV);
+	m_reasoningFormatIdx =
+		findOptionIndex(m_reasoningFormatOptions, cfg.load.reasoningFormat);
 
 	// Inference settings
 	m_temperature = static_cast<float>(cfg.inference.temperature);
@@ -133,6 +115,9 @@ void ModelsPanel::loadFromConfig()
 			break;
 		}
 	}
+
+	// Load presets for the initially selected model
+	refreshPresetsForModel();
 }
 
 void ModelsPanel::saveConfig()
@@ -281,23 +266,24 @@ bool ModelsPanel::shouldFilterModel(const std::string &path) const
 
 void ModelsPanel::refreshModelList()
 {
-	// Load models from models.ini
-	m_modelNames = ModelsIni::instance().getModelNames();
-	m_modelDisplayNames = m_modelNames; // Section names are display names
+	auto entries = ModelsIni::instance().getUniqueModelEntries();
 
-	// Sort by display name for user-friendly dropdown
-	std::vector<size_t> indices(m_modelNames.size());
-	std::iota(indices.begin(), indices.end(), 0);
-	std::sort(indices.begin(), indices.end(), [this](size_t a, size_t b) {
-		return m_modelDisplayNames[a] < m_modelDisplayNames[b];
-	});
+	// Sort by display name
+	std::sort(
+		entries.begin(),
+		entries.end(),
+		[](const ModelsIni::ModelEntry &a, const ModelsIni::ModelEntry &b) {
+			return a.displayName < b.displayName;
+		});
 
-	std::vector<std::string> sortedNames;
-	for (auto idx : indices) {
-		sortedNames.push_back(m_modelNames[idx]);
+	m_modelNames.clear();
+	m_modelDisplayNames.clear();
+	m_modelPaths.clear();
+	for (const auto &entry : entries) {
+		m_modelNames.push_back(entry.displayName);
+		m_modelDisplayNames.push_back(entry.displayName);
+		m_modelPaths.push_back(entry.modelPath);
 	}
-	m_modelNames = std::move(sortedNames);
-	m_modelDisplayNames = m_modelNames; // Re-sync after sort
 
 	// Reset dropdown index if it's now out of bounds
 	if (m_modelDropdownIndex < 0 ||
@@ -362,9 +348,13 @@ Component ModelsPanel::component()
 	// (UNLOAD/STOP)
 	auto startStopBtnStyle = ButtonOption::Animated();
 	startStopBtnStyle.transform = [=](const EntryState &s) {
-		// Green when LOAD, Red when UNLOAD or STOP
-		Color textColor =
-			(s.label == "LOAD") ? Color::GreenLight : Color::RedLight;
+		Color textColor;
+		if (s.label == "STARTING...")
+			textColor = Color::YellowLight;
+		else if (s.label == "LOAD")
+			textColor = Color::GreenLight;
+		else
+			textColor = Color::RedLight;
 		auto e = text(s.label) | color(textColor);
 		if (s.focused)
 			e |= bold;
@@ -779,8 +769,7 @@ Component ModelsPanel::component()
 			if (m_modelDropdownIndex >= 0 &&
 				m_modelDropdownIndex < static_cast<int>(m_modelNames.size())) {
 				m_selectedModelName = m_modelNames[m_modelDropdownIndex];
-				m_modelPath =
-					ModelsIni::instance().getModelPath(m_selectedModelName);
+				m_modelPath = m_modelPaths[m_modelDropdownIndex];
 			}
 			refreshPresetsForModel();
 			m_selectedPresetIndex = -1;
@@ -973,8 +962,16 @@ void ModelsPanel::refreshPresetsForModel()
 		m_presetDisplayNames.clear();
 		return;
 	}
-	std::string modelPath =
-		ModelsIni::instance().getModelPath(m_selectedModelName);
+	// Find the model path from our parallel vector
+	std::string modelPath;
+	for (size_t i = 0; i < m_modelNames.size(); ++i) {
+		if (m_modelNames[i] == m_selectedModelName) {
+			modelPath = m_modelPaths[i];
+			break;
+		}
+	}
+	if (modelPath.empty())
+		modelPath = ModelsIni::instance().getModelPath(m_selectedModelName);
 	m_presetsForModel = ModelsIni::instance().getPresetsForModel(modelPath);
 	m_presetDisplayNames.clear();
 	for (const auto &p : m_presetsForModel)
@@ -1022,34 +1019,13 @@ void ModelsPanel::applyPreset(const Config::ModelPreset &preset)
 	m_reasoningFormat = preset.load.reasoningFormat;
 
 	// Dropdown indices for load settings
-	m_splitModeIdx = 0;
-	for (size_t i = 0; i < m_splitModeOptions.size(); ++i) {
-		if (m_splitModeOptions[i] == preset.load.splitMode) {
-			m_splitModeIdx = static_cast<int>(i);
-			break;
-		}
-	}
-	m_cacheTypeKIdx = 0;
-	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
-		if (m_cacheTypeOptions[i] == preset.load.cacheTypeK) {
-			m_cacheTypeKIdx = static_cast<int>(i);
-			break;
-		}
-	}
-	m_cacheTypeVIdx = 0;
-	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
-		if (m_cacheTypeOptions[i] == preset.load.cacheTypeV) {
-			m_cacheTypeVIdx = static_cast<int>(i);
-			break;
-		}
-	}
-	m_reasoningFormatIdx = 0;
-	for (size_t i = 0; i < m_reasoningFormatOptions.size(); ++i) {
-		if (m_reasoningFormatOptions[i] == preset.load.reasoningFormat) {
-			m_reasoningFormatIdx = static_cast<int>(i);
-			break;
-		}
-	}
+	m_splitModeIdx = findOptionIndex(m_splitModeOptions, preset.load.splitMode);
+	m_cacheTypeKIdx =
+		findOptionIndex(m_cacheTypeOptions, preset.load.cacheTypeK);
+	m_cacheTypeVIdx =
+		findOptionIndex(m_cacheTypeOptions, preset.load.cacheTypeV);
+	m_reasoningFormatIdx =
+		findOptionIndex(m_reasoningFormatOptions, preset.load.reasoningFormat);
 
 	// Inference settings
 	m_temperature = static_cast<float>(preset.inference.temperature);
@@ -1104,7 +1080,13 @@ void ModelsPanel::saveCurrentToPreset()
 		preset.name = m_editingPresetName;
 	}
 
-	preset.model = ModelsIni::instance().getModelPath(m_selectedModelName);
+	// Use model path from our parallel vector
+	for (size_t i = 0; i < m_modelNames.size(); ++i) {
+		if (m_modelNames[i] == m_selectedModelName) {
+			preset.model = m_modelPaths[i];
+			break;
+		}
+	}
 	if (preset.model.empty())
 		preset.model = m_modelPath; // fallback to current model path
 
@@ -1234,11 +1216,19 @@ void ModelsPanel::onStartStopClicked()
 			cfg.server);
 
 		if (success) {
-			// Wait briefly for server to start
-			std::this_thread::sleep_for(std::chrono::seconds(2));
-			// Refresh state and update label
-			updateStartStopLabel();
-			spdlog::info("Server started (no model)");
+			m_serverStarting.store(true);
+			m_startStopLabel = "STARTING...";
+			std::thread([this] {
+				for (int i = 0; i < 20; ++i) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(500));
+					if (LlamaServerProcess::instance().isServerHealthy()) {
+						break;
+					}
+				}
+				m_serverStarting.store(false);
+				updateStartStopLabel();
+				spdlog::info("Server started (no model)");
+			}).detach();
 		} else {
 			spdlog::error("Failed to start server");
 		}
@@ -1275,8 +1265,8 @@ void ModelsPanel::onLoadUnloadClicked()
 		if (!process.isRunning()) {
 			// Auto-start server if not running
 			onStartStopClicked();
-			// Wait briefly for server to start
-			std::this_thread::sleep_for(std::chrono::seconds(2));
+			// Server start is async — the health poll thread will handle it
+			return;
 		}
 
 		// Load the model via API - pass section name, not path
@@ -1329,39 +1319,5 @@ void ModelsPanel::updateStartStopLabel()
 		} else {
 			m_startStopLabel = "LOAD";
 		}
-	}
-}
-
-void ModelsPanel::onLoadClicked()
-{
-	// Validate model selection
-	if (m_modelNames.empty() || m_modelDropdownIndex < 0 ||
-		m_modelDropdownIndex >= static_cast<int>(m_modelNames.size())) {
-		spdlog::warn("No model selected, cannot load");
-		return;
-	}
-
-	// Get selected model name (section name from models.ini)
-	std::string modelName = m_modelNames[m_modelDropdownIndex];
-
-	// Get current config
-	auto &cfg = ConfigManager::instance().getConfig();
-
-	// If already running, terminate first
-	if (LlamaServerProcess::instance().isRunning()) {
-		LlamaServerProcess::instance().terminate();
-	}
-
-	// Launch the server using singleton for global access during cleanup
-	// Pass empty string - model is loaded via API after server starts
-	bool success = LlamaServerProcess::instance().launch("",
-														 cfg.load,
-														 cfg.inference,
-														 cfg.server);
-
-	if (success) {
-		spdlog::info("Starting server for model: '{}'", modelName);
-	} else {
-		spdlog::error("Failed to start server for model: '{}'", modelName);
 	}
 }
