@@ -346,6 +346,7 @@ void to_json(json &j, const ModelPreset &v)
 {
 	j["name"] = v.name;
 	j["model"] = v.model;
+	j["load"] = v.load;
 	j["inference"] = v.inference;
 }
 
@@ -353,6 +354,8 @@ void from_json(const json &j, ModelPreset &v)
 {
 	v.name = j.value("name", v.name);
 	v.model = j.value("model", v.model);
+	if (j.contains("load"))
+		v.load = j["load"].get<LoadSettings>();
 	if (j.contains("inference"))
 		v.inference = j["inference"].get<InferenceSettings>();
 }

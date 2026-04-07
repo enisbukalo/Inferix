@@ -147,6 +147,28 @@ class ModelsPanel
 	/** Refresh model list from ModelsIni singleton. */
 	void refreshModelList();
 
+	// =========================================================================
+	// Preset State
+	// =========================================================================
+	std::vector<Config::ModelPreset>
+		m_presetsForModel;						   // filtered to current model
+	std::vector<std::string> m_presetDisplayNames; // names for Menu component
+	int m_selectedPresetIndex = -1;				   // -1 = none selected
+	std::string m_editingPresetName;			   // bound to editable input
+	std::string m_presetStatus; // status message (e.g. "Saved", "Name in use")
+
+	/** Reload presets from ModelsIni for the currently selected model. */
+	void refreshPresetsForModel();
+
+	/** Apply a preset's load + inference values into all member state. */
+	void applyPreset(const Config::ModelPreset &preset);
+
+	/** Write current member state back to the selected preset in models.ini. */
+	void saveCurrentToPreset();
+
+	/** Rename the selected preset. */
+	void renameSelectedPreset(const std::string &newName);
+
 	/**
 	 * @brief Check if a model path should be filtered out based on fileFilter
 	 * patterns.

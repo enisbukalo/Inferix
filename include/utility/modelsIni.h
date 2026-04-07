@@ -1,5 +1,8 @@
 #pragma once
 
+#include "modelSettings.h"
+
+#include <optional>
 #include <string>
 #include <vector>
 #include <map>
@@ -70,6 +73,45 @@ class ModelsIni
 	 * @return Map of key-value pairs
 	 */
 	std::map<std::string, std::string> getGlobalDefaults() const;
+
+	// ----- Preset read methods -----
+
+	/**
+	 * @brief Parse a section into a ModelPreset.
+	 * @param sectionName The INI section name
+	 * @return The preset, or nullopt if section unknown
+	 */
+	std::optional<Config::ModelPreset>
+	getPreset(const std::string &sectionName) const;
+
+	/**
+	 * @brief Return all presets whose "model" key matches the given path.
+	 * @param modelPath The model file path to match
+	 * @return Vector of matching presets
+	 */
+	std::vector<Config::ModelPreset>
+	getPresetsForModel(const std::string &modelPath) const;
+
+	// ----- Preset write methods -----
+
+	/**
+	 * @brief Persist a preset (creates section if new, overwrites if exists).
+	 * Writes atomically via temp file + rename.
+	 * @return true on success
+	 */
+	bool savePreset(const Config::ModelPreset &preset);
+
+	/**
+	 * @brief Rename a section in-place (preserves all key-value pairs).
+	 * @return true on success
+	 */
+	bool renamePreset(const std::string &oldName, const std::string &newName);
+
+	/**
+	 * @brief Delete a section from the INI file.
+	 * @return true on success
+	 */
+	bool deletePreset(const std::string &sectionName);
 
   private:
 	ModelsIni() = default;
