@@ -33,6 +33,20 @@ namespace Config {
 struct ServerSettings
 {
 	/**
+	 * @name Executable
+	 */
+
+	/**
+	 * @brief Path to the llama-server executable.
+	 *
+	 * Full path to the llama-server binary on the local filesystem.
+	 * On Linux this can also be just the binary name if it's on PATH.
+	 *
+	 * @note Must be set before launching the server.
+	 */
+	std::string executablePath;
+
+	/**
 	 * @name Network Settings
 	 *
 	 * These fields control how the server binds to network interfaces

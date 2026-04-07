@@ -158,7 +158,6 @@ int main()
 		cfg.server);
 
 	if (serverStarted) {
-		std::this_thread::sleep_for(std::chrono::seconds(2));
 		spdlog::info("Llama-server auto-started on app launch");
 	} else {
 		spdlog::warn("Failed to auto-start llama-server");

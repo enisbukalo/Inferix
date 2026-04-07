@@ -11,6 +11,7 @@
 
 #include <chrono>
 #include <iomanip>
+#include <json.hpp>
 #include <spdlog/spdlog.h>
 #include <sstream>
 #include <string>
@@ -63,9 +64,13 @@ class LlamaServerProcess::Impl
 
 		spdlog::info("Starting llama-server with model: '{}'", modelPath);
 
-		// Build full command for logging
-		std::string exePath =
-			"C:\\Users\\bukal\\Documents\\llama\\llama-server.exe";
+		// Use executable path from server settings
+		std::string exePath = server.executablePath;
+		if (exePath.empty()) {
+			spdlog::error("Cannot start llama-server: executablePath is not set "
+						  "in config");
+			return false;
+		}
 		std::string fullCommand = exePath + " " + buildCommandLine(args);
 		spdlog::info("llama-server command: {}", fullCommand);
 
@@ -242,8 +247,9 @@ class LlamaServerProcess::Impl
 		auto &cfg = ConfigManager::instance().getConfig();
 		std::string url = "http://" + cfg.server.host + ":" +
 						  std::to_string(cfg.server.port) + "/models/unload";
-		std::string body = "{\"model\":\"" + loadedModel + "\"}";
-		auto [success, response] = httpClient_.post(url, body);
+		nlohmann::json bodyJson;
+		bodyJson["model"] = loadedModel;
+		auto [success, response] = httpClient_.post(url, bodyJson.dump());
 		if (success) {
 			spdlog::info("Model unloaded successfully");
 		} else {
@@ -261,8 +267,9 @@ class LlamaServerProcess::Impl
 		auto &cfg = ConfigManager::instance().getConfig();
 		std::string url = "http://" + cfg.server.host + ":" +
 						  std::to_string(cfg.server.port) + "/models/load";
-		std::string body = "{\"model\":\"" + modelIdentifier + "\"}";
-		auto [success, response] = httpClient_.post(url, body);
+		nlohmann::json bodyJson;
+		bodyJson["model"] = modelIdentifier;
+		auto [success, response] = httpClient_.post(url, bodyJson.dump());
 		if (success) {
 			spdlog::info("Model loaded: {}", modelIdentifier);
 		} else {

@@ -8,6 +8,7 @@
 #include <ftxui/dom/elements.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <iomanip>
 #include <sstream>
 #include <thread>
@@ -190,6 +191,9 @@ class ModelsPanel
 	// =========================================================================
 	// Server/Model State Tracking (for single server button)
 	// =========================================================================
+	/** True while waiting for server to become healthy after launch */
+	std::atomic<bool> m_serverStarting{ false };
+
 	/** Current server running state */
 	bool m_serverRunning = false;
 	/** Current model loaded state */

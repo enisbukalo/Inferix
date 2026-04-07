@@ -47,6 +47,7 @@ static double roundToTwoDecimals(double value)
 
 void to_json(json &j, const ServerSettings &v)
 {
+	j["executablePath"] = v.executablePath;
 	j["host"] = v.host;
 	j["port"] = v.port;
 	j["apiKey"] = v.apiKey;
@@ -88,6 +89,7 @@ void to_json(json &j, const ServerSettings &v)
 
 void from_json(const json &j, ServerSettings &v)
 {
+	v.executablePath = j.value("executablePath", v.executablePath);
 	v.host = j.value("host", v.host);
 	v.port = j.value("port", v.port);
 	v.apiKey = j.value("apiKey", v.apiKey);

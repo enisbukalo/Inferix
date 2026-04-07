@@ -15,6 +15,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <filesystem>
+#include <json.hpp>
 #include <signal.h>
 #include <spdlog/spdlog.h>
 #include <sys/prctl.h>
@@ -104,7 +105,10 @@ class LlamaServerProcess::Impl
 			}
 			argv.push_back(nullptr);
 
-			execve("llama-server", argv.data(), environ);
+			execve(server.executablePath.empty() ? "llama-server"
+												 : server.executablePath.c_str(),
+				   argv.data(),
+				   environ);
 			// If we get here, execve failed
 			_exit(1);
 		}
@@ -268,8 +272,9 @@ class LlamaServerProcess::Impl
 		auto &cfg = ConfigManager::instance().getConfig();
 		std::string url = "http://" + cfg.server.host + ":" +
 						  std::to_string(cfg.server.port) + "/models/unload";
-		std::string body = "{\"model\":\"" + loadedModel + "\"}";
-		auto [success, response] = httpClient_.post(url, body);
+		nlohmann::json bodyJson;
+		bodyJson["model"] = loadedModel;
+		auto [success, response] = httpClient_.post(url, bodyJson.dump());
 		if (success) {
 			spdlog::info("Model unloaded successfully");
 		} else {
@@ -287,8 +292,9 @@ class LlamaServerProcess::Impl
 		auto &cfg = ConfigManager::instance().getConfig();
 		std::string url = "http://" + cfg.server.host + ":" +
 						  std::to_string(cfg.server.port) + "/models/load";
-		std::string body = "{\"model\":\"" + modelIdentifier + "\"}";
-		auto [success, response] = httpClient_.post(url, body);
+		nlohmann::json bodyJson;
+		bodyJson["model"] = modelIdentifier;
+		auto [success, response] = httpClient_.post(url, bodyJson.dump());
 		if (success) {
 			spdlog::info("Model loaded: {}", modelIdentifier);
 		} else {

@@ -362,9 +362,13 @@ Component ModelsPanel::component()
 	// (UNLOAD/STOP)
 	auto startStopBtnStyle = ButtonOption::Animated();
 	startStopBtnStyle.transform = [=](const EntryState &s) {
-		// Green when LOAD, Red when UNLOAD or STOP
-		Color textColor =
-			(s.label == "LOAD") ? Color::GreenLight : Color::RedLight;
+		Color textColor;
+		if (s.label == "STARTING...")
+			textColor = Color::YellowLight;
+		else if (s.label == "LOAD")
+			textColor = Color::GreenLight;
+		else
+			textColor = Color::RedLight;
 		auto e = text(s.label) | color(textColor);
 		if (s.focused)
 			e |= bold;
@@ -1234,11 +1238,19 @@ void ModelsPanel::onStartStopClicked()
 			cfg.server);
 
 		if (success) {
-			// Wait briefly for server to start
-			std::this_thread::sleep_for(std::chrono::seconds(2));
-			// Refresh state and update label
-			updateStartStopLabel();
-			spdlog::info("Server started (no model)");
+			m_serverStarting.store(true);
+			m_startStopLabel = "STARTING...";
+			std::thread([this] {
+				for (int i = 0; i < 20; ++i) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(500));
+					if (LlamaServerProcess::instance().isServerHealthy()) {
+						break;
+					}
+				}
+				m_serverStarting.store(false);
+				updateStartStopLabel();
+				spdlog::info("Server started (no model)");
+			}).detach();
 		} else {
 			spdlog::error("Failed to start server");
 		}
@@ -1275,8 +1287,8 @@ void ModelsPanel::onLoadUnloadClicked()
 		if (!process.isRunning()) {
 			// Auto-start server if not running
 			onStartStopClicked();
-			// Wait briefly for server to start
-			std::this_thread::sleep_for(std::chrono::seconds(2));
+			// Server start is async — the health poll thread will handle it
+			return;
 		}
 
 		// Load the model via API - pass section name, not path
