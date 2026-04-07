@@ -142,7 +142,9 @@ class ModelsPanel
 										   // for /models/load API)
 	std::vector<std::string> m_modelDisplayNames; // Display names for dropdown
 												  // (same as names for now)
-	int m_modelDropdownIndex = 0;				  // Selected index in dropdown
+	std::vector<std::string>
+		m_modelPaths;				 // GGUF file paths parallel to m_modelNames
+	int m_modelDropdownIndex = 0;	 // Selected index in dropdown
 	std::string m_selectedModelName; // Section name of selected model
 
 	/** Refresh model list from ModelsIni singleton. */

@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
-#include <numeric>
 #include <sstream>
 #include <thread>
 
@@ -116,6 +115,9 @@ void ModelsPanel::loadFromConfig()
 			break;
 		}
 	}
+
+	// Load presets for the initially selected model
+	refreshPresetsForModel();
 }
 
 void ModelsPanel::saveConfig()
@@ -264,23 +266,24 @@ bool ModelsPanel::shouldFilterModel(const std::string &path) const
 
 void ModelsPanel::refreshModelList()
 {
-	// Load models from models.ini
-	m_modelNames = ModelsIni::instance().getModelNames();
-	m_modelDisplayNames = m_modelNames; // Section names are display names
+	auto entries = ModelsIni::instance().getUniqueModelEntries();
 
-	// Sort by display name for user-friendly dropdown
-	std::vector<size_t> indices(m_modelNames.size());
-	std::iota(indices.begin(), indices.end(), 0);
-	std::sort(indices.begin(), indices.end(), [this](size_t a, size_t b) {
-		return m_modelDisplayNames[a] < m_modelDisplayNames[b];
-	});
+	// Sort by display name
+	std::sort(
+		entries.begin(),
+		entries.end(),
+		[](const ModelsIni::ModelEntry &a, const ModelsIni::ModelEntry &b) {
+			return a.displayName < b.displayName;
+		});
 
-	std::vector<std::string> sortedNames;
-	for (auto idx : indices) {
-		sortedNames.push_back(m_modelNames[idx]);
+	m_modelNames.clear();
+	m_modelDisplayNames.clear();
+	m_modelPaths.clear();
+	for (const auto &entry : entries) {
+		m_modelNames.push_back(entry.displayName);
+		m_modelDisplayNames.push_back(entry.displayName);
+		m_modelPaths.push_back(entry.modelPath);
 	}
-	m_modelNames = std::move(sortedNames);
-	m_modelDisplayNames = m_modelNames; // Re-sync after sort
 
 	// Reset dropdown index if it's now out of bounds
 	if (m_modelDropdownIndex < 0 ||
@@ -766,8 +769,7 @@ Component ModelsPanel::component()
 			if (m_modelDropdownIndex >= 0 &&
 				m_modelDropdownIndex < static_cast<int>(m_modelNames.size())) {
 				m_selectedModelName = m_modelNames[m_modelDropdownIndex];
-				m_modelPath =
-					ModelsIni::instance().getModelPath(m_selectedModelName);
+				m_modelPath = m_modelPaths[m_modelDropdownIndex];
 			}
 			refreshPresetsForModel();
 			m_selectedPresetIndex = -1;
@@ -960,8 +962,16 @@ void ModelsPanel::refreshPresetsForModel()
 		m_presetDisplayNames.clear();
 		return;
 	}
-	std::string modelPath =
-		ModelsIni::instance().getModelPath(m_selectedModelName);
+	// Find the model path from our parallel vector
+	std::string modelPath;
+	for (size_t i = 0; i < m_modelNames.size(); ++i) {
+		if (m_modelNames[i] == m_selectedModelName) {
+			modelPath = m_modelPaths[i];
+			break;
+		}
+	}
+	if (modelPath.empty())
+		modelPath = ModelsIni::instance().getModelPath(m_selectedModelName);
 	m_presetsForModel = ModelsIni::instance().getPresetsForModel(modelPath);
 	m_presetDisplayNames.clear();
 	for (const auto &p : m_presetsForModel)
@@ -1070,7 +1080,13 @@ void ModelsPanel::saveCurrentToPreset()
 		preset.name = m_editingPresetName;
 	}
 
-	preset.model = ModelsIni::instance().getModelPath(m_selectedModelName);
+	// Use model path from our parallel vector
+	for (size_t i = 0; i < m_modelNames.size(); ++i) {
+		if (m_modelNames[i] == m_selectedModelName) {
+			preset.model = m_modelPaths[i];
+			break;
+		}
+	}
 	if (preset.model.empty())
 		preset.model = m_modelPath; // fallback to current model path
 
