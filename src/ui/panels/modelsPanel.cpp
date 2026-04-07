@@ -565,6 +565,91 @@ Component ModelsPanel::component()
 	auto fitCb = Checkbox("", &m_fit, cbOpt);
 
 	// -----------------------------------------------------------------------
+	// Preset components
+	// -----------------------------------------------------------------------
+	// Refresh presets for the initially selected model
+	refreshPresetsForModel();
+
+	auto presetMenuOpt = MenuOption::Vertical();
+	presetMenuOpt.on_change = [this] {
+		if (m_selectedPresetIndex >= 0 &&
+			m_selectedPresetIndex < static_cast<int>(m_presetsForModel.size())) {
+			applyPreset(m_presetsForModel[m_selectedPresetIndex]);
+			m_editingPresetName = m_presetsForModel[m_selectedPresetIndex].name;
+			m_presetStatus.clear();
+		}
+	};
+	presetMenuOpt.entries_option.transform = [=](const EntryState &s) {
+		auto e = text(s.label);
+		if (s.active)
+			e |= color(toggleOnColor);
+		else
+			e |= color(toggleOffColor);
+		if (s.focused)
+			e |= bold;
+		return e;
+	};
+	auto presetMenu =
+		Menu(&m_presetDisplayNames, &m_selectedPresetIndex, presetMenuOpt);
+
+	InputOption presetNameOpt;
+	presetNameOpt.multiline = false;
+	presetNameOpt.transform = [=](InputState state) {
+		auto e = state.element | align_right;
+		if (state.is_placeholder)
+			return e | color(toggleOffColor);
+		return e | color(toggleOnColor);
+	};
+	auto presetNameInput =
+		Input(&m_editingPresetName, "preset name", presetNameOpt);
+
+	auto presetBtnStyle = ButtonOption::Animated();
+	presetBtnStyle.transform = [=](const EntryState &s) {
+		auto e = text(s.label) | color(Color::MagentaLight);
+		if (s.focused)
+			e |= bold;
+		return e | center;
+	};
+
+	auto presetSaveBtn = Button(
+		"Save",
+		[this] { saveCurrentToPreset(); },
+		presetBtnStyle);
+
+	auto presetRenameBtn = Button(
+		"Rename",
+		[this] { renameSelectedPreset(m_editingPresetName); },
+		presetBtnStyle);
+
+	auto presetNewBtn = Button(
+		"+ New",
+		[this] {
+			m_selectedPresetIndex = -1;
+			std::string base =
+				m_selectedModelName.empty() ? "preset" : m_selectedModelName;
+			m_editingPresetName = base + "-new";
+			m_presetStatus.clear();
+		},
+		presetBtnStyle);
+
+	auto presetDeleteBtn = Button(
+		"Delete",
+		[this] {
+			if (m_selectedPresetIndex >= 0 &&
+				m_selectedPresetIndex <
+					static_cast<int>(m_presetsForModel.size())) {
+				std::string name = m_presetsForModel[m_selectedPresetIndex].name;
+				if (ModelsIni::instance().deletePreset(name)) {
+					m_presetStatus = "Deleted";
+					m_selectedPresetIndex = -1;
+					m_editingPresetName.clear();
+					refreshPresetsForModel();
+				}
+			}
+		},
+		presetBtnStyle);
+
+	// -----------------------------------------------------------------------
 	// Model Selection Dropdown, START/STOP, and LOAD/UNLOAD Buttons
 	// -----------------------------------------------------------------------
 	// Model dropdown - selecting a model updates m_modelPath which is used when
@@ -662,6 +747,13 @@ Component ModelsPanel::component()
 			mmapCb,
 			mlockCb,
 			fitCb,
+			// Presets
+			presetMenu,
+			presetNameInput,
+			presetSaveBtn,
+			presetRenameBtn,
+			presetNewBtn,
+			presetDeleteBtn,
 			// Footer: model dropdown and single server button
 			modelDropdown,
 			serverButton,
@@ -677,7 +769,27 @@ Component ModelsPanel::component()
 		}),
 	});
 
-	m_component = Renderer(container, [=, this] {
+	// Track model dropdown changes to refresh presets
+	int lastModelIndex = m_modelDropdownIndex;
+
+	m_component = Renderer(container, [=, this]() mutable {
+		// Detect model dropdown change
+		if (m_modelDropdownIndex != lastModelIndex) {
+			lastModelIndex = m_modelDropdownIndex;
+			if (m_modelDropdownIndex >= 0 &&
+				m_modelDropdownIndex < static_cast<int>(m_modelNames.size())) {
+				m_selectedModelName = m_modelNames[m_modelDropdownIndex];
+				m_modelPath =
+					ModelsIni::instance().getModelPath(m_selectedModelName);
+			}
+			refreshPresetsForModel();
+			m_selectedPresetIndex = -1;
+			m_editingPresetName.clear();
+			m_presetStatus.clear();
+			updateStartStopLabel();
+			saveConfig();
+		}
+
 		// === Left column: Load Settings ===
 		Elements leftElements;
 		{
@@ -788,13 +900,46 @@ Component ModelsPanel::component()
 		auto leftCol = vbox(std::move(leftElements)) | flex;
 		auto rightCol = vbox(std::move(rightElements)) | flex;
 
-		// Footer section with model dropdown and single server button
-		// Button state:
-		// - Server not running: LOAD (green text)
-		// - Server running, no model: LOAD (green text)
-		// - Server running, model loaded: UNLOAD (red text)
-		// Note: Button text color changes via style, no background color
+		// === Presets panel ===
+		Elements presetElements;
+		if (m_presetDisplayNames.empty()) {
+			presetElements.push_back(
+				text("  No presets — use Save to create one.") |
+				color(Color::GrayDark));
+		} else {
+			presetElements.push_back(presetMenu->Render() | vscroll_indicator |
+									 frame | size(HEIGHT, LESS_THAN, 6));
+		}
+		// Name input + buttons row
+		presetElements.push_back(separatorLight());
+		presetElements.push_back(hbox({
+			text(" Name: ") | color(Color::GrayLight),
+			presetNameInput->Render() | flex,
+			separatorLight(),
+			presetRenameBtn->Render(),
+			separatorLight(),
+			presetSaveBtn->Render(),
+			separatorLight(),
+			presetNewBtn->Render(),
+			separatorLight(),
+			presetDeleteBtn->Render(),
+		}));
+		// Status message
+		if (!m_presetStatus.empty()) {
+			Color statusColor = (m_presetStatus == "Name in use" ||
+								 m_presetStatus == "Save failed" ||
+								 m_presetStatus == "Rename failed")
+									? Color::RedLight
+									: Color::GreenLight;
+			presetElements.push_back(text("  " + m_presetStatus) |
+									 color(statusColor));
+		}
 
+		auto presetsPanel = window(text("Presets") | bold | color(Color::Yellow),
+								   vbox(std::move(presetElements)),
+								   ftxui::EMPTY);
+
+		// Footer section with model dropdown and single server button
 		auto footerRow = hbox({
 			filler(),
 			vbox({
@@ -807,6 +952,7 @@ Component ModelsPanel::component()
 
 		return vbox({
 				   hbox({ leftCol, separatorLight(), rightCol }),
+				   presetsPanel,
 				   filler(),
 				   footerRow,
 			   }) |
@@ -815,6 +961,256 @@ Component ModelsPanel::component()
 
 	return m_component;
 }
+
+// =========================================================================
+// Preset Methods
+// =========================================================================
+
+void ModelsPanel::refreshPresetsForModel()
+{
+	if (m_selectedModelName.empty()) {
+		m_presetsForModel.clear();
+		m_presetDisplayNames.clear();
+		return;
+	}
+	std::string modelPath =
+		ModelsIni::instance().getModelPath(m_selectedModelName);
+	m_presetsForModel = ModelsIni::instance().getPresetsForModel(modelPath);
+	m_presetDisplayNames.clear();
+	for (const auto &p : m_presetsForModel)
+		m_presetDisplayNames.push_back(p.name);
+
+	// Clamp selected index
+	if (m_selectedPresetIndex >= static_cast<int>(m_presetsForModel.size()))
+		m_selectedPresetIndex = -1;
+}
+
+void ModelsPanel::applyPreset(const Config::ModelPreset &preset)
+{
+	// Load settings
+	m_ngpuLayers = preset.load.ngpuLayers;
+	m_ctxSize =
+		preset.load.ctxSize == 0 ? "" : std::to_string(preset.load.ctxSize);
+	m_batchSize = preset.load.batchSize;
+	m_batchSizeStr = std::to_string(m_batchSize);
+	m_parallel = preset.load.parallel;
+	m_parallelStr = m_parallel < 0 ? "-1" : std::to_string(m_parallel);
+
+	// Flash attention dropdown index
+	if (preset.load.flashAttn == "on")
+		m_flashAttnIdx = 1;
+	else if (preset.load.flashAttn == "off")
+		m_flashAttnIdx = 2;
+	else
+		m_flashAttnIdx = 0;
+
+	m_kvOffload = preset.load.kvOffload;
+	m_kvUnified = preset.load.kvUnified;
+	m_mmap = preset.load.mmap;
+	m_mlock = preset.load.mlock;
+	m_fit = preset.load.fit;
+	m_devicePriority = preset.load.devicePriority;
+	m_splitMode = preset.load.splitMode;
+	m_tensorSplit = preset.load.tensorSplit;
+	m_cacheTypeK = preset.load.cacheTypeK;
+	m_cacheTypeV = preset.load.cacheTypeV;
+	m_lora = preset.load.lora;
+	m_mmproj = preset.load.mmproj;
+	m_modelDraft = preset.load.modelDraft;
+	m_draftMax = std::to_string(preset.load.draftMax);
+	m_chatTemplate = preset.load.chatTemplate;
+	m_reasoningFormat = preset.load.reasoningFormat;
+
+	// Dropdown indices for load settings
+	m_splitModeIdx = 0;
+	for (size_t i = 0; i < m_splitModeOptions.size(); ++i) {
+		if (m_splitModeOptions[i] == preset.load.splitMode) {
+			m_splitModeIdx = static_cast<int>(i);
+			break;
+		}
+	}
+	m_cacheTypeKIdx = 0;
+	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
+		if (m_cacheTypeOptions[i] == preset.load.cacheTypeK) {
+			m_cacheTypeKIdx = static_cast<int>(i);
+			break;
+		}
+	}
+	m_cacheTypeVIdx = 0;
+	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
+		if (m_cacheTypeOptions[i] == preset.load.cacheTypeV) {
+			m_cacheTypeVIdx = static_cast<int>(i);
+			break;
+		}
+	}
+	m_reasoningFormatIdx = 0;
+	for (size_t i = 0; i < m_reasoningFormatOptions.size(); ++i) {
+		if (m_reasoningFormatOptions[i] == preset.load.reasoningFormat) {
+			m_reasoningFormatIdx = static_cast<int>(i);
+			break;
+		}
+	}
+
+	// Inference settings
+	m_temperature = static_cast<float>(preset.inference.temperature);
+	m_temperatureStr = ui_utils::formatFloat(m_temperature);
+	m_topP = static_cast<float>(preset.inference.topP);
+	m_topPStr = ui_utils::formatFloat(m_topP);
+	m_topK = preset.inference.topK;
+	m_topKStr = std::to_string(m_topK);
+	m_minP = static_cast<float>(preset.inference.minP);
+	m_minPStr = ui_utils::formatFloat(m_minP);
+	m_repeatPenalty = static_cast<float>(preset.inference.repeatPenalty);
+	m_repeatPenaltyStr = ui_utils::formatFloat(m_repeatPenalty);
+	m_presencePenalty = static_cast<float>(preset.inference.presencePenalty);
+	m_presencePenaltyStr = ui_utils::formatFloat(m_presencePenalty);
+	m_frequencyPenalty = static_cast<float>(preset.inference.frequencyPenalty);
+	m_frequencyPenaltyStr = ui_utils::formatFloat(m_frequencyPenalty);
+	m_nPredict = std::to_string(preset.inference.nPredict);
+	m_seed = std::to_string(preset.inference.seed);
+
+	// Persist to config.json so LOAD picks up the values
+	saveConfig();
+
+	spdlog::info("Applied preset '{}'", preset.name);
+}
+
+void ModelsPanel::saveCurrentToPreset()
+{
+	Config::ModelPreset preset;
+
+	// Determine preset name
+	if (m_editingPresetName.empty()) {
+		// Generate default name
+		std::string base =
+			m_selectedModelName.empty() ? "preset" : m_selectedModelName;
+		preset.name = base + "-1";
+		int n = 1;
+		// Ensure unique
+		while (true) {
+			bool found = false;
+			for (const auto &p : m_presetsForModel) {
+				if (p.name == preset.name) {
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+				break;
+			preset.name = base + "-" + std::to_string(++n);
+		}
+		m_editingPresetName = preset.name;
+	} else {
+		preset.name = m_editingPresetName;
+	}
+
+	preset.model = ModelsIni::instance().getModelPath(m_selectedModelName);
+	if (preset.model.empty())
+		preset.model = m_modelPath; // fallback to current model path
+
+	// Load settings from current member state
+	preset.load.modelPath = preset.model;
+	preset.load.ngpuLayers = m_ngpuLayers;
+	try {
+		preset.load.ctxSize = m_ctxSize.empty() ? 0 : std::stoi(m_ctxSize);
+	} catch (...) {
+	}
+	preset.load.batchSize = m_batchSize;
+	preset.load.parallel = m_parallel;
+	preset.load.flashAttn =
+		m_flashAttnOptions[static_cast<size_t>(m_flashAttnIdx)];
+	preset.load.kvOffload = m_kvOffload;
+	preset.load.kvUnified = m_kvUnified;
+	preset.load.mmap = m_mmap;
+	preset.load.mlock = m_mlock;
+	preset.load.fit = m_fit;
+	preset.load.devicePriority = m_devicePriority;
+	preset.load.splitMode = m_splitMode;
+	preset.load.tensorSplit = m_tensorSplit;
+	preset.load.cacheTypeK =
+		m_cacheTypeOptions[static_cast<size_t>(m_cacheTypeKIdx)];
+	preset.load.cacheTypeV =
+		m_cacheTypeOptions[static_cast<size_t>(m_cacheTypeVIdx)];
+	preset.load.lora = m_lora;
+	preset.load.mmproj = m_mmproj;
+	preset.load.modelDraft = m_modelDraft;
+	try {
+		preset.load.draftMax = std::stoi(m_draftMax);
+	} catch (...) {
+	}
+	preset.load.chatTemplate = m_chatTemplate;
+	preset.load.reasoningFormat =
+		m_reasoningFormatOptions[static_cast<size_t>(m_reasoningFormatIdx)];
+
+	// Inference settings
+	preset.inference.temperature = static_cast<double>(m_temperature);
+	preset.inference.topP = static_cast<double>(m_topP);
+	preset.inference.topK = m_topK;
+	preset.inference.minP = static_cast<double>(m_minP);
+	preset.inference.repeatPenalty = static_cast<double>(m_repeatPenalty);
+	preset.inference.presencePenalty = static_cast<double>(m_presencePenalty);
+	preset.inference.frequencyPenalty = static_cast<double>(m_frequencyPenalty);
+	try {
+		preset.inference.nPredict = std::stoi(m_nPredict);
+	} catch (...) {
+	}
+	try {
+		preset.inference.seed = std::stoi(m_seed);
+	} catch (...) {
+	}
+
+	if (ModelsIni::instance().savePreset(preset)) {
+		m_presetStatus = "Saved";
+		refreshPresetsForModel();
+		// Select the saved preset
+		for (int i = 0; i < static_cast<int>(m_presetsForModel.size()); ++i) {
+			if (m_presetsForModel[i].name == preset.name) {
+				m_selectedPresetIndex = i;
+				break;
+			}
+		}
+	} else {
+		m_presetStatus = "Save failed";
+	}
+}
+
+void ModelsPanel::renameSelectedPreset(const std::string &newName)
+{
+	if (m_selectedPresetIndex < 0 ||
+		m_selectedPresetIndex >= static_cast<int>(m_presetsForModel.size())) {
+		return;
+	}
+
+	std::string oldName = m_presetsForModel[m_selectedPresetIndex].name;
+	if (oldName == newName || newName.empty())
+		return;
+
+	// Check for duplicate name
+	for (const auto &p : m_presetsForModel) {
+		if (p.name == newName) {
+			m_presetStatus = "Name in use";
+			return;
+		}
+	}
+
+	if (ModelsIni::instance().renamePreset(oldName, newName)) {
+		m_presetStatus = "Renamed";
+		refreshPresetsForModel();
+		// Re-select by new name
+		for (int i = 0; i < static_cast<int>(m_presetsForModel.size()); ++i) {
+			if (m_presetsForModel[i].name == newName) {
+				m_selectedPresetIndex = i;
+				break;
+			}
+		}
+	} else {
+		m_presetStatus = "Rename failed";
+	}
+}
+
+// =========================================================================
+// Server Methods
+// =========================================================================
 
 void ModelsPanel::onStartStopClicked()
 {

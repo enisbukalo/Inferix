@@ -910,6 +910,16 @@ struct ModelPreset
 	std::string model;
 
 	/**
+	 * @brief Load settings specific to this preset.
+	 *
+	 * GPU layers, context size, batch size, and other model loading
+	 * parameters optimized for this preset's use case.
+	 *
+	 * @see LoadSettings for parameter documentation
+	 */
+	LoadSettings load;
+
+	/**
 	 * @brief Inference settings specific to this preset.
 	 *
 	 * Sampling and generation parameters optimized for this
