@@ -1,5 +1,6 @@
 #pragma once
 #include "config.h"
+#include <shared_mutex>
 #include <string>
 #include <optional>
 
@@ -228,5 +229,6 @@ private:
     ConfigManager& operator=(ConfigManager&&) = delete;
 
     Config::UserConfig config_;
+    mutable std::shared_mutex mutex_;
     bool loaded_ = false;
 };

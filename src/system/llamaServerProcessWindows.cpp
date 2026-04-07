@@ -147,7 +147,7 @@ class LlamaServerProcess::Impl
 		return result != FALSE;
 	}
 
-	bool isRunning() const
+	bool isRunning()
 	{
 		if (!running_ || processHandle_ == nullptr) {
 			return false;
@@ -158,6 +158,10 @@ class LlamaServerProcess::Impl
 			if (exitCode == STILL_ACTIVE) {
 				return true;
 			}
+			// Process has exited — clean up stale state
+			CloseHandle(processHandle_);
+			processHandle_ = nullptr;
+			running_ = false;
 			return false;
 		}
 		return false;

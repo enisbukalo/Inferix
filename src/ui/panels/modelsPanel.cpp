@@ -18,6 +18,18 @@
 
 using namespace ftxui;
 
+/**
+ * @brief Find the index of a value in an options vector, or 0 if not found.
+ */
+static int findOptionIndex(const std::vector<std::string> &options,
+						   const std::string &value)
+{
+	for (size_t i = 0; i < options.size(); ++i)
+		if (options[i] == value)
+			return static_cast<int>(i);
+	return 0;
+}
+
 // =========================================================================
 // Constructor and Config Methods
 // =========================================================================
@@ -67,41 +79,12 @@ void ModelsPanel::loadFromConfig()
 	m_chatTemplate = cfg.load.chatTemplate;
 	m_reasoningFormat = cfg.load.reasoningFormat;
 
-	// Split mode dropdown index
-	m_splitModeIdx = 0;
-	for (size_t i = 0; i < m_splitModeOptions.size(); ++i) {
-		if (m_splitModeOptions[i] == cfg.load.splitMode) {
-			m_splitModeIdx = static_cast<int>(i);
-			break;
-		}
-	}
-
-	// Cache type K dropdown index
-	m_cacheTypeKIdx = 0;
-	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
-		if (m_cacheTypeOptions[i] == cfg.load.cacheTypeK) {
-			m_cacheTypeKIdx = static_cast<int>(i);
-			break;
-		}
-	}
-
-	// Cache type V dropdown index
-	m_cacheTypeVIdx = 0;
-	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
-		if (m_cacheTypeOptions[i] == cfg.load.cacheTypeV) {
-			m_cacheTypeVIdx = static_cast<int>(i);
-			break;
-		}
-	}
-
-	// Reasoning format dropdown index
-	m_reasoningFormatIdx = 0;
-	for (size_t i = 0; i < m_reasoningFormatOptions.size(); ++i) {
-		if (m_reasoningFormatOptions[i] == cfg.load.reasoningFormat) {
-			m_reasoningFormatIdx = static_cast<int>(i);
-			break;
-		}
-	}
+	// Dropdown indices
+	m_splitModeIdx = findOptionIndex(m_splitModeOptions, cfg.load.splitMode);
+	m_cacheTypeKIdx = findOptionIndex(m_cacheTypeOptions, cfg.load.cacheTypeK);
+	m_cacheTypeVIdx = findOptionIndex(m_cacheTypeOptions, cfg.load.cacheTypeV);
+	m_reasoningFormatIdx =
+		findOptionIndex(m_reasoningFormatOptions, cfg.load.reasoningFormat);
 
 	// Inference settings
 	m_temperature = static_cast<float>(cfg.inference.temperature);
@@ -1026,34 +1009,13 @@ void ModelsPanel::applyPreset(const Config::ModelPreset &preset)
 	m_reasoningFormat = preset.load.reasoningFormat;
 
 	// Dropdown indices for load settings
-	m_splitModeIdx = 0;
-	for (size_t i = 0; i < m_splitModeOptions.size(); ++i) {
-		if (m_splitModeOptions[i] == preset.load.splitMode) {
-			m_splitModeIdx = static_cast<int>(i);
-			break;
-		}
-	}
-	m_cacheTypeKIdx = 0;
-	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
-		if (m_cacheTypeOptions[i] == preset.load.cacheTypeK) {
-			m_cacheTypeKIdx = static_cast<int>(i);
-			break;
-		}
-	}
-	m_cacheTypeVIdx = 0;
-	for (size_t i = 0; i < m_cacheTypeOptions.size(); ++i) {
-		if (m_cacheTypeOptions[i] == preset.load.cacheTypeV) {
-			m_cacheTypeVIdx = static_cast<int>(i);
-			break;
-		}
-	}
-	m_reasoningFormatIdx = 0;
-	for (size_t i = 0; i < m_reasoningFormatOptions.size(); ++i) {
-		if (m_reasoningFormatOptions[i] == preset.load.reasoningFormat) {
-			m_reasoningFormatIdx = static_cast<int>(i);
-			break;
-		}
-	}
+	m_splitModeIdx = findOptionIndex(m_splitModeOptions, preset.load.splitMode);
+	m_cacheTypeKIdx =
+		findOptionIndex(m_cacheTypeOptions, preset.load.cacheTypeK);
+	m_cacheTypeVIdx =
+		findOptionIndex(m_cacheTypeOptions, preset.load.cacheTypeV);
+	m_reasoningFormatIdx =
+		findOptionIndex(m_reasoningFormatOptions, preset.load.reasoningFormat);
 
 	// Inference settings
 	m_temperature = static_cast<float>(preset.inference.temperature);

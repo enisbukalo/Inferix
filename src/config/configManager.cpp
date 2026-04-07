@@ -71,6 +71,8 @@ std::string ConfigManager::getLogsDir()
 
 bool ConfigManager::load()
 {
+	std::unique_lock lock(mutex_);
+
 	std::string configDir = getConfigDir();
 	std::string configFile = getConfigFilePath();
 
@@ -150,15 +152,19 @@ bool ConfigManager::save()
 		return false;
 	}
 
-	std::ofstream file(configFile);
-	if (!file.is_open()) {
-		spdlog::error("Failed to save config: could not open file '{}'",
-					  configFile);
-		return false;
-	}
+	{
+		std::unique_lock lock(mutex_);
 
-	json j = config_;
-	file << j.dump(4) << std::endl;
+		std::ofstream file(configFile);
+		if (!file.is_open()) {
+			spdlog::error("Failed to save config: could not open file '{}'",
+						  configFile);
+			return false;
+		}
+
+		json j = config_;
+		file << j.dump(4) << std::endl;
+	} // Release lock before publishing events
 
 	spdlog::info("Config saved to '{}'", configFile);
 
@@ -170,8 +176,12 @@ bool ConfigManager::save()
 
 const Config::UserConfig &ConfigManager::getConfig() const
 {
+	std::shared_lock lock(mutex_);
 	return config_;
 }
+
+// Note: mutable getConfig() is intended for UI-thread-only use.
+// Callers on other threads should use the const overload.
 
 Config::UserConfig &ConfigManager::getConfig()
 {
