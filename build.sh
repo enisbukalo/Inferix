@@ -129,8 +129,8 @@ else
     
     # Run tests if requested
     if [[ $BUILD_TESTS -eq 1 ]]; then
-      echo "Running tests..."
-      ./build_linux/WorkbenchTests --gtest_color=yes
+      # Run tests (continue even if tests fail, to generate coverage)
+      ./build_linux/WorkbenchTests --gtest_color=yes || true
       
       # Generate coverage report using gcov (GCC format)
       if command -v gcov &> /dev/null; then
@@ -140,12 +140,32 @@ else
         echo "========================================"
         
         cd ./build_linux
-        
-        # Run gcov on all source gcno files, calculate overall coverage
-        gcov -b $(find . -path "./tests/CMakeFiles/WorkbenchTests.dir/__/src/*.gcno" 2>/dev/null) 2>/dev/null \
-          | grep "Lines executed" \
-          | awk -F'[:% of ]+' '{pct=$3; lines=$NF; total+=lines; exec+=lines*pct/100} END {if(total>0) printf "Total lines: %d\nExecuted: %d\nOVERALL COVERAGE: %.1f%%\n", total, exec, exec*100/total; else print "No coverage data"}'
-        
+
+        # Run gcov on all source gcno files, filter to project source files only
+        gcov -b $(find . -path "./tests/CMakeFiles/WorkbenchTests.dir/__/src/*.gcno" 2>/dev/null) 2>/dev/null > /tmp/gcov_output.txt 2>&1
+
+        # Parse gcov output, only counting files under our src/ directory
+        awk '
+          /^File .*\/app\/src\//{active=1; next}
+          /^File /{active=0; next}
+          active && /^Lines executed:/{
+            split($0, a, ":")
+            split(a[2], b, "% of ")
+            pct = b[1] + 0
+            lines = b[2] + 0
+            if (lines > 0) {
+              total += lines
+              exec += lines * pct / 100
+            }
+            active=0
+          }
+        END {
+          if (total > 0)
+            printf "Total lines: %d\nExecuted: %d\nOVERALL COVERAGE: %.1f%%\n", total, exec, exec*100/total
+          else
+            print "No coverage data"
+        }' /tmp/gcov_output.txt
+
         cd ..
       fi
     fi
