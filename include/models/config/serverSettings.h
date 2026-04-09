@@ -392,11 +392,12 @@ struct ServerSettings
 	 * @brief Enable metrics endpoint.
 	 *
 	 * Exposes Prometheus-format metrics at /metrics endpoint.
+	 * Always enabled - this flag is not configurable.
 	 *
 	 * Corresponds to: `--metrics`
-	 * @default false
+	 * @default true
 	 */
-	bool metrics = false;
+	bool metrics = true;
 
 	/**
 	 * @brief Enable properties endpoint.

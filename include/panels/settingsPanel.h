@@ -62,7 +62,7 @@ class SettingsPanel
 	bool m_embedding = false;
 	bool m_contBatching = true;
 	bool m_cachePrompt = true;
-	bool m_metrics = false;
+	// m_metrics removed - metrics is always enabled
 
 	// --- UI state ---
 	int m_themeIdx = 0;		 // dropdown index

@@ -39,7 +39,6 @@ void SettingsPanel::loadFromConfig()
 	m_embedding = cfg.server.embedding;
 	m_contBatching = cfg.server.contBatching;
 	m_cachePrompt = cfg.server.cachePrompt;
-	m_metrics = cfg.server.metrics;
 
 	// UI
 	auto themeIt =
@@ -92,7 +91,7 @@ void SettingsPanel::saveConfig()
 	cfg.server.embedding = m_embedding;
 	cfg.server.contBatching = m_contBatching;
 	cfg.server.cachePrompt = m_cachePrompt;
-	cfg.server.metrics = m_metrics;
+	// metrics is always enabled - do not save to config
 
 	// ========================================================================
 	// Update UI settings
@@ -272,7 +271,6 @@ Component SettingsPanel::component()
 	auto embeddingCb = Checkbox("", &m_embedding, cbOpt);
 	auto contBatchCb = Checkbox("", &m_contBatching, cbOpt);
 	auto cachePromptCb = Checkbox("", &m_cachePrompt, cbOpt);
-	auto metricsCb = Checkbox("", &m_metrics, cbOpt);
 
 	// -----------------------------------------------------------------------
 	// UI components
@@ -317,12 +315,12 @@ Component SettingsPanel::component()
 	auto container = Container::Horizontal({
 		Container::Vertical({
 			// Left column: Server, UI
-			exePathInput,	  hostInput,	   portInput,	   apiKeyInput,
-			timeoutMinus,	  timeoutInput,	   timeoutPlus,	   threadsHttpMinus,
-			threadsHttpInput, threadsHttpPlus, webuiCb,		   embeddingCb,
-			contBatchCb,	  cachePromptCb,   metricsCb,	   themeToggle,
-			defaultTabToggle, showSysPanelCb,  refreshMinus,   refreshInput,
-			refreshPlus,	  retentionMinus,  retentionInput, retentionPlus,
+			exePathInput,	  hostInput,	   portInput,	  apiKeyInput,
+			timeoutMinus,	  timeoutInput,	   timeoutPlus,	  threadsHttpMinus,
+			threadsHttpInput, threadsHttpPlus, webuiCb,		  embeddingCb,
+			contBatchCb,	  cachePromptCb,   themeToggle,	  defaultTabToggle,
+			showSysPanelCb,	  refreshMinus,	   refreshInput,  refreshPlus,
+			retentionMinus,	  retentionInput,  retentionPlus,
 		}),
 		Container::Vertical({
 			// Right column: Terminal
@@ -369,8 +367,6 @@ Component SettingsPanel::component()
 												 contBatchCb->Render()));
 			rows.push_back(
 				ui_utils::checkboxRow("Cache Prompt", cachePromptCb->Render()));
-			rows.push_back(
-				ui_utils::checkboxRow("Metrics", metricsCb->Render()));
 			leftElements.push_back(
 				window(text("Server Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
