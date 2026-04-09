@@ -81,7 +81,6 @@ void to_json(json &j, const ServerSettings &v)
 	j["slotPromptSimilarity"] = roundToTwoDecimals(v.slotPromptSimilarity);
 	j["sleepIdleSeconds"] = v.sleepIdleSeconds;
 
-	j["metrics"] = v.metrics;
 	j["props"] = v.props;
 	j["slots"] = v.slots;
 	j["slotSavePath"] = v.slotSavePath;
@@ -124,7 +123,7 @@ void from_json(const json &j, ServerSettings &v)
 		j.value("slotPromptSimilarity", v.slotPromptSimilarity);
 	v.sleepIdleSeconds = j.value("sleepIdleSeconds", v.sleepIdleSeconds);
 
-	v.metrics = j.value("metrics", v.metrics);
+	// metrics is always enabled - do not read from config
 	v.props = j.value("props", v.props);
 	v.slots = j.value("slots", v.slots);
 	v.slotSavePath = j.value("slotSavePath", v.slotSavePath);
