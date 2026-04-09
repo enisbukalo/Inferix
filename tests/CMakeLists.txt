@@ -5,12 +5,16 @@ add_executable(WorkbenchTests
     main.cpp
     config/config_serialization_test.cpp
     config/config_manager_test.cpp
+    config/config_manager_presets_test.cpp
     core/event_bus_test.cpp
     utility/model_discovery_test.cpp
+    utility/models_ini_test.cpp
     system/cpu_monitor_test.cpp
     system/memory_monitor_test.cpp
     system/gpu_monitor_test.cpp
     system/llama_server_args_test.cpp
+    system/http_client_test.cpp
+    system/pty_handler_test.cpp
 )
 
 # Set output directory to match main build

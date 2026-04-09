@@ -123,7 +123,11 @@ bool ConfigManager::load()
 			// Initialize with default values
 			config_ = Config::UserConfig{};
 			// Create default config file for the user
+			// NOTE: Must release lock first - createDefaultConfig() calls save()
+			// which also needs the lock
+			lock.unlock();
 			createDefaultConfig();
+			lock.lock();
 			spdlog::info("Created default config at '{}'", configFile);
 		} else {
 			// File exists but couldn't be opened, use defaults

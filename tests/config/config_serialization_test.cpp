@@ -407,6 +407,147 @@ TEST(ConfigSerialization, UserConfig_ModifiedValues) {
 }
 
 // =============================================================================
+// Advanced InferenceSettings Fields
+// =============================================================================
+
+TEST(ConfigSerialization, InferenceSettings_AdvancedFields) {
+    InferenceSettings original;
+    original.topNsigma = 2.5;
+    original.typicalP = 0.8;
+    original.xtcProbability = 0.3;
+    original.xtcThreshold = 0.2;
+    original.dryMultiplier = 1.5;
+    original.dryBase = 2.0;
+    original.dryAllowedLength = 3;
+    original.dryPenaltyLastN = 128;
+    original.dynatempRange = 0.5;
+    original.dynatempExp = 1.5;
+    original.samplers = "topK;topP;temperature";
+
+    auto j = serializeRoundtrip(original);
+    auto restored = deserializeRoundtrip<InferenceSettings>(j);
+
+    EXPECT_FLOAT_EQ(restored.topNsigma, 2.5);
+    EXPECT_FLOAT_EQ(restored.typicalP, 0.8);
+    EXPECT_FLOAT_EQ(restored.xtcProbability, 0.3);
+    EXPECT_FLOAT_EQ(restored.xtcThreshold, 0.2);
+    EXPECT_FLOAT_EQ(restored.dryMultiplier, 1.5);
+    EXPECT_FLOAT_EQ(restored.dryBase, 2.0);
+    EXPECT_EQ(restored.dryAllowedLength, 3);
+    EXPECT_EQ(restored.dryPenaltyLastN, 128);
+    EXPECT_FLOAT_EQ(restored.dynatempRange, 0.5);
+    EXPECT_FLOAT_EQ(restored.dynatempExp, 1.5);
+    EXPECT_EQ(restored.samplers, "topK;topP;temperature");
+}
+
+TEST(ConfigSerialization, LoadSettings_AllFieldsRoundTrip) {
+    LoadSettings original;
+    original.modelPath = "/path/model.gguf";
+    original.modelUrl = "https://example.com/model.gguf";
+    original.hfRepo = "org/repo";
+    original.hfFile = "model-q4.gguf";
+    original.hfToken = "hf_token123";
+    original.ngpuLayers = "40";
+    original.splitMode = "layer";
+    original.tensorSplit = "0.5,0.5";
+    original.devicePriority = "0,1";
+    original.ctxSize = 16384;
+    original.batchSize = 1024;
+    original.ubatchSize = 256;
+    original.parallel = 2;
+    original.cacheTypeK = "q8_0";
+    original.cacheTypeV = "q4_0";
+    original.kvOffload = false;
+    original.kvUnified = false;
+    original.flashAttn = "off";
+    original.mlock = true;
+    original.mmap = true;
+    original.threads = 16;
+    original.threadsBatch = 8;
+    original.lora = "/lora.bin";
+    original.mmproj = "/proj.bin";
+    original.modelDraft = "/draft.gguf";
+    original.draftMax = 32;
+    original.chatTemplate = "chatml";
+    original.reasoningFormat = "hidden";
+    original.fit = false;
+
+    auto j = serializeRoundtrip(original);
+    auto restored = deserializeRoundtrip<LoadSettings>(j);
+
+    EXPECT_EQ(restored.modelPath, "/path/model.gguf");
+    EXPECT_EQ(restored.splitMode, "layer");
+    EXPECT_EQ(restored.tensorSplit, "0.5,0.5");
+    EXPECT_EQ(restored.devicePriority, "0,1");
+    EXPECT_EQ(restored.ubatchSize, 256);
+    EXPECT_EQ(restored.cacheTypeK, "q8_0");
+    EXPECT_EQ(restored.cacheTypeV, "q4_0");
+    EXPECT_FALSE(restored.kvOffload);
+    EXPECT_FALSE(restored.kvUnified);
+    EXPECT_TRUE(restored.mlock);
+    EXPECT_TRUE(restored.mmap);
+    EXPECT_EQ(restored.threadsBatch, 8);
+    EXPECT_EQ(restored.modelDraft, "/draft.gguf");
+    EXPECT_EQ(restored.draftMax, 32);
+    EXPECT_EQ(restored.chatTemplate, "chatml");
+    EXPECT_EQ(restored.reasoningFormat, "hidden");
+    EXPECT_FALSE(restored.fit);
+}
+
+TEST(ConfigSerialization, RoundToTwoDecimals_Precision) {
+    InferenceSettings original;
+    original.temperature = 0.12345;
+    original.topP = 0.99999;
+    original.minP = 0.001;
+
+    auto j = serializeRoundtrip(original);
+    auto restored = deserializeRoundtrip<InferenceSettings>(j);
+
+    // roundToTwoDecimals should round to 2 decimal places
+    EXPECT_FLOAT_EQ(restored.temperature, 0.12);
+    EXPECT_FLOAT_EQ(restored.topP, 1.0);
+    EXPECT_FLOAT_EQ(restored.minP, 0.0);
+}
+
+TEST(ConfigSerialization, FromJson_EmptyJson_UsesDefaults) {
+    nlohmann::json j = "{}"_json;
+    UserConfig config;
+    from_json(j, config);
+
+    UserConfig defaults;
+    EXPECT_EQ(config.server.host, defaults.server.host);
+    EXPECT_EQ(config.server.port, defaults.server.port);
+    EXPECT_EQ(config.load.ctxSize, defaults.load.ctxSize);
+    EXPECT_EQ(config.inference.temperature, defaults.inference.temperature);
+}
+
+TEST(ConfigSerialization, ModelPreset_NestedRoundTrip) {
+    ModelPreset original;
+    original.name = "full-preset";
+    original.model = "/m.gguf";
+    original.load.ctxSize = 8192;
+    original.load.ngpuLayers = "all";
+    original.load.flashAttn = "on";
+    original.load.fit = true;
+    original.inference.temperature = 0.7;
+    original.inference.topP = 0.9;
+    original.inference.topK = 50;
+    original.inference.nPredict = 1024;
+
+    auto j = serializeRoundtrip(original);
+    auto restored = deserializeRoundtrip<ModelPreset>(j);
+
+    EXPECT_EQ(restored.name, "full-preset");
+    EXPECT_EQ(restored.model, "/m.gguf");
+    EXPECT_EQ(restored.load.ctxSize, 8192);
+    EXPECT_EQ(restored.load.ngpuLayers, "all");
+    EXPECT_TRUE(restored.load.fit);
+    EXPECT_FLOAT_EQ(restored.inference.temperature, 0.7);
+    EXPECT_EQ(restored.inference.topK, 50);
+    EXPECT_EQ(restored.inference.nPredict, 1024);
+}
+
+// =============================================================================
 // Missing Keys Test
 // =============================================================================
 
