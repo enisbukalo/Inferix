@@ -1,4 +1,4 @@
-# Workbench
+# Workbench (WIP)
 A TUI frontend for llama.cpp, built with FTXUI, nlohmann/json, cpp-httplib, libvterm, gtest.
 
 ## Building
