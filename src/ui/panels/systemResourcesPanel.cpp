@@ -250,9 +250,10 @@ Element SystemResourcesPanel::render()
 						  separatorLight(),
 						  hbox({
 							  cpuLoadGauge,
+							  // separatorLight(),
 							  gpuLoadGauges,
 						  }),
-					  }),
+					  }) | yflex,
 					  separatorLight(),
 					  filler(),
 					  separatorLight(),
