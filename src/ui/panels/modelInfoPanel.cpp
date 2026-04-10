@@ -81,10 +81,6 @@ Element ModelInfoPanel::render()
 	std::string procTokPerSec =
 		info.isModelLoaded ? formatDouble(info.processingTokensPerSec, 1)
 						   : "N/A";
-	std::string promptTokens =
-		info.isModelLoaded ? formatNumber(info.totalPromptTokens) : "N/A";
-	std::string generatedTokens =
-		info.isModelLoaded ? formatNumber(info.totalGenerationTokens) : "N/A";
 	std::string status = getStatusString(info);
 
 	// Build column
@@ -105,18 +101,6 @@ Element ModelInfoPanel::render()
 		hbox({
 			text("Proc: ") | bold,
 			text(procTokPerSec + " tok/s"),
-		}),
-		separatorLight(),
-		// Prompt tokens total
-		hbox({
-			text("Prompt: ") | bold,
-			text(promptTokens + " tok"),
-		}),
-		separatorLight(),
-		// Generation tokens total
-		hbox({
-			text("Generated: ") | bold,
-			text(generatedTokens + " tok"),
 		}),
 		separatorLight(),
 		// Status

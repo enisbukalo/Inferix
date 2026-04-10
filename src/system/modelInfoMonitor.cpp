@@ -46,7 +46,6 @@ void ModelInfoMonitor::start()
 
 	m_running = true;
 	m_pollThread = std::thread(&ModelInfoMonitor::pollLoop, this);
-	spdlog::debug("ModelInfoMonitor: started polling thread");
 }
 
 void ModelInfoMonitor::stop()
@@ -58,7 +57,6 @@ void ModelInfoMonitor::stop()
 	if (m_pollThread.joinable()) {
 		m_pollThread.join();
 	}
-	spdlog::debug("ModelInfoMonitor: stopped polling thread");
 }
 
 ModelInfo ModelInfoMonitor::getStats() const
@@ -82,6 +80,7 @@ void ModelInfoMonitor::pollLoop()
 
 		// Check if server is healthy
 		if (!LlamaServerProcess::instance().isServerHealthy()) {
+			spdlog::debug("ModelInfoMonitor: server not healthy");
 			info.isServerRunning = false;
 			info.isModelLoaded = false;
 			info.loadedModel = "Server: Offline";
@@ -90,12 +89,15 @@ void ModelInfoMonitor::pollLoop()
 			m_cachedModel.clear(); // Clear cached model on offline
 		} else {
 			info.isServerRunning = true;
+			spdlog::debug("ModelInfoMonitor: server is healthy");
 
 			// Get currently loaded model - only refresh if cache is empty
 			// (e.g., first poll or after server came back online)
 			if (m_cachedModel.empty()) {
 				m_cachedModel =
 					LlamaServerProcess::instance().getLoadedModelPath();
+				spdlog::debug("ModelInfoMonitor: cached model: {}",
+							  m_cachedModel);
 			}
 
 			if (m_cachedModel.empty()) {
@@ -110,6 +112,8 @@ void ModelInfoMonitor::pollLoop()
 				// Get slot status to check if processing - pass model name
 				auto slotStatus =
 					LlamaServerProcess::instance().getSlotStatus(m_cachedModel);
+				spdlog::debug("ModelInfoMonitor: slot status length: {}",
+							  slotStatus.size());
 				bool currentlyProcessing = isProcessing(slotStatus);
 
 				// Count active requests - look for "is_processing":true
@@ -126,10 +130,21 @@ void ModelInfoMonitor::pollLoop()
 
 				// Detect transition: was processing, now idle -> fetch metrics
 				// once
+				spdlog::debug(
+					"ModelInfoMonitor: wasProcessing={}, currentlyProcessing={}",
+					m_wasProcessing,
+					currentlyProcessing);
 				if (m_wasProcessing && !currentlyProcessing) {
 					spdlog::debug("ModelInfoMonitor: slot transitioned to idle, "
 								  "fetching metrics");
 					auto metrics = fetchMetricsOnce();
+					spdlog::debug("ModelInfoMonitor: metrics - genTokPerSec={}, "
+								  "procTokPerSec={}, "
+								  "promptTokens={}, generatedTokens={}",
+								  metrics.generationTokensPerSec,
+								  metrics.processingTokensPerSec,
+								  metrics.totalPromptTokens,
+								  metrics.totalGenerationTokens);
 					// Update with new metrics
 					info.generationTokensPerSec = metrics.generationTokensPerSec;
 					info.processingTokensPerSec = metrics.processingTokensPerSec;
