@@ -9,6 +9,7 @@
 #include "app.h"
 #include "configManager.h"
 #include "llamaServerProcess.h"
+#include "modelInfoMonitor.h"
 #include "modelsIni.h"
 #include "systemMonitorRunner.h"
 
@@ -160,8 +161,14 @@ int main()
 		spdlog::warn("Failed to auto-start llama-server");
 	}
 
+	// Start model info monitoring (runs in background during UI)
+	ModelInfoMonitor::instance().start();
+
 	// Run the main application UI loop
 	App::run();
+
+	// Clean up the model info monitor before system monitor
+	ModelInfoMonitor::instance().stop();
 
 	// Clean up the system monitor before exit
 	SystemMonitorRunner::instance().stop();

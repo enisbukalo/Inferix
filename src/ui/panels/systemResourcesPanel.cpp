@@ -253,5 +253,11 @@ Element SystemResourcesPanel::render()
 						  }),
 					  }),
 					  separatorLight(),
+					  filler(),
+					  vbox({
+						  text("Model Info") | bold | hcenter,
+						  separatorLight(),
+						  ModelInfoPanel::render(),
+					  }),
 				  }));
 }

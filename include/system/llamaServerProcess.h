@@ -138,6 +138,14 @@ class LlamaServerProcess
 	 */
 	bool isServerHealthy();
 
+	/**
+	 * @brief Get the current slot status as JSON.
+	 * @param modelName The model name to query slots for (required -
+	 * llama-server requires it)
+	 * @return JSON string with slot info, empty on failure
+	 */
+	std::string getSlotStatus(const std::string &modelName);
+
   private:
 	class Impl; // Forward declaration for pImpl
 	std::unique_ptr<Impl> m_impl;
