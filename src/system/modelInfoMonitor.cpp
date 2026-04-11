@@ -137,7 +137,7 @@ void ModelInfoMonitor::pollLoop()
 				if (m_wasProcessing && !currentlyProcessing) {
 					spdlog::debug("ModelInfoMonitor: slot transitioned to idle, "
 								  "fetching metrics");
-					auto metrics = fetchMetricsOnce();
+					auto metrics = fetchMetricsOnce(m_cachedModel);
 					spdlog::debug("ModelInfoMonitor: metrics - genTokPerSec={}, "
 								  "procTokPerSec={}, "
 								  "promptTokens={}, generatedTokens={}",
@@ -175,7 +175,7 @@ void ModelInfoMonitor::pollLoop()
 	}
 }
 
-ModelInfo ModelInfoMonitor::fetchMetricsOnce()
+ModelInfo ModelInfoMonitor::fetchMetricsOnce(const std::string &modelName)
 {
 	ModelInfo info;
 	info.generationTokensPerSec = 0.0;
@@ -186,7 +186,7 @@ ModelInfo ModelInfoMonitor::fetchMetricsOnce()
 	HttpClient client;
 	client.setTimeout(HTTP_TIMEOUT_SECONDS);
 
-	auto url = getServerAddress() + "/metrics";
+	auto url = getServerAddress() + "/metrics?model=" + modelName;
 	auto [success, response] = client.get(url);
 
 	if (!success) {

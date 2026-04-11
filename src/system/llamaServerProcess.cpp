@@ -72,7 +72,9 @@ LlamaServerProcess::buildCommandArgs(const std::string &modelPath,
 		args.push_back("--no-kv-offload");
 	}
 	// KV unified
-	if (!load.kvUnified) {
+	if (load.kvUnified) {
+		args.push_back("--kv-unified");
+	} else {
 		args.push_back("--no-kv-unified");
 	}
 	// KV cache type K

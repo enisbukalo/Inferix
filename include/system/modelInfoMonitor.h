@@ -109,7 +109,7 @@ class ModelInfoMonitor
 	 *
 	 * @return ModelInfo with the fetched values, or default if failed.
 	 */
-	ModelInfo fetchMetricsOnce();
+	ModelInfo fetchMetricsOnce(const std::string &modelName);
 
 	/**
 	 * @brief Parses Prometheus-style metrics response.

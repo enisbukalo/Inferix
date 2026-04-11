@@ -70,7 +70,7 @@ Element ModelInfoPanel::render()
 	// Format values
 	std::string modelName = info.isServerRunning ? info.loadedModel : "N/A";
 	if (!info.isModelLoaded && info.isServerRunning) {
-		modelName = "Model: None";
+		modelName = "None";
 	} else if (!info.isServerRunning) {
 		modelName = "Server: Offline";
 	}
@@ -93,14 +93,14 @@ Element ModelInfoPanel::render()
 		separatorLight(),
 		// Generation tokens/s
 		hbox({
-			text("Gen: ") | bold,
-			text(genTokPerSec + " tok/s"),
+			text("Generated: ") | bold,
+			text(genTokPerSec + " tok/s (AVG)"),
 		}),
 		separatorLight(),
 		// Processing tokens/s
 		hbox({
-			text("Proc: ") | bold,
-			text(procTokPerSec + " tok/s"),
+			text("Processing: ") | bold,
+			text(procTokPerSec + " tok/s (AVG)"),
 		}),
 		separatorLight(),
 		// Status

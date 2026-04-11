@@ -1295,9 +1295,6 @@ void ModelsPanel::refreshServerState()
 
 void ModelsPanel::updateStartStopLabel()
 {
-	// First refresh state from server
-	refreshServerState();
-
 	// Get the currently selected model in dropdown
 	std::string selectedModel;
 	if (m_modelDropdownIndex >= 0 &&
@@ -1305,15 +1302,16 @@ void ModelsPanel::updateStartStopLabel()
 		selectedModel = m_modelNames[m_modelDropdownIndex];
 	}
 
-	if (!m_serverRunning) {
+	if (!LlamaServerProcess::instance().isRunning()) {
 		// Server not running - show LOAD
 		m_startStopLabel = "LOAD";
 	} else if (!m_modelLoaded) {
 		// Server running but no model loaded - show LOAD
 		m_startStopLabel = "LOAD";
 	} else {
-		// Server running with model loaded
-		// Show UNLOAD if the loaded model matches selected model, else LOAD
+		// Server running with a model loaded
+		// Show UNLOAD if the selected model matches what we loaded,
+		// otherwise show LOAD so the user can switch to the selected model
 		if (m_loadedModelPath == selectedModel) {
 			m_startStopLabel = "UNLOAD";
 		} else {
