@@ -562,10 +562,17 @@ Component ModelsPanel::component()
 
 	auto presetMenuOpt = MenuOption::Vertical();
 	presetMenuOpt.on_change = [this] {
+		// Always apply preset when clicked (even if same one re-selected)
 		if (m_selectedPresetIndex >= 0 &&
 			m_selectedPresetIndex < static_cast<int>(m_presetsForModel.size())) {
 			applyPreset(m_presetsForModel[m_selectedPresetIndex]);
 			m_editingPresetName = m_presetsForModel[m_selectedPresetIndex].name;
+			m_presetStatus.clear();
+		} else if (!m_presetsForModel.empty()) {
+			// Edge case: index out of bounds but presets exist → select first
+			m_selectedPresetIndex = 0;
+			applyPreset(m_presetsForModel[0]);
+			m_editingPresetName = m_presetsForModel[0].name;
 			m_presetStatus.clear();
 		}
 	};
@@ -761,8 +768,23 @@ Component ModelsPanel::component()
 
 	// Track model dropdown changes to refresh presets
 	int lastModelIndex = m_modelDropdownIndex;
+	// Periodic refresh counter - refresh every ~2 seconds (60 renders at 30Hz)
+	int renderCount = 0;
+	auto lastRefreshTime = std::chrono::steady_clock::now();
 
 	m_component = Renderer(container, [=, this]() mutable {
+		// Periodic server state refresh to keep button state accurate
+		renderCount++;
+		auto now = std::chrono::steady_clock::now();
+		auto elapsed =
+			std::chrono::duration_cast<std::chrono::seconds>(now - lastRefreshTime)
+				.count();
+		if (elapsed >= 2) { // Refresh every 2 seconds
+			lastRefreshTime = now;
+			refreshServerState();
+			updateStartStopLabel();
+		}
+
 		// Detect model dropdown change
 		if (m_modelDropdownIndex != lastModelIndex) {
 			lastModelIndex = m_modelDropdownIndex;
@@ -772,8 +794,16 @@ Component ModelsPanel::component()
 				m_modelPath = m_modelPaths[m_modelDropdownIndex];
 			}
 			refreshPresetsForModel();
-			m_selectedPresetIndex = -1;
-			m_editingPresetName.clear();
+
+			// Auto-select first preset if any exist
+			if (!m_presetsForModel.empty()) {
+				m_selectedPresetIndex = 0;
+				applyPreset(m_presetsForModel[0]);
+				m_editingPresetName = m_presetsForModel[0].name;
+			} else {
+				m_selectedPresetIndex = -1;
+				m_editingPresetName.clear();
+			}
 			m_presetStatus.clear();
 			updateStartStopLabel();
 			saveConfig();
@@ -1252,13 +1282,12 @@ void ModelsPanel::onLoadUnloadClicked()
 	// Button label determines action, not m_modelLoaded state
 	if (m_startStopLabel == "UNLOAD") {
 		// Unload: call unloadModel API (unload whatever is currently loaded)
-		if (process.unloadModel()) {
-			m_modelLoaded = false;
-			m_loadedModelPath.clear();
-			m_startStopLabel = "LOAD";
+		(void)process.unloadModel();
+		// ALWAYS verify actual state after unload attempt
+		refreshServerState();
+		updateStartStopLabel();
+		if (!m_modelLoaded) {
 			spdlog::info("Model unloaded");
-		} else {
-			spdlog::error("Failed to unload model");
 		}
 	} else {
 		// LOAD: load the selected model (switches if different model is loaded)
@@ -1270,10 +1299,11 @@ void ModelsPanel::onLoadUnloadClicked()
 		}
 
 		// Load the model via API - pass section name, not path
-		if (process.loadModel(selectedModel)) {
-			m_modelLoaded = true;
-			m_loadedModelPath = selectedModel;
-			m_startStopLabel = "UNLOAD";
+		(void)process.loadModel(selectedModel);
+		// ALWAYS verify actual state after load attempt
+		refreshServerState();
+		updateStartStopLabel();
+		if (m_modelLoaded) {
 			spdlog::info("Model loaded: {}", selectedModel);
 		} else {
 			spdlog::error("Failed to load model: {}", selectedModel);

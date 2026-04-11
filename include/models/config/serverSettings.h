@@ -400,6 +400,16 @@ struct ServerSettings
 	bool metrics = true;
 
 	/**
+	 * @brief Verbose API logging for debugging.
+	 *
+	 * When enabled, shows /models, /metrics, /slots API responses
+	 * in the server log panel. Useful for debugging.
+	 *
+	 * @default false
+	 */
+	bool verboseApiLogs = false;
+
+	/**
 	 * @brief Enable properties endpoint.
 	 *
 	 * Exposes server properties and capabilities.
