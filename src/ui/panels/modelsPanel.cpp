@@ -776,9 +776,9 @@ Component ModelsPanel::component()
 		// Periodic server state refresh to keep button state accurate
 		renderCount++;
 		auto now = std::chrono::steady_clock::now();
-		auto elapsed =
-			std::chrono::duration_cast<std::chrono::seconds>(now - lastRefreshTime)
-				.count();
+		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+						   now - lastRefreshTime)
+						   .count();
 		if (elapsed >= 2) { // Refresh every 2 seconds
 			lastRefreshTime = now;
 			refreshServerState();

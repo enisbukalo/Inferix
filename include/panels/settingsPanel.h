@@ -64,7 +64,8 @@ class SettingsPanel
 	bool m_cachePrompt = true;
 	// m_metrics removed - metrics is always enabled
 
-	// Verbose API logging - off by default, shows /models, /metrics, /slots in logs
+	// Verbose API logging - off by default, shows /models, /metrics, /slots in
+	// logs
 	bool m_verboseApiLogs = false;
 
 	// --- UI state ---

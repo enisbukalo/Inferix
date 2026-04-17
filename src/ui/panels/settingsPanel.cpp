@@ -369,8 +369,8 @@ Component SettingsPanel::component()
 												 contBatchCb->Render()));
 			rows.push_back(
 				ui_utils::checkboxRow("Cache Prompt", cachePromptCb->Render()));
-			rows.push_back(
-				ui_utils::checkboxRow("Verbose API Logs", verboseApiLogsCb->Render()));
+			rows.push_back(ui_utils::checkboxRow("Verbose API Logs",
+												 verboseApiLogsCb->Render()));
 			leftElements.push_back(
 				window(text("Server Settings") | bold | color(Color::Yellow),
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
