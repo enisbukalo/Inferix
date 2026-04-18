@@ -1,6 +1,7 @@
 #include "modelsPanel.h"
 #include "configManager.h"
 #include "modelDiscovery.h"
+#include "modelInfoMonitor.h"
 #include "ui_utils.h"
 
 #include <ftxui/component/component.hpp>
@@ -1283,12 +1284,15 @@ void ModelsPanel::onLoadUnloadClicked()
 	if (m_startStopLabel == "UNLOAD") {
 		// Unload: call unloadModel API (unload whatever is currently loaded)
 		(void)process.unloadModel();
-		// ALWAYS verify actual state after unload attempt
-		refreshServerState();
-		updateStartStopLabel();
-		if (!m_modelLoaded) {
-			spdlog::info("Model unloaded");
-		}
+		// Signal the monitor to stop all model-specific queries
+		// (slots, metrics) which would trigger the server to reload
+		ModelInfoMonitor::instance().setUnloaded();
+		// Set local state directly — don't query server because
+		// /models still reports "loaded" briefly after unload returns
+		m_modelLoaded = false;
+		m_loadedModelPath.clear();
+		m_startStopLabel = "LOAD";
+		spdlog::info("Model unloaded");
 	} else {
 		// LOAD: load the selected model (switches if different model is loaded)
 		if (!process.isRunning()) {
@@ -1298,6 +1302,8 @@ void ModelsPanel::onLoadUnloadClicked()
 			return;
 		}
 
+		// Re-enable monitoring now that we're explicitly loading
+		ModelInfoMonitor::instance().clearForceUnloaded();
 		// Load the model via API - pass section name, not path
 		(void)process.loadModel(selectedModel);
 		// ALWAYS verify actual state after load attempt
@@ -1315,9 +1321,13 @@ void ModelsPanel::refreshServerState()
 {
 	auto &process = LlamaServerProcess::instance();
 	m_serverRunning = process.isRunning() && process.isServerHealthy();
-	m_modelLoaded = m_serverRunning && process.isModelLoaded();
+
+	// Get model state from the monitor's stats rather than querying
+	// the server directly — the monitor respects the force-unloaded flag
+	auto stats = ModelInfoMonitor::instance().getStats();
+	m_modelLoaded = stats.isModelLoaded;
 	if (m_modelLoaded) {
-		m_loadedModelPath = process.getLoadedModelPath();
+		m_loadedModelPath = stats.loadedModel;
 	} else {
 		m_loadedModelPath.clear();
 	}
@@ -1339,13 +1349,7 @@ void ModelsPanel::updateStartStopLabel()
 		// Server running but no model loaded - show LOAD
 		m_startStopLabel = "LOAD";
 	} else {
-		// Server running with a model loaded
-		// Show UNLOAD if the selected model matches what we loaded,
-		// otherwise show LOAD so the user can switch to the selected model
-		if (m_loadedModelPath == selectedModel) {
-			m_startStopLabel = "UNLOAD";
-		} else {
-			m_startStopLabel = "LOAD";
-		}
+		// Server running with a model loaded - show UNLOAD
+		m_startStopLabel = "UNLOAD";
 	}
 }

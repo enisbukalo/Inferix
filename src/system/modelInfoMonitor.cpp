@@ -29,7 +29,8 @@ std::string getServerAddress()
 }
 } // namespace
 
-ModelInfoMonitor::ModelInfoMonitor() : m_running(false), m_wasProcessing(false)
+ModelInfoMonitor::ModelInfoMonitor()
+	: m_running(false), m_wasProcessing(false), m_forceUnloaded(false)
 {
 	m_modelInfo = ModelInfo{};
 }
@@ -65,6 +66,17 @@ ModelInfo ModelInfoMonitor::getStats() const
 	return m_modelInfo;
 }
 
+void ModelInfoMonitor::setUnloaded()
+{
+	m_forceUnloaded.store(true);
+	m_cachedModel.clear();
+}
+
+void ModelInfoMonitor::clearForceUnloaded()
+{
+	m_forceUnloaded.store(false);
+}
+
 bool ModelInfoMonitor::isProcessing(const std::string &slotJson)
 {
 	// Look for "is_processing":true in the slots response
@@ -91,9 +103,17 @@ void ModelInfoMonitor::pollLoop()
 			info.isServerRunning = true;
 			spdlog::debug("ModelInfoMonitor: server is healthy");
 
+			// If we intentionally unloaded, skip all model-specific queries
+			// to avoid triggering the server to reload the model
+			if (m_forceUnloaded.load()) {
+				spdlog::debug(
+					"ModelInfoMonitor: force unloaded, skipping model queries");
+				m_cachedModel.clear();
+			}
+
 			// Get currently loaded model - only refresh if cache is empty
 			// (e.g., first poll or after server came back online)
-			if (m_cachedModel.empty()) {
+			if (m_cachedModel.empty() && !m_forceUnloaded.load()) {
 				m_cachedModel =
 					LlamaServerProcess::instance().getLoadedModelPath();
 				spdlog::debug("ModelInfoMonitor: cached model: {}",

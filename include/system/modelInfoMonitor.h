@@ -84,6 +84,22 @@ class ModelInfoMonitor
 	 */
 	ModelInfo getStats() const;
 
+	/**
+	 * @brief Signals that the model was intentionally unloaded.
+	 *
+	 * Clears cached model name AND sets a flag that prevents
+	 * the polling loop from querying model-specific endpoints
+	 * (slots, metrics) which would trigger the server to reload.
+	 */
+	void setUnloaded();
+
+	/**
+	 * @brief Clears the force-unloaded flag so monitoring resumes.
+	 *
+	 * Call when the user explicitly loads a new model.
+	 */
+	void clearForceUnloaded();
+
   private:
 	ModelInfoMonitor();
 	~ModelInfoMonitor();
@@ -132,4 +148,7 @@ class ModelInfoMonitor
 
 	// Cache model path - only refresh when transitioning from offline/empty
 	std::string m_cachedModel;
+
+	// When true, skip all model-specific queries to avoid triggering reload
+	std::atomic<bool> m_forceUnloaded;
 };
