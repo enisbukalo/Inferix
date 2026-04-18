@@ -87,26 +87,30 @@ Element ModelInfoPanel::render()
 	return vbox({
 		// Model name
 		hbox({
-			text("Model: ") | bold,
-			text(modelName),
+			text("Model: ") | bold | color(Color::MagentaLight),
+			text(modelName) |
+				color(info.isModelLoaded ? Color::CyanLight : Color::RedLight),
 		}),
 		separatorLight(),
 		// Generation tokens/s
 		hbox({
-			text("Generated: ") | bold,
-			text(genTokPerSec + " tok/s (AVG)"),
+			text("Generated: ") | bold | color(Color::MagentaLight),
+			text(genTokPerSec + " tok/s (AVG)") |
+				color(info.isModelLoaded ? Color::YellowLight : Color::RedLight),
 		}),
 		separatorLight(),
 		// Processing tokens/s
 		hbox({
-			text("Processing: ") | bold,
-			text(procTokPerSec + " tok/s (AVG)"),
+			text("Processing: ") | bold | color(Color::MagentaLight),
+			text(procTokPerSec + " tok/s (AVG)") |
+				color(info.isModelLoaded ? Color::YellowLight : Color::RedLight),
 		}),
 		separatorLight(),
 		// Status
 		hbox({
-			text("Status: ") | bold,
-			text(status) | color(info.isIdle ? Color::Green : Color::Yellow),
+			text("Status: ") | bold | color(Color::MagentaLight),
+			text(status) |
+				color(info.isIdle ? Color::GreenLight : Color::YellowLight),
 		}),
 	});
 }
