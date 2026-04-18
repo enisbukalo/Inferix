@@ -15,6 +15,7 @@ add_executable(WorkbenchTests
     system/llama_server_args_test.cpp
     system/http_client_test.cpp
     system/pty_handler_test.cpp
+    system/model_info_monitor_test.cpp
 )
 
 # Set output directory to match main build

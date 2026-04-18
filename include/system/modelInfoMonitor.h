@@ -100,6 +100,16 @@ class ModelInfoMonitor
 	 */
 	void clearForceUnloaded();
 
+	/**
+	 * @brief Parses Prometheus-style metrics response from llama-server.
+	 *
+	 * Exposed as public static for unit testing.
+	 *
+	 * @param response Raw response body from /metrics
+	 * @return ModelInfo with parsed values.
+	 */
+	static ModelInfo parseMetricsResponse(const std::string &response);
+
   private:
 	ModelInfoMonitor();
 	~ModelInfoMonitor();
@@ -126,14 +136,6 @@ class ModelInfoMonitor
 	 * @return ModelInfo with the fetched values, or default if failed.
 	 */
 	ModelInfo fetchMetricsOnce(const std::string &modelName);
-
-	/**
-	 * @brief Parses Prometheus-style metrics response.
-	 *
-	 * @param response Raw response body from /metrics
-	 * @return ModelInfo with parsed values.
-	 */
-	ModelInfo parseMetricsResponse(const std::string &response);
 
 	// Thread-safe state
 	mutable std::mutex m_mutex;

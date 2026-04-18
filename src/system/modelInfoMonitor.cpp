@@ -225,12 +225,13 @@ ModelInfo ModelInfoMonitor::parseMetricsResponse(const std::string &response)
 	info.totalPromptTokens = 0;
 	info.totalGenerationTokens = 0;
 
-	// Parse Prometheus-style metrics
-	// Expected metrics:
-	// predicted_tokens_seconds{model="..."} 37.5
-	// prompt_tokens_seconds{model="..."} 2038.0
-	// prompt_tokens_total{model="..."} 2020
-	// tokens_predicted_total{model="..."} 776
+	// Parse Prometheus-style metrics from llama-server.
+	// llama-server returns metrics with a "llamacpp:" namespace prefix and
+	// optional {label} suffixes, e.g.:
+	//   llamacpp:predicted_tokens_seconds{model="..."} 67.8
+	//   llamacpp:prompt_tokens_seconds{model="..."} 1664.8
+	//   llamacpp:prompt_tokens_total{model="..."} 98986
+	//   llamacpp:tokens_predicted_total{model="..."} 6829
 
 	std::istringstream stream(response);
 	std::string line;
@@ -240,25 +241,29 @@ ModelInfo ModelInfoMonitor::parseMetricsResponse(const std::string &response)
 		if (line.empty() || line[0] == '#')
 			continue;
 
-		// Parse metric name and value
-		// Format: metric_name{labels} value
+		// Format: metric_name{labels} value  (labels are optional)
 		size_t spacePos = line.find(' ');
 		if (spacePos == std::string::npos)
 			continue;
 
+		// Strip any {label...} suffix to get the bare metric name
 		std::string metricName = line.substr(0, spacePos);
+		size_t bracePos = metricName.find('{');
+		if (bracePos != std::string::npos)
+			metricName = metricName.substr(0, bracePos);
+
 		std::string valueStr = line.substr(spacePos + 1);
 
 		try {
 			double value = std::stod(valueStr);
 
-			if (metricName == "predicted_tokens_seconds") {
+			if (metricName == "llamacpp:predicted_tokens_seconds") {
 				info.generationTokensPerSec = value;
-			} else if (metricName == "prompt_tokens_seconds") {
+			} else if (metricName == "llamacpp:prompt_tokens_seconds") {
 				info.processingTokensPerSec = value;
-			} else if (metricName == "prompt_tokens_total") {
+			} else if (metricName == "llamacpp:prompt_tokens_total") {
 				info.totalPromptTokens = static_cast<uint64_t>(value);
-			} else if (metricName == "tokens_predicted_total") {
+			} else if (metricName == "llamacpp:tokens_predicted_total") {
 				info.totalGenerationTokens = static_cast<uint64_t>(value);
 			}
 		} catch (const std::exception &e) {
