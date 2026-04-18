@@ -352,11 +352,16 @@ Component ModelsPanel::component()
 		Color textColor;
 		if (s.label == "STARTING...")
 			textColor = Color::YellowLight;
+		else if (s.label == "LOADING")
+			textColor = Color::YellowLight;
 		else if (s.label == "LOAD")
 			textColor = Color::GreenLight;
 		else
 			textColor = Color::RedLight;
+
 		auto e = text(s.label) | color(textColor);
+		if (s.label == "LOADING")
+			e |= dim; // FTXUI dim modifier reduces visual weight
 		if (s.focused)
 			e |= bold;
 		return e | center;
@@ -1294,26 +1299,51 @@ void ModelsPanel::onLoadUnloadClicked()
 		m_startStopLabel = "LOAD";
 		spdlog::info("Model unloaded");
 	} else {
-		// LOAD: load the selected model (switches if different model is loaded)
-		if (!process.isRunning()) {
-			// Auto-start server if not running
-			onStartStopClicked();
-			// Server start is async — the health poll thread will handle it
+		// Guard — ignore clicks while loading is already in progress
+		if (m_modelLoading.load())
 			return;
+
+		ModelInfoMonitor::instance().clearForceUnloaded();
+		bool apiOk = process.loadModel(selectedModel);
+		if (!apiOk) {
+			spdlog::error("Failed to send load request for: {}", selectedModel);
+			return; // HTTP call itself failed — stay in LOAD state
 		}
 
-		// Re-enable monitoring now that we're explicitly loading
-		ModelInfoMonitor::instance().clearForceUnloaded();
-		// Load the model via API - pass section name, not path
-		(void)process.loadModel(selectedModel);
-		// ALWAYS verify actual state after load attempt
-		refreshServerState();
-		updateStartStopLabel();
-		if (m_modelLoaded) {
-			spdlog::info("Model loaded: {}", selectedModel);
-		} else {
-			spdlog::error("Failed to load model: {}", selectedModel);
-		}
+		// API call accepted: enter LOADING state and poll for actual completion
+		m_modelLoading.store(true);
+		m_startStopLabel = "LOADING";
+
+		std::thread([this, selectedModel] {
+			constexpr int MAX_POLLS = 40; // 40 × 500 ms = 20 s timeout
+			constexpr auto POLL_INTERVAL = std::chrono::milliseconds(500);
+			bool loaded = false;
+			for (int i = 0; i < MAX_POLLS; ++i) {
+				std::this_thread::sleep_for(POLL_INTERVAL);
+				auto stats = ModelInfoMonitor::instance().getStats();
+				if (stats.isModelLoaded) {
+					loaded = true;
+					break;
+				} else if (!LlamaServerProcess::instance().isRunning() ||
+						   !LlamaServerProcess::instance().isServerHealthy()) {
+					// Server died during load — exit early, don't wait for
+					// timeout
+					spdlog::warn("Server became unhealthy during model load");
+					break;
+				}
+			}
+			m_modelLoaded = loaded;
+			if (loaded) {
+				auto stats = ModelInfoMonitor::instance().getStats();
+				m_loadedModelPath = stats.loadedModel;
+				spdlog::info("Model loaded: {}", selectedModel);
+			} else {
+				m_loadedModelPath.clear();
+				spdlog::error("Model load timed out: {}", selectedModel);
+			}
+			m_modelLoading.store(false);
+			updateStartStopLabel(); // resolves to UNLOAD or LOAD
+		}).detach();
 	}
 }
 
@@ -1335,6 +1365,16 @@ void ModelsPanel::refreshServerState()
 
 void ModelsPanel::updateStartStopLabel()
 {
+	// Guard: don't overwrite transient states during async operations
+	if (m_serverStarting.load()) {
+		m_startStopLabel = "STARTING...";
+		return;
+	}
+	if (m_modelLoading.load()) {
+		m_startStopLabel = "LOADING";
+		return;
+	}
+
 	// Get the currently selected model in dropdown
 	std::string selectedModel;
 	if (m_modelDropdownIndex >= 0 &&
