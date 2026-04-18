@@ -204,6 +204,22 @@ class LlamaServerProcess::Impl
 		return success && response.find("ok") != std::string::npos;
 	}
 
+	std::string getSlotStatus(const std::string &modelName)
+	{
+		if (!isServerHealthy() || modelName.empty())
+			return "";
+		auto &cfg = ConfigManager::instance().getConfig();
+		std::string url = "http://" + cfg.server.host + ":" +
+						  std::to_string(cfg.server.port) +
+						  "/slots?model=" + modelName;
+		auto [success, response] = httpClient_.get(url);
+		if (!success) {
+			spdlog::debug("getSlotStatus failed: {}", response);
+			return "";
+		}
+		return response;
+	}
+
 	bool isModelLoaded()
 	{
 		if (!isServerHealthy())
@@ -430,4 +446,9 @@ bool LlamaServerProcess::loadModel(const std::string &modelPath)
 bool LlamaServerProcess::isServerHealthy()
 {
 	return m_impl->isServerHealthy();
+}
+
+std::string LlamaServerProcess::getSlotStatus(const std::string &modelName)
+{
+	return m_impl->getSlotStatus(modelName);
 }

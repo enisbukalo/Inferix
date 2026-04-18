@@ -190,6 +190,9 @@ class ModelsPanel
 	/** True while waiting for server to become healthy after launch */
 	std::atomic<bool> m_serverStarting{ false };
 
+	/** True while a model-load API call + confirmation poll is in flight */
+	std::atomic<bool> m_modelLoading{ false };
+
 	/** Current server running state */
 	bool m_serverRunning = false;
 	/** Current model loaded state */

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "memoryStats.h"
+#include "modelInfoMonitor.h"
+#include "modelInfoPanel.h"
 #include "processorStats.h"
 #include <ftxui/dom/elements.hpp>
 #include <vector>

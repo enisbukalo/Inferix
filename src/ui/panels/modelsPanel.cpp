@@ -1,6 +1,7 @@
 #include "modelsPanel.h"
 #include "configManager.h"
 #include "modelDiscovery.h"
+#include "modelInfoMonitor.h"
 #include "ui_utils.h"
 
 #include <ftxui/component/component.hpp>
@@ -351,11 +352,16 @@ Component ModelsPanel::component()
 		Color textColor;
 		if (s.label == "STARTING...")
 			textColor = Color::YellowLight;
+		else if (s.label == "LOADING")
+			textColor = Color::YellowLight;
 		else if (s.label == "LOAD")
 			textColor = Color::GreenLight;
 		else
 			textColor = Color::RedLight;
+
 		auto e = text(s.label) | color(textColor);
+		if (s.label == "LOADING")
+			e |= dim; // FTXUI dim modifier reduces visual weight
 		if (s.focused)
 			e |= bold;
 		return e | center;
@@ -562,10 +568,17 @@ Component ModelsPanel::component()
 
 	auto presetMenuOpt = MenuOption::Vertical();
 	presetMenuOpt.on_change = [this] {
+		// Always apply preset when clicked (even if same one re-selected)
 		if (m_selectedPresetIndex >= 0 &&
 			m_selectedPresetIndex < static_cast<int>(m_presetsForModel.size())) {
 			applyPreset(m_presetsForModel[m_selectedPresetIndex]);
 			m_editingPresetName = m_presetsForModel[m_selectedPresetIndex].name;
+			m_presetStatus.clear();
+		} else if (!m_presetsForModel.empty()) {
+			// Edge case: index out of bounds but presets exist → select first
+			m_selectedPresetIndex = 0;
+			applyPreset(m_presetsForModel[0]);
+			m_editingPresetName = m_presetsForModel[0].name;
 			m_presetStatus.clear();
 		}
 	};
@@ -761,8 +774,23 @@ Component ModelsPanel::component()
 
 	// Track model dropdown changes to refresh presets
 	int lastModelIndex = m_modelDropdownIndex;
+	// Periodic refresh counter - refresh every ~2 seconds (60 renders at 30Hz)
+	int renderCount = 0;
+	auto lastRefreshTime = std::chrono::steady_clock::now();
 
 	m_component = Renderer(container, [=, this]() mutable {
+		// Periodic server state refresh to keep button state accurate
+		renderCount++;
+		auto now = std::chrono::steady_clock::now();
+		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+						   now - lastRefreshTime)
+						   .count();
+		if (elapsed >= 2) { // Refresh every 2 seconds
+			lastRefreshTime = now;
+			refreshServerState();
+			updateStartStopLabel();
+		}
+
 		// Detect model dropdown change
 		if (m_modelDropdownIndex != lastModelIndex) {
 			lastModelIndex = m_modelDropdownIndex;
@@ -772,8 +800,16 @@ Component ModelsPanel::component()
 				m_modelPath = m_modelPaths[m_modelDropdownIndex];
 			}
 			refreshPresetsForModel();
-			m_selectedPresetIndex = -1;
-			m_editingPresetName.clear();
+
+			// Auto-select first preset if any exist
+			if (!m_presetsForModel.empty()) {
+				m_selectedPresetIndex = 0;
+				applyPreset(m_presetsForModel[0]);
+				m_editingPresetName = m_presetsForModel[0].name;
+			} else {
+				m_selectedPresetIndex = -1;
+				m_editingPresetName.clear();
+			}
 			m_presetStatus.clear();
 			updateStartStopLabel();
 			saveConfig();
@@ -1252,32 +1288,62 @@ void ModelsPanel::onLoadUnloadClicked()
 	// Button label determines action, not m_modelLoaded state
 	if (m_startStopLabel == "UNLOAD") {
 		// Unload: call unloadModel API (unload whatever is currently loaded)
-		if (process.unloadModel()) {
-			m_modelLoaded = false;
-			m_loadedModelPath.clear();
-			m_startStopLabel = "LOAD";
-			spdlog::info("Model unloaded");
-		} else {
-			spdlog::error("Failed to unload model");
-		}
+		(void)process.unloadModel();
+		// Signal the monitor to stop all model-specific queries
+		// (slots, metrics) which would trigger the server to reload
+		ModelInfoMonitor::instance().setUnloaded();
+		// Set local state directly — don't query server because
+		// /models still reports "loaded" briefly after unload returns
+		m_modelLoaded = false;
+		m_loadedModelPath.clear();
+		m_startStopLabel = "LOAD";
+		spdlog::info("Model unloaded");
 	} else {
-		// LOAD: load the selected model (switches if different model is loaded)
-		if (!process.isRunning()) {
-			// Auto-start server if not running
-			onStartStopClicked();
-			// Server start is async — the health poll thread will handle it
+		// Guard — ignore clicks while loading is already in progress
+		if (m_modelLoading.load())
 			return;
+
+		ModelInfoMonitor::instance().clearForceUnloaded();
+		bool apiOk = process.loadModel(selectedModel);
+		if (!apiOk) {
+			spdlog::error("Failed to send load request for: {}", selectedModel);
+			return; // HTTP call itself failed — stay in LOAD state
 		}
 
-		// Load the model via API - pass section name, not path
-		if (process.loadModel(selectedModel)) {
-			m_modelLoaded = true;
-			m_loadedModelPath = selectedModel;
-			m_startStopLabel = "UNLOAD";
-			spdlog::info("Model loaded: {}", selectedModel);
-		} else {
-			spdlog::error("Failed to load model: {}", selectedModel);
-		}
+		// API call accepted: enter LOADING state and poll for actual completion
+		m_modelLoading.store(true);
+		m_startStopLabel = "LOADING";
+
+		std::thread([this, selectedModel] {
+			constexpr int MAX_POLLS = 40; // 40 × 500 ms = 20 s timeout
+			constexpr auto POLL_INTERVAL = std::chrono::milliseconds(500);
+			bool loaded = false;
+			for (int i = 0; i < MAX_POLLS; ++i) {
+				std::this_thread::sleep_for(POLL_INTERVAL);
+				auto stats = ModelInfoMonitor::instance().getStats();
+				if (stats.isModelLoaded) {
+					loaded = true;
+					break;
+				} else if (!LlamaServerProcess::instance().isRunning() ||
+						   !LlamaServerProcess::instance().isServerHealthy()) {
+					// Server died during load — exit early, don't wait for
+					// timeout
+					spdlog::warn("Server became unhealthy during model load");
+					break;
+				}
+			}
+			m_modelLoaded = loaded;
+			if (loaded) {
+				auto stats = ModelInfoMonitor::instance().getStats();
+				m_loadedModelPath = stats.loadedModel;
+				spdlog::info("Model loaded: {}", selectedModel);
+			} else {
+				m_loadedModelPath.clear();
+				spdlog::error("Model load timed out: {}", selectedModel);
+			}
+			m_modelLoading.store(false);
+			updateStartStopLabel(); // resolves to UNLOAD or LOAD
+		}).detach();
 	}
 }
 
@@ -1285,9 +1351,13 @@ void ModelsPanel::refreshServerState()
 {
 	auto &process = LlamaServerProcess::instance();
 	m_serverRunning = process.isRunning() && process.isServerHealthy();
-	m_modelLoaded = m_serverRunning && process.isModelLoaded();
+
+	// Get model state from the monitor's stats rather than querying
+	// the server directly — the monitor respects the force-unloaded flag
+	auto stats = ModelInfoMonitor::instance().getStats();
+	m_modelLoaded = stats.isModelLoaded;
 	if (m_modelLoaded) {
-		m_loadedModelPath = process.getLoadedModelPath();
+		m_loadedModelPath = stats.loadedModel;
 	} else {
 		m_loadedModelPath.clear();
 	}
@@ -1295,8 +1365,15 @@ void ModelsPanel::refreshServerState()
 
 void ModelsPanel::updateStartStopLabel()
 {
-	// First refresh state from server
-	refreshServerState();
+	// Guard: don't overwrite transient states during async operations
+	if (m_serverStarting.load()) {
+		m_startStopLabel = "STARTING...";
+		return;
+	}
+	if (m_modelLoading.load()) {
+		m_startStopLabel = "LOADING";
+		return;
+	}
 
 	// Get the currently selected model in dropdown
 	std::string selectedModel;
@@ -1305,19 +1382,14 @@ void ModelsPanel::updateStartStopLabel()
 		selectedModel = m_modelNames[m_modelDropdownIndex];
 	}
 
-	if (!m_serverRunning) {
+	if (!LlamaServerProcess::instance().isRunning()) {
 		// Server not running - show LOAD
 		m_startStopLabel = "LOAD";
 	} else if (!m_modelLoaded) {
 		// Server running but no model loaded - show LOAD
 		m_startStopLabel = "LOAD";
 	} else {
-		// Server running with model loaded
-		// Show UNLOAD if the loaded model matches selected model, else LOAD
-		if (m_loadedModelPath == selectedModel) {
-			m_startStopLabel = "UNLOAD";
-		} else {
-			m_startStopLabel = "LOAD";
-		}
+		// Server running with a model loaded - show UNLOAD
+		m_startStopLabel = "UNLOAD";
 	}
 }

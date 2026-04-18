@@ -235,6 +235,8 @@ Element SystemResourcesPanel::render()
 	dataRows.DecorateCellsAlternateRow(color(Color::CyanLight), 2, 1);
 	dataRows.DecorateCellsAlternateRow(color(Color::MagentaLight), 2, 0);
 
+	table.SelectAll().BorderBottom(LIGHT);
+
 	return window(text("System Resources") | bold,
 				  hbox({
 					  vbox({
@@ -248,10 +250,17 @@ Element SystemResourcesPanel::render()
 						  separatorLight(),
 						  hbox({
 							  cpuLoadGauge,
-							  separatorLight(),
+							  // separatorLight(),
 							  gpuLoadGauges,
 						  }),
-					  }),
+					  }) | yflex,
 					  separatorLight(),
+					  filler(),
+					  separatorLight(),
+					  vbox({
+						  text("Model Info") | bold | hcenter,
+						  separatorLight(),
+						  ModelInfoPanel::render(),
+					  }),
 				  }));
 }
