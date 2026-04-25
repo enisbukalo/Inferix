@@ -21,10 +21,12 @@
 
 class TerminalPanel;
 
+namespace Config {
 struct TerminalPreset;
+} // namespace Config
 
 namespace ftxui {
-class Component;
+class ComponentBase;
 class Event;
 class ScreenInteractive;
 } // namespace ftxui
@@ -77,12 +79,13 @@ class TerminalCoordinator
 	 * - Calling spawnAll() before the event loop starts
 	 *
 	 * @param presets Vector of terminal presets from config.
-	 * @return std::pair<std::vector<ftxui::Component>, std::vector<std::string>>
-	 *         First: components for each dynamic terminal
-	 *         Second: corresponding tab labels (preset names)
-	 */
-	[[nodiscard]] std::pair<std::vector<ftxui::Component>, std::vector<std::string>>
-	createDynamicTerminals(const std::vector<TerminalPreset> &presets);
+	 * @return std::pair<std::vector<std::shared_ptr<ftxui::ComponentBase>>, std::vector<std::string>>
+		 *         First: components for each dynamic terminal
+		 *         Second: corresponding tab labels (preset names)
+		 */
+	[[nodiscard]]
+	std::pair<std::vector<std::shared_ptr<ftxui::ComponentBase>>, std::vector<std::string>>
+	createDynamicTerminals(const std::vector<Config::TerminalPreset> &presets);
 
 	/**
 	 * @brief Eagerly spawn all terminals (static + dynamic) before the event loop.

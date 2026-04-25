@@ -17,11 +17,12 @@ TerminalCoordinator::TerminalCoordinator(TerminalPanel &staticTerminal,
 {
 }
 
-std::pair<std::vector<ftxui::Component>, std::vector<std::string>>
+std::pair<std::vector<std::shared_ptr<ftxui::ComponentBase>>,
+		  std::vector<std::string>>
 TerminalCoordinator::createDynamicTerminals(
-	const std::vector<TerminalPreset> &presets)
+	const std::vector<Config::TerminalPreset> &presets)
 {
-	std::vector<ftxui::Component> components;
+	std::vector<std::shared_ptr<ftxui::ComponentBase>> components;
 	std::vector<std::string> labels;
 
 	// Start dynamic terminal index at 4 (0: App Settings, 1: Model Settings,

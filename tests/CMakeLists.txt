@@ -39,6 +39,7 @@ target_link_libraries(WorkbenchTests PRIVATE
 # Link required libraries from main target
 target_link_libraries(WorkbenchTests PRIVATE
     httplib
+    vterm
     spdlog::spdlog
     ftxui::component
     ftxui::dom
@@ -64,7 +65,6 @@ file(GLOB_RECURSE TEST_SOURCES
 
 # Remove panel files that depend on PTY or FTXUI screen (not testable in unit tests easily)
 list(REMOVE_ITEM TEST_SOURCES
-    "${CMAKE_SOURCE_DIR}/src/ui/panels/terminalPanel.cpp"
     "${CMAKE_SOURCE_DIR}/src/ui/panels/serverLogPanel.cpp"
 )
 

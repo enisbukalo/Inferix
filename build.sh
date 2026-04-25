@@ -46,6 +46,20 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+# Ensure log directory exists
+LOG_DIR="./logs"
+mkdir -p "$LOG_DIR"
+
+# Signal handler for graceful interruption
+handle_interrupt() {
+  echo ""
+  echo "Build interrupted. Logs saved up to this point."
+  # Kill any remaining child processes in our process group
+  pkill -P $$ 2>/dev/null || true
+  exit 130
+}
+trap handle_interrupt SIGINT SIGTERM
+
 format_code() {
   echo "Formatting source files..."
   find src/ include/models include/panels include/system \
@@ -68,20 +82,21 @@ if [[ $BUILD_ALL -eq 1 ]]; then
 
   echo "Starting Windows and Linux builds in parallel..."
 
+  # Use stdbuf -oL to force line-buffering so logs write in real-time
   (
-    cmake -B"$BUILD_DIR_WIN" -H. \
+    stdbuf -oL cmake -B"$BUILD_DIR_WIN" -H. \
       --log-level=VERBOSE \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_SYSTEM_NAME=Windows \
       -DCMAKE_C_COMPILER="x86_64-w64-mingw32-gcc-posix" \
       -DCMAKE_CXX_COMPILER="x86_64-w64-mingw32-g++-posix"
-    make -C"$BUILD_DIR_WIN" -j6 VERBOSE=1
+    stdbuf -oL make -C"$BUILD_DIR_WIN" -j6 VERBOSE=1
   ) > "$LOG_DIR/build_win.log" 2>&1 &
   WIN_PID=$!
 
   (
-    cmake -B"$BUILD_DIR_LINUX" -H. --log-level=VERBOSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
-    make -C"$BUILD_DIR_LINUX" -j6 VERBOSE=1
+    stdbuf -oL cmake -B"$BUILD_DIR_LINUX" -H. --log-level=VERBOSE -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20
+    stdbuf -oL make -C"$BUILD_DIR_LINUX" -j6 VERBOSE=1
   ) > "$LOG_DIR/build_linux.log" 2>&1 &
   LIN_PID=$!
 
@@ -109,8 +124,9 @@ else
       CMAKE_FLAGS="$CMAKE_FLAGS -DENABLE_COVERAGE=ON"
     fi
     
-    cmake -B"$BUILD_DIR_WIN" -H. --log-level=VERBOSE $CMAKE_FLAGS
-    make -C"$BUILD_DIR_WIN" -j6 VERBOSE=1
+    WIN_LOG="$LOG_DIR/build_win.log"
+    { cmake -B"$BUILD_DIR_WIN" -H. --log-level=VERBOSE $CMAKE_FLAGS; } 2>&1 | tee "$WIN_LOG"
+    { make -C"$BUILD_DIR_WIN" -j6 VERBOSE=1; } 2>&1 | tee -a "$WIN_LOG"
   else
     # Default: Linux only
     echo "Configuring Linux build..."
@@ -124,8 +140,9 @@ else
       CMAKE_FLAGS="$CMAKE_FLAGS -DENABLE_COVERAGE=ON"
     fi
     
-    cmake -B"$BUILD_DIR_LINUX" -H. --log-level=VERBOSE $CMAKE_FLAGS
-    make -C"$BUILD_DIR_LINUX" -j6 VERBOSE=1
+    LINUX_LOG="$LOG_DIR/build_linux.log"
+    { cmake -B"$BUILD_DIR_LINUX" -H. --log-level=VERBOSE $CMAKE_FLAGS; } 2>&1 | tee "$LINUX_LOG"
+    { make -C"$BUILD_DIR_LINUX" -j6 VERBOSE=1; } 2>&1 | tee -a "$LINUX_LOG"
     
     # Run tests if requested
     if [[ $BUILD_TESTS -eq 1 ]]; then
