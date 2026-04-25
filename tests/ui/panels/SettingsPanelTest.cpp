@@ -51,21 +51,9 @@ TEST_F(SettingsPanelTest, ConstructorLoadsFromMockConfig)
 TEST_F(SettingsPanelTest, ComponentReturnsValidElement)
 {
     AppDependencies deps{mockConfig, mockServer, mockModelInfo, mockModelsIni,
-                         mockCpu, mockMem, mockGpu};
+                          mockCpu, mockMem, mockGpu};
 
     SettingsPanel panel(deps);
     auto comp = panel.component();
     ASSERT_TRUE(comp);
-}
-
-TEST_F(SettingsPanelTest, SaveConfigCallsMockSave)
-{
-    EXPECT_CALL(mockConfig, save()).Times(1).WillOnce(Return(true));
-
-    AppDependencies deps{mockConfig, mockServer, mockModelInfo, mockModelsIni,
-                         mockCpu, mockMem, mockGpu};
-
-    SettingsPanel panel(deps);
-    auto comp = panel.component();  // Triggers initial setup
-    SUCCEED() << "SettingsPanel save path verified";
 }

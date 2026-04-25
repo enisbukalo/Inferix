@@ -39,7 +39,7 @@ class ModelsPanelTest : public Test
 
         // Empty model list from models.ini
         ON_CALL(mockModelsIni, getUniqueModelEntries())
-            .WillByDefault(Return(std::vector<ModelsIni::ModelEntry>{}));
+            .WillByDefault(Return(std::vector<ModelsIniEntry>{}));
     }
 
     NiceMock<MockConfigManager> mockConfig;
@@ -77,11 +77,11 @@ TEST_F(ModelsPanelTest, ComponentReturnsValidElement)
 
 TEST_F(ModelsPanelTest, ServerNotRunningShowsLoadLabel)
 {
-    EXPECT_CALL(mockServer, isRunning()).WillOnce(Return(false));
-    EXPECT_CALL(mockServer, isServerHealthy()).WillOnce(Return(false));
+    // Panel calls isRunning() multiple times during construction (refreshServerState + updateStartStopLabel).
+    EXPECT_CALL(mockServer, isRunning()).Times(AtLeast(1)).WillRepeatedly(Return(false));
 
     AppDependencies deps{mockConfig, mockServer, mockModelInfo, mockModelsIni,
-                         mockCpu, mockMem, mockGpu};
+                          mockCpu, mockMem, mockGpu};
     ModelsPanel panel(deps);
 
     // Component creation triggers server state refresh

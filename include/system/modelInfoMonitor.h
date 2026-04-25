@@ -2,6 +2,7 @@
 
 #include "IModelInfoMonitor.h"
 #include "llamaServerProcess.h"
+#include "modelInfo.h"
 
 #include <atomic>
 #include <chrono>
@@ -22,23 +23,6 @@
  *
  * Thread-safe: All public methods can be called concurrently.
  */
-
-/**
- * @struct ModelInfo
- * @brief Data structure holding the current model metrics.
- */
-struct ModelInfo
-{
-	std::string loadedModel;		// e.g., "nvidia_Orchestrator-8B-Q6_K_L"
-	double generationTokensPerSec;	// tokens predicted per second
-	double processingTokensPerSec;	// prompt tokens per second
-	uint64_t totalPromptTokens;		// total prompt tokens processed
-	uint64_t totalGenerationTokens; // total generation tokens processed
-	int activeRequestCount;			// number of active requests
-	bool isIdle;					// true if all slots idle
-	bool isServerRunning;			// server is healthy
-	bool isModelLoaded;				// a model is loaded
-};
 
 /**
  * @class ModelInfoMonitor

@@ -271,12 +271,11 @@ void ModelsPanel::refreshModelList()
 	auto entries = m_modelsIni.getUniqueModelEntries();
 
 	// Sort by display name
-	std::sort(
-		entries.begin(),
-		entries.end(),
-		[](const ModelsIni::ModelEntry &a, const ModelsIni::ModelEntry &b) {
-			return a.displayName < b.displayName;
-		});
+	std::sort(entries.begin(),
+			  entries.end(),
+			  [](const ModelsIniEntry &a, const ModelsIniEntry &b) {
+				  return a.displayName < b.displayName;
+			  });
 
 	m_modelNames.clear();
 	m_modelDisplayNames.clear();

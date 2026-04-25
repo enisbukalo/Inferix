@@ -1,6 +1,7 @@
 #pragma once
 
 #include "modelSettings.h"
+#include "modelsIniEntry.h"
 
 #include <string>
 #include <vector>
@@ -19,7 +20,7 @@ class IModelsIni
     virtual ~IModelsIni() = default;
 
     /** @brief Return one entry per unique GGUF path in models.ini. */
-    virtual std::vector<ModelsIni::ModelEntry> getUniqueModelEntries() const = 0;
+    virtual std::vector<ModelsIniEntry> getUniqueModelEntries() const = 0;
 
     /** @brief Get the model path for a given section name. */
     virtual std::string getModelPath(const std::string &sectionName) const = 0;

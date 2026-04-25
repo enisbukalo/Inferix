@@ -2,6 +2,7 @@
 
 #include "IModelsIni.h"
 #include "modelSettings.h"
+#include "modelsIniEntry.h"
 
 #include <map>
 #include <optional>
@@ -95,12 +96,9 @@ class ModelsIni : public IModelsIni
 
 	/**
 	 * @brief A unique model entry: one record per distinct GGUF path.
+	 * Type alias to the shared ModelsIniEntry struct for backward compatibility.
 	 */
-	struct ModelEntry
-	{
-		std::string displayName; // section name (first section found for this path)
-		std::string modelPath;   // the GGUF file path
-	};
+	using ModelEntry = ModelsIniEntry;
 
 	/**
 	 * @brief Return one entry per unique GGUF path in models.ini.

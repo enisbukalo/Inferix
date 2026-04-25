@@ -16,6 +16,7 @@ class TerminalPresetsPanelTest : public Test
 {
   protected:
     NiceMock<MockConfigManager> mockConfig;
+    std::vector<Config::TerminalPreset> m_emptyPresets;
 };
 
 TEST_F(TerminalPresetsPanelTest, AddPresetSuccess)
@@ -62,7 +63,7 @@ TEST_F(TerminalPresetsPanelTest, RemovePresetNotFound)
 TEST_F(TerminalPresetsPanelTest, RenderWithEmptyPresets)
 {
     EXPECT_CALL(mockConfig, getTerminalPresets())
-        .WillOnce(ReturnRef(std::vector<Config::TerminalPreset>{}));
+        .WillOnce(ReturnRef(m_emptyPresets));
 
     auto element = TerminalPresetsPanel::render(mockConfig);
     ASSERT_TRUE(element);

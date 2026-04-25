@@ -1,6 +1,6 @@
 #pragma once
 
-#include "modelInfoMonitor.h"
+#include "modelInfo.h"
 
 /**
  * @file IModelInfoMonitor.h
