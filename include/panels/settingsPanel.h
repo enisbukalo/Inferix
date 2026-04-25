@@ -1,5 +1,7 @@
 #pragma once
 
+#include "IConfigManager.h"
+#include "appDependencies.h"
 #include "eventBus.h"
 #include "terminalPresetsPanel.h"
 
@@ -41,11 +43,13 @@
 class SettingsPanel
 {
   public:
-	SettingsPanel();
+	explicit SettingsPanel(AppDependencies &deps);
 
 	ftxui::Component component();
 
   private:
+	IConfigManager &m_config;
+
 	void loadFromConfig();
 	void saveConfig();
 

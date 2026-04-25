@@ -7,7 +7,6 @@
  */
 
 #include "terminalPresetsPanel.h"
-#include "configManager.h"
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/dom/table.hpp>
@@ -18,7 +17,8 @@ using namespace ftxui;
 std::string TerminalPresetsPanel::newPresetName_;
 std::string TerminalPresetsPanel::newPresetCommand_;
 
-bool TerminalPresetsPanel::addPreset(const std::string &name,
+bool TerminalPresetsPanel::addPreset(IConfigManager &config,
+									 const std::string &name,
 									 const std::string &command)
 {
 	if (name.empty() || command.empty())
@@ -28,18 +28,19 @@ bool TerminalPresetsPanel::addPreset(const std::string &name,
 	preset.name = name;
 	preset.initialCommand = command;
 
-	return ConfigManager::instance().addTerminalPreset(std::move(preset));
+	return config.addTerminalPreset(std::move(preset));
 }
 
-bool TerminalPresetsPanel::removePreset(const std::string &name)
+bool TerminalPresetsPanel::removePreset(IConfigManager &config,
+										const std::string &name)
 {
-	return ConfigManager::instance().removeTerminalPreset(name);
+	return config.removeTerminalPreset(name);
 }
 
-Element TerminalPresetsPanel::render()
+Element TerminalPresetsPanel::render(IConfigManager &config)
 {
 	// Get all presets from config
-	const auto &presets = ConfigManager::instance().getTerminalPresets();
+	const auto &presets = config.getTerminalPresets();
 
 	// Header row
 	std::vector<Element> header = {

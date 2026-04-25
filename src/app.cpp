@@ -8,8 +8,15 @@
  */
 
 #include "app.h"
+#include "appDependencies.h"
 #include "configManager.h"
+#include "cpuMonitor.h"
+#include "gpuMonitor.h"
+#include "llamaServerProcess.h"
+#include "modelInfoMonitor.h"
+#include "modelsIni.h"
 #include "modelsPanel.h"
+#include "ramMonitor.h"
 #include "serverInfoPanel.h"
 #include "serverLogPanel.h"
 #include "settingsPanel.h"
@@ -52,9 +59,20 @@ void App::run()
 	auto &config = ConfigManager::instance().getConfig();
 	SystemMonitorRunner::instance().start(&screen, config.ui.refreshRateMs);
 
+	// Build dependency injection struct from singleton instances
+	AppDependencies deps{
+		ConfigManager::instance(),		// IConfigManager&
+		LlamaServerProcess::instance(), // ILlamaServerProcess&
+		ModelInfoMonitor::instance(),	// IModelInfoMonitor&
+		ModelsIni::instance(),			// IModelsIni&
+		CpuMonitor::instance(),			// ICpuMonitor&
+		MemoryMonitor::instance(),		// IMemoryMonitor&
+		GpuMonitor::instance()			// IGpuMonitor&
+	};
+
 	TerminalPanel terminalPanel(screen);
-	SettingsPanel settingsPanel;
-	ModelsPanel modelsPanel;
+	SettingsPanel settingsPanel(deps);
+	ModelsPanel modelsPanel(deps);
 	ServerLogPanel serverLogPanel(screen);
 
 	std::vector<std::string> tabValues{ "App Settings",
@@ -81,11 +99,11 @@ void App::run()
 		return window(text(""), flex(modelInner->Render()), ftxui::EMPTY) | flex;
 	});
 
-	auto serverContent = Renderer([] {
+	auto serverContent = Renderer([&] {
 		return hbox({ text("Some really long status about the server probably "
 						   "here."),
 					  filler(),
-					  ServerInfoPanel::render() });
+					  ServerInfoPanel::render(deps.server) });
 	});
 
 	auto terminalContent = terminalPanel.component();
@@ -163,7 +181,10 @@ void App::run()
 		if (anyCapturing)
 			panel = panel | color(Color::LightGreen);
 
-		return vbox({ SystemResourcesPanel::render(),
+		return vbox({ SystemResourcesPanel::render(deps.cpu,
+												   deps.mem,
+												   deps.gpu,
+												   deps.modelInfo),
 					  separatorCharacter("*") | bold | color(Color::Orange3),
 					  panel,
 					  serverContent->Render() }) |

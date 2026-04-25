@@ -1,6 +1,9 @@
 #pragma once
 
+#include "IModelInfoMonitor.h"
 #include "llamaServerProcess.h"
+#include "modelInfo.h"
+
 #include <atomic>
 #include <chrono>
 #include <mutex>
@@ -22,23 +25,6 @@
  */
 
 /**
- * @struct ModelInfo
- * @brief Data structure holding the current model metrics.
- */
-struct ModelInfo
-{
-	std::string loadedModel;		// e.g., "nvidia_Orchestrator-8B-Q6_K_L"
-	double generationTokensPerSec;	// tokens predicted per second
-	double processingTokensPerSec;	// prompt tokens per second
-	uint64_t totalPromptTokens;		// total prompt tokens processed
-	uint64_t totalGenerationTokens; // total generation tokens processed
-	int activeRequestCount;			// number of active requests
-	bool isIdle;					// true if all slots idle
-	bool isServerRunning;			// server is healthy
-	bool isModelLoaded;				// a model is loaded
-};
-
-/**
  * @class ModelInfoMonitor
  * @brief Singleton that monitors llama-server state and fetches metrics on
  * demand.
@@ -49,7 +35,7 @@ struct ModelInfo
  *
  * Thread-safe storage uses mutex-protected access.
  */
-class ModelInfoMonitor
+class ModelInfoMonitor : public IModelInfoMonitor
 {
   public:
 	/**
@@ -82,7 +68,7 @@ class ModelInfoMonitor
 	 *
 	 * @return Copy of the latest @c ModelInfo.
 	 */
-	ModelInfo getStats() const;
+	ModelInfo getStats() const override;
 
 	/**
 	 * @brief Signals that the model was intentionally unloaded.
@@ -91,14 +77,14 @@ class ModelInfoMonitor
 	 * the polling loop from querying model-specific endpoints
 	 * (slots, metrics) which would trigger the server to reload.
 	 */
-	void setUnloaded();
+	void setUnloaded() override;
 
 	/**
 	 * @brief Clears the force-unloaded flag so monitoring resumes.
 	 *
 	 * Call when the user explicitly loads a new model.
 	 */
-	void clearForceUnloaded();
+	void clearForceUnloaded() override;
 
 	/**
 	 * @brief Parses Prometheus-style metrics response from llama-server.

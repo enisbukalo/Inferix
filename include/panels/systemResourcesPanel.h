@@ -1,9 +1,13 @@
 #pragma once
 
+#include "ICpuMonitor.h"
+#include "IGpuMonitor.h"
+#include "IMemoryMonitor.h"
+#include "IModelInfoMonitor.h"
 #include "memoryStats.h"
-#include "modelInfoMonitor.h"
 #include "modelInfoPanel.h"
 #include "processorStats.h"
+
 #include <ftxui/dom/elements.hpp>
 #include <vector>
 
@@ -37,12 +41,20 @@ class SystemResourcesPanel
 	/**
 	 * @brief Builds and returns the complete resource-usage panel.
 	 *
-	 * Queries @c CpuMonitor, @c MemoryMonitor, and @c GpuMonitor for the latest
-	 * snapshots, then composes all sub-elements into the full panel layout.
+	 * Takes monitor references rather than calling singletons, enabling
+	 * unit testing with mocks. The caller (app.cpp) passes singleton instances.
 	 *
+	 * @param cpu CPU monitor reference for load stats.
+	 * @param mem Memory monitor reference for RAM stats.
+	 * @param gpu GPU monitor reference for VRAM and compute stats.
+	 * @param modelInfo Model info monitor reference for the embedded
+	 * ModelInfoPanel.
 	 * @return An @c ftxui::Element containing the fully composed panel.
 	 */
-	static ftxui::Element render();
+	static ftxui::Element render(ICpuMonitor &cpu,
+								 IMemoryMonitor &mem,
+								 IGpuMonitor &gpu,
+								 IModelInfoMonitor &modelInfo);
 
   private:
 	/**

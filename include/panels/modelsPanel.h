@@ -1,8 +1,10 @@
 #pragma once
 
-#include "configManager.h"
-#include "llamaServerProcess.h"
-#include "modelsIni.h"
+#include "IConfigManager.h"
+#include "ILlamaServerProcess.h"
+#include "IModelInfoMonitor.h"
+#include "IModelsIni.h"
+#include "appDependencies.h"
 
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
@@ -21,6 +23,8 @@
  * parameters and inference behavior. It is a stateful component that
  * reads from and writes to the ConfigManager on change.
  *
+ * Dependencies are injected via constructor (no singleton calls).
+ *
  * Sections:
  * - Load Settings: Model path, GPU layers, context size, batch size,
  *   flash attention, memory mapping options
@@ -31,11 +35,13 @@ class ModelsPanel
 {
   public:
 	/**
-	 * @brief Constructs the ModelsPanel and loads current configuration.
+	 * @brief Constructs the ModelsPanel with injected dependencies.
 	 *
-	 * Initializes all member variables from ConfigManager::getConfig().
+	 * @param deps Dependencies required by this panel (config, server,
+	 *             model info monitor, models INI).
+	 * Initializes all member variables from config values.
 	 */
-	ModelsPanel();
+	explicit ModelsPanel(AppDependencies &deps);
 
 	/**
 	 * @brief Returns the FTXUI component for this panel.
@@ -49,6 +55,11 @@ class ModelsPanel
 	ftxui::Component component();
 
   private:
+	// Injected dependencies
+	IConfigManager &m_config;
+	ILlamaServerProcess &m_server;
+	IModelInfoMonitor &m_modelInfo;
+	IModelsIni &m_modelsIni;
 	/**
 	 * @brief Loads current configuration values into member variables.
 	 *

@@ -129,8 +129,12 @@ else
     
     # Run tests if requested
     if [[ $BUILD_TESTS -eq 1 ]]; then
+      LOG_DIR="./logs"
+      mkdir -p "$LOG_DIR"
+      TEST_LOG="$LOG_DIR/test_output.log"
+
       # Run tests (continue even if tests fail, to generate coverage)
-      ./build_linux/WorkbenchTests --gtest_color=yes || true
+      ./build_linux/WorkbenchTests --gtest_color=yes 2>&1 | tee "$TEST_LOG" || true
       
       # Generate coverage report using gcov (GCC format)
       if command -v gcov &> /dev/null; then

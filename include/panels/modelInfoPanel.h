@@ -1,6 +1,8 @@
 #pragma once
 
+#include "IModelInfoMonitor.h"
 #include "modelInfoMonitor.h"
+
 #include <ftxui/dom/elements.hpp>
 
 /**
@@ -27,12 +29,13 @@ class ModelInfoPanel
 	/**
 	 * @brief Builds and returns the model info panel.
 	 *
-	 * Queries @c ModelInfoMonitor for the latest snapshot, then composes
-	 * all sub-elements into the panel layout.
+	 * Takes a monitor reference rather than calling singletons, enabling
+	 * unit testing with mocks. The caller (app.cpp) passes singleton instances.
 	 *
+	 * @param monitor ModelInfoMonitor reference for stats.
 	 * @return An @c ftxui::Element containing the fully composed panel.
 	 */
-	static ftxui::Element render();
+	static ftxui::Element render(IModelInfoMonitor &monitor);
 
   private:
 	/**

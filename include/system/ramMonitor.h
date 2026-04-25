@@ -1,5 +1,8 @@
 #pragma once
+
+#include "IMemoryMonitor.h"
 #include "memoryStats.h"
+
 #include <mutex>
 #include <optional>
 
@@ -21,7 +24,7 @@
  * Sampling interval: Determined by caller; typically 500ms via
  * SystemMonitorRunner
  */
-class MemoryMonitor
+class MemoryMonitor : public IMemoryMonitor
 {
   public:
 	/**
@@ -61,7 +64,7 @@ class MemoryMonitor
 	 * @note The stats_ vector is updated atomically; readers will never
 	 *       see a partially-updated state.
 	 */
-	void update();
+	void update() override;
 
 	/**
 	 * @brief Returns the latest @c MemoryStats snapshot under lock.
@@ -79,7 +82,7 @@ class MemoryMonitor
 	 *       with update() or other get_* methods.
 	 * @see tryUpdate()
 	 */
-	MemoryStats getStats() const;
+	MemoryStats getStats() const override;
 
 	/**
 	 * @brief Calls @ref update() and returns the resulting stats.

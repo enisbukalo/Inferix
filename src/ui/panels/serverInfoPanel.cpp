@@ -7,7 +7,6 @@
  */
 
 #include "serverInfoPanel.h"
-#include "llamaServerProcess.h"
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
@@ -51,10 +50,10 @@ std::string readLastLines(const std::string &path, int maxLines = 10)
 }
 } // namespace
 
-Element ServerInfoPanel::render()
+Element ServerInfoPanel::render(ILlamaServerProcess &server)
 {
 	// Check if server is running
-	bool running = LlamaServerProcess::instance().isRunning();
+	bool running = server.isRunning();
 
 	// Get color based on status
 	Color statusColor = running ? Color::GreenLight : Color::Red;
@@ -63,6 +62,6 @@ Element ServerInfoPanel::render()
 	return hbox({
 		text("Server Status") | bold,
 		separatorEmpty(),
-		text("◉") | hcenter | color(statusColor),
+		text("\u25C9") | hcenter | color(statusColor),
 	});
 }
