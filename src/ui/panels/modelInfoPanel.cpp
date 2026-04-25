@@ -7,7 +7,6 @@
  */
 
 #include "modelInfoPanel.h"
-#include "modelInfoMonitor.h"
 
 #include <ftxui/dom/elements.hpp>
 #include <iomanip>
@@ -63,9 +62,9 @@ std::string ModelInfoPanel::getStatusString(const ModelInfo &info)
 	return ::getStatusString(info);
 }
 
-Element ModelInfoPanel::render()
+Element ModelInfoPanel::render(IModelInfoMonitor &monitor)
 {
-	auto info = ModelInfoMonitor::instance().getStats();
+	auto info = monitor.getStats();
 
 	// Format values
 	std::string modelName = info.isServerRunning ? info.loadedModel : "N/A";

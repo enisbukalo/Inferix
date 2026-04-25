@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ILlamaServerProcess.h"
+
 #include <ftxui/dom/elements.hpp>
 
 /**
@@ -27,13 +29,13 @@ class ServerInfoPanel
 	 * @brief Builds and returns an FTXUI element with animated pulsing
 	 * indicator.
 	 *
-	 * Uses a static frame counter to alternate between green (connected) and red
-	 * (disconnected) colors every 8 frames. The animation creates a simple
-	 * presence indicator without reflecting actual server state.
+	 * Takes a server reference rather than calling singletons, enabling
+	 * unit testing with mocks. The caller (app.cpp) passes singleton instances.
 	 *
+	 * @param server LlamaServerProcess reference for running state.
 	 * @return An @c ftxui::Element containing the animated status display.
 	 */
-	static ftxui::Element render();
+	static ftxui::Element render(ILlamaServerProcess &server);
 
   private:
 };

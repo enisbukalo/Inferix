@@ -1,6 +1,9 @@
 #pragma once
+
+#include "IGpuMonitor.h"
 #include "memoryStats.h"
 #include "processorStats.h"
+
 #include <mutex>
 #include <vector>
 
@@ -26,7 +29,7 @@
  * Sampling interval: Determined by caller; typically 500ms via
  * SystemMonitorRunner
  */
-class GpuMonitor
+class GpuMonitor : public IGpuMonitor
 {
   public:
 	/**
@@ -67,7 +70,7 @@ class GpuMonitor
 	 * @note The stats_ and loadStats_ vectors are updated atomically;
 	 *       readers will never see a partially-updated state.
 	 */
-	void update();
+	void update() override;
 
 	/**
 	 * @brief Returns per-GPU VRAM usage snapshots.
@@ -93,7 +96,7 @@ class GpuMonitor
 	 *       with update() or other get_* methods.
 	 * @see getLoadStats()
 	 */
-	std::vector<MemoryStats> getStats() const;
+	std::vector<MemoryStats> getStats() const override;
 
 	/**
 	 * @brief Returns per-GPU compute utilisation snapshots.
@@ -116,7 +119,7 @@ class GpuMonitor
 	 *       with update() or other get_* methods.
 	 * @see getStats()
 	 */
-	std::vector<ProcessorStats> getLoadStats() const;
+	std::vector<ProcessorStats> getLoadStats() const override;
 
   private:
 	GpuMonitor() = default;

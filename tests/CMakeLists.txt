@@ -16,6 +16,12 @@ add_executable(WorkbenchTests
     system/http_client_test.cpp
     system/pty_handler_test.cpp
     system/model_info_monitor_test.cpp
+    ui/panels/ModelsPanelTest.cpp
+    ui/panels/SettingsPanelTest.cpp
+    ui/panels/SystemResourcesPanelTest.cpp
+    ui/panels/ModelInfoPanelTest.cpp
+    ui/panels/TerminalPresetsPanelTest.cpp
+    ui/panels/ServerInfoPanelTest.cpp
 )
 
 # Set output directory to match main build
@@ -23,10 +29,11 @@ set_target_properties(WorkbenchTests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
 
-# Link gtest
+# Link gtest and gmock
 target_link_libraries(WorkbenchTests PRIVATE
     GTest::gtest_main
     GTest::gtest
+    GTest::gmock
 )
 
 # Link required libraries from main target
@@ -38,10 +45,11 @@ target_link_libraries(WorkbenchTests PRIVATE
     ftxui::screen
 )
 
-# Include directories (same as main target)
+# Include directories (same as main target, plus mock headers)
 target_include_directories(WorkbenchTests PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
 )
 
 # Platform-specific sources based on config in parent
@@ -51,6 +59,13 @@ file(GLOB_RECURSE TEST_SOURCES
     "${CMAKE_SOURCE_DIR}/src/core/*.cpp"
     "${CMAKE_SOURCE_DIR}/src/utility/*.cpp"
     "${CMAKE_SOURCE_DIR}/src/system/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/panels/*.cpp"
+)
+
+# Remove panel files that depend on PTY or FTXUI screen (not testable in unit tests easily)
+list(REMOVE_ITEM TEST_SOURCES
+    "${CMAKE_SOURCE_DIR}/src/ui/panels/terminalPanel.cpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/panels/serverLogPanel.cpp"
 )
 
 # Remove platform-specific files (same pattern as main)

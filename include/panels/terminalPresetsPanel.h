@@ -1,5 +1,7 @@
 #pragma once
 
+#include "IConfigManager.h"
+
 #include <ftxui/dom/elements.hpp>
 #include <string>
 
@@ -19,26 +21,31 @@ class TerminalPresetsPanel
 	 * Displays a table of existing presets with options to remove them,
 	 * and a form to add new presets.
 	 *
+	 * @param config ConfigManager reference for preset data.
 	 * @return FTXUI element representing the panel.
 	 */
-	static ftxui::Element render();
+	static ftxui::Element render(IConfigManager &config);
 
 	/**
 	 * @brief Adds a new terminal preset.
 	 *
+	 * @param config ConfigManager reference for persistence.
 	 * @param name Display name for the tab (e.g., "Opencode", "GitUI")
 	 * @param command Command to execute (e.g., "opencode", "gitui")
 	 * @return true if preset was added, false if name already exists
 	 */
-	static bool addPreset(const std::string &name, const std::string &command);
+	static bool addPreset(IConfigManager &config,
+						  const std::string &name,
+						  const std::string &command);
 
 	/**
 	 * @brief Removes an existing terminal preset by name.
 	 *
+	 * @param config ConfigManager reference for persistence.
 	 * @param name Name of the preset to remove
 	 * @return true if preset was found and removed, false otherwise
 	 */
-	static bool removePreset(const std::string &name);
+	static bool removePreset(IConfigManager &config, const std::string &name);
 
   private:
 	// Edit state for adding new presets

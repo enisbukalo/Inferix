@@ -1,7 +1,6 @@
 #include "modelsPanel.h"
-#include "configManager.h"
+
 #include "modelDiscovery.h"
-#include "modelInfoMonitor.h"
 #include "ui_utils.h"
 
 #include <ftxui/component/component.hpp>
@@ -34,14 +33,16 @@ static int findOptionIndex(const std::vector<std::string> &options,
 // Constructor and Config Methods
 // =========================================================================
 
-ModelsPanel::ModelsPanel()
+ModelsPanel::ModelsPanel(AppDependencies &deps)
+	: m_config(deps.config), m_server(deps.server), m_modelInfo(deps.modelInfo),
+	  m_modelsIni(deps.modelsIni)
 {
 	loadFromConfig();
 }
 
 void ModelsPanel::loadFromConfig()
 {
-	auto &cfg = ConfigManager::instance().getConfig();
+	auto &cfg = m_config.getConfig();
 
 	spdlog::debug("Loaded settings from config");
 
@@ -123,7 +124,7 @@ void ModelsPanel::loadFromConfig()
 
 void ModelsPanel::saveConfig()
 {
-	auto &cfg = ConfigManager::instance().getConfig();
+	auto &cfg = m_config.getConfig();
 
 	// Load settings
 	cfg.load.modelPath = m_modelPath;
@@ -172,7 +173,7 @@ void ModelsPanel::saveConfig()
 	} catch (...) {
 	}
 
-	ConfigManager::instance().save();
+	m_config.save();
 	spdlog::info("Model settings saved (model: {})",
 				 m_modelPath.empty() ? "<none>" : m_modelPath);
 }
@@ -212,7 +213,7 @@ bool ModelsPanel::shouldFilterModel(const std::string &path) const
 	}
 
 	// Get filter patterns from config
-	auto &cfg = ConfigManager::instance().getConfig();
+	auto &cfg = m_config.getConfig();
 	const auto &filters = cfg.discovery.fileFilter;
 
 	// Check each filter pattern - if ANY matches, filter out the model
@@ -267,7 +268,7 @@ bool ModelsPanel::shouldFilterModel(const std::string &path) const
 
 void ModelsPanel::refreshModelList()
 {
-	auto entries = ModelsIni::instance().getUniqueModelEntries();
+	auto entries = m_modelsIni.getUniqueModelEntries();
 
 	// Sort by display name
 	std::sort(
@@ -642,7 +643,7 @@ Component ModelsPanel::component()
 				m_selectedPresetIndex <
 					static_cast<int>(m_presetsForModel.size())) {
 				std::string name = m_presetsForModel[m_selectedPresetIndex].name;
-				if (ModelsIni::instance().deletePreset(name)) {
+				if (m_modelsIni.deletePreset(name)) {
 					m_presetStatus = "Deleted";
 					m_selectedPresetIndex = -1;
 					m_editingPresetName.clear();
@@ -669,8 +670,7 @@ Component ModelsPanel::component()
 	auto serverButton = Button(
 		&m_startStopLabel,
 		[this] {
-			auto &process = LlamaServerProcess::instance();
-			if (!process.isRunning()) {
+			if (!m_server.isRunning()) {
 				// Server not running - START it
 				onStartStopClicked();
 			} else {
@@ -1007,8 +1007,8 @@ void ModelsPanel::refreshPresetsForModel()
 		}
 	}
 	if (modelPath.empty())
-		modelPath = ModelsIni::instance().getModelPath(m_selectedModelName);
-	m_presetsForModel = ModelsIni::instance().getPresetsForModel(modelPath);
+		modelPath = m_modelsIni.getModelPath(m_selectedModelName);
+	m_presetsForModel = m_modelsIni.getPresetsForModel(modelPath);
 	m_presetDisplayNames.clear();
 	for (const auto &p : m_presetsForModel)
 		m_presetDisplayNames.push_back(p.name);
@@ -1177,7 +1177,7 @@ void ModelsPanel::saveCurrentToPreset()
 	} catch (...) {
 	}
 
-	if (ModelsIni::instance().savePreset(preset)) {
+	if (m_modelsIni.savePreset(preset)) {
 		m_presetStatus = "Saved";
 		refreshPresetsForModel();
 		// Select the saved preset
@@ -1211,7 +1211,7 @@ void ModelsPanel::renameSelectedPreset(const std::string &newName)
 		}
 	}
 
-	if (ModelsIni::instance().renamePreset(oldName, newName)) {
+	if (m_modelsIni.renamePreset(oldName, newName)) {
 		m_presetStatus = "Renamed";
 		refreshPresetsForModel();
 		// Re-select by new name
@@ -1232,9 +1232,9 @@ void ModelsPanel::renameSelectedPreset(const std::string &newName)
 
 void ModelsPanel::onStartStopClicked()
 {
-	if (LlamaServerProcess::instance().isRunning()) {
+	if (m_server.isRunning()) {
 		// Stop: terminate process
-		LlamaServerProcess::instance().terminate();
+		m_server.terminate();
 		m_serverRunning = false;
 		m_modelLoaded = false;
 		m_loadedModelPath.clear();
@@ -1242,14 +1242,13 @@ void ModelsPanel::onStartStopClicked()
 		spdlog::info("Server stopped");
 	} else {
 		// Start: launch server (without model initially)
-		auto &cfg = ConfigManager::instance().getConfig();
+		auto &cfg = m_config.getConfig();
 
 		// Launch with empty model path = server only, no model
-		bool success = LlamaServerProcess::instance().launch(
-			"", // Empty model path = no model
-			cfg.load,
-			cfg.inference,
-			cfg.server);
+		bool success = m_server.launch("", // Empty model path = no model
+									   cfg.load,
+									   cfg.inference,
+									   cfg.server);
 
 		if (success) {
 			m_serverStarting.store(true);
@@ -1257,7 +1256,7 @@ void ModelsPanel::onStartStopClicked()
 			std::thread([this] {
 				for (int i = 0; i < 20; ++i) {
 					std::this_thread::sleep_for(std::chrono::milliseconds(500));
-					if (LlamaServerProcess::instance().isServerHealthy()) {
+					if (m_server.isServerHealthy()) {
 						break;
 					}
 				}
@@ -1273,8 +1272,6 @@ void ModelsPanel::onStartStopClicked()
 
 void ModelsPanel::onLoadUnloadClicked()
 {
-	auto &process = LlamaServerProcess::instance();
-
 	// Validate model selection
 	if (m_modelNames.empty() || m_modelDropdownIndex < 0 ||
 		m_modelDropdownIndex >= static_cast<int>(m_modelNames.size())) {
@@ -1288,10 +1285,10 @@ void ModelsPanel::onLoadUnloadClicked()
 	// Button label determines action, not m_modelLoaded state
 	if (m_startStopLabel == "UNLOAD") {
 		// Unload: call unloadModel API (unload whatever is currently loaded)
-		(void)process.unloadModel();
+		(void)m_server.unloadModel();
 		// Signal the monitor to stop all model-specific queries
 		// (slots, metrics) which would trigger the server to reload
-		ModelInfoMonitor::instance().setUnloaded();
+		m_modelInfo.setUnloaded();
 		// Set local state directly — don't query server because
 		// /models still reports "loaded" briefly after unload returns
 		m_modelLoaded = false;
@@ -1303,8 +1300,8 @@ void ModelsPanel::onLoadUnloadClicked()
 		if (m_modelLoading.load())
 			return;
 
-		ModelInfoMonitor::instance().clearForceUnloaded();
-		bool apiOk = process.loadModel(selectedModel);
+		m_modelInfo.clearForceUnloaded();
+		bool apiOk = m_server.loadModel(selectedModel);
 		if (!apiOk) {
 			spdlog::error("Failed to send load request for: {}", selectedModel);
 			return; // HTTP call itself failed — stay in LOAD state
@@ -1315,17 +1312,17 @@ void ModelsPanel::onLoadUnloadClicked()
 		m_startStopLabel = "LOADING";
 
 		std::thread([this, selectedModel] {
-			constexpr int MAX_POLLS = 40; // 40 × 500 ms = 20 s timeout
+			constexpr int MAX_POLLS = 40; // 40 x 500 ms = 20 s timeout
 			constexpr auto POLL_INTERVAL = std::chrono::milliseconds(500);
 			bool loaded = false;
 			for (int i = 0; i < MAX_POLLS; ++i) {
 				std::this_thread::sleep_for(POLL_INTERVAL);
-				auto stats = ModelInfoMonitor::instance().getStats();
+				auto stats = m_modelInfo.getStats();
 				if (stats.isModelLoaded) {
 					loaded = true;
 					break;
-				} else if (!LlamaServerProcess::instance().isRunning() ||
-						   !LlamaServerProcess::instance().isServerHealthy()) {
+				} else if (!m_server.isRunning() ||
+						   !m_server.isServerHealthy()) {
 					// Server died during load — exit early, don't wait for
 					// timeout
 					spdlog::warn("Server became unhealthy during model load");
@@ -1334,7 +1331,7 @@ void ModelsPanel::onLoadUnloadClicked()
 			}
 			m_modelLoaded = loaded;
 			if (loaded) {
-				auto stats = ModelInfoMonitor::instance().getStats();
+				auto stats = m_modelInfo.getStats();
 				m_loadedModelPath = stats.loadedModel;
 				spdlog::info("Model loaded: {}", selectedModel);
 			} else {
@@ -1349,12 +1346,11 @@ void ModelsPanel::onLoadUnloadClicked()
 
 void ModelsPanel::refreshServerState()
 {
-	auto &process = LlamaServerProcess::instance();
-	m_serverRunning = process.isRunning() && process.isServerHealthy();
+	m_serverRunning = m_server.isRunning() && m_server.isServerHealthy();
 
 	// Get model state from the monitor's stats rather than querying
 	// the server directly — the monitor respects the force-unloaded flag
-	auto stats = ModelInfoMonitor::instance().getStats();
+	auto stats = m_modelInfo.getStats();
 	m_modelLoaded = stats.isModelLoaded;
 	if (m_modelLoaded) {
 		m_loadedModelPath = stats.loadedModel;
@@ -1382,7 +1378,7 @@ void ModelsPanel::updateStartStopLabel()
 		selectedModel = m_modelNames[m_modelDropdownIndex];
 	}
 
-	if (!LlamaServerProcess::instance().isRunning()) {
+	if (!m_server.isRunning()) {
 		// Server not running - show LOAD
 		m_startStopLabel = "LOAD";
 	} else if (!m_modelLoaded) {

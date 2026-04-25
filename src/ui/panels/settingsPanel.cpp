@@ -1,5 +1,5 @@
 #include "settingsPanel.h"
-#include "configManager.h"
+
 #include "eventBus.h"
 #include "ui_utils.h"
 
@@ -17,14 +17,14 @@ using namespace ftxui;
 
 // ---------------------------------------------------------------------------
 
-SettingsPanel::SettingsPanel()
+SettingsPanel::SettingsPanel(AppDependencies &deps) : m_config(deps.config)
 {
 	loadFromConfig();
 }
 
 void SettingsPanel::loadFromConfig()
 {
-	auto &cfg = ConfigManager::instance().getConfig();
+	auto &cfg = m_config.getConfig();
 
 	// Server
 	m_executablePath = cfg.server.executablePath;
@@ -66,7 +66,7 @@ void SettingsPanel::loadFromConfig()
 
 void SettingsPanel::saveConfig()
 {
-	auto &cfg = ConfigManager::instance().getConfig();
+	auto &cfg = m_config.getConfig();
 
 	// ========================================================================
 	// Capture old values for change detection
@@ -144,7 +144,7 @@ void SettingsPanel::saveConfig()
 	// ========================================================================
 	// Persist to disk
 	// ========================================================================
-	ConfigManager::instance().save();
+	m_config.save();
 }
 
 Component SettingsPanel::component()
@@ -425,7 +425,7 @@ Component SettingsPanel::component()
 					   hbox({ text("    "), vbox(std::move(rows)) | xflex }),
 					   ftxui::EMPTY));
 		}
-		rightElements.push_back(TerminalPresetsPanel::render());
+		rightElements.push_back(TerminalPresetsPanel::render(m_config));
 
 		auto leftCol = vbox(std::move(leftElements)) | flex;
 		auto rightCol = vbox(std::move(rightElements)) | flex;

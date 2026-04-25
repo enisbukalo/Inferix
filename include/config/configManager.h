@@ -1,8 +1,11 @@
 #pragma once
+
+#include "IConfigManager.h"
 #include "config.h"
+
+#include <optional>
 #include <shared_mutex>
 #include <string>
-#include <optional>
 
 /**
  * @file configManager.h
@@ -35,7 +38,8 @@
  *       before any panels or systems access configuration.
  * @note The save() method can be called at any time to persist changes.
  */
-class ConfigManager {
+class ConfigManager : public IConfigManager
+{
 public:
     /**
      * @brief Get the singleton instance.
@@ -75,7 +79,7 @@ public:
      * @note Creates parent directories if they don't exist.
      * @note Can be called multiple times during application lifetime.
      */
-    bool save();
+    bool save() override;
 
     /**
      * @brief Get the current configuration (const access).
@@ -83,16 +87,16 @@ public:
      * @return Const reference to the current UserConfig.
      * @use Use when you only need to read configuration values.
      */
-    const Config::UserConfig& getConfig() const;
+    const Config::UserConfig &getConfig() const override;
 
     /**
      * @brief Get the current configuration (mutable access).
-     * 
+     *
      * @return Mutable reference to the current UserConfig.
      * @use Use when you need to modify configuration values.
      * @note Changes are not persisted until save() is called.
      */
-    Config::UserConfig& getConfig();
+    Config::UserConfig &getConfig() override;
 
     /**
      * @brief Check if config has been loaded.
@@ -155,47 +159,47 @@ public:
      * 
      * @return Const reference to the vector of terminal presets.
      */
-    const std::vector<Config::TerminalPreset>& getTerminalPresets() const;
+    const std::vector<Config::TerminalPreset> &getTerminalPresets() const override;
 
     /**
      * @brief Get all terminal presets (mutable access).
-     * 
+     *
      * @return Mutable reference to the vector of terminal presets.
      */
-    std::vector<Config::TerminalPreset>& getTerminalPresets();
+    std::vector<Config::TerminalPreset> &getTerminalPresets();
 
     /**
      * @brief Find a terminal preset by name.
-     * 
+     *
      * @param name The name of the preset to find.
      * @return The preset if found, std::nullopt otherwise.
      */
-    std::optional<Config::TerminalPreset> findTerminalPreset(const std::string& name) const;
+    std::optional<Config::TerminalPreset> findTerminalPreset(const std::string &name) const override;
 
     /**
      * @brief Add a new terminal preset.
-     * 
+     *
      * @param preset The preset to add.
      * @return true if added successfully, false if a preset with the same name exists.
      */
-    bool addTerminalPreset(Config::TerminalPreset preset);
+    bool addTerminalPreset(Config::TerminalPreset preset) override;
 
     /**
      * @brief Remove a terminal preset by name.
-     * 
+     *
      * @param name The name of the preset to remove.
      * @return true if found and removed, false otherwise.
      */
-    bool removeTerminalPreset(const std::string& name);
+    bool removeTerminalPreset(const std::string &name) override;
 
     /**
      * @brief Update an existing terminal preset.
-     * 
+     *
      * @param oldName The name of the preset to update.
      * @param preset The new preset values.
      * @return true if found and updated, false otherwise.
      */
-    bool updateTerminalPreset(const std::string& oldName, Config::TerminalPreset preset);
+    bool updateTerminalPreset(const std::string &oldName, Config::TerminalPreset preset) override;
 
 private:
     /**

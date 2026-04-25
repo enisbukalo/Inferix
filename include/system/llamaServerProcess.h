@@ -1,8 +1,10 @@
 #pragma once
 
+#include "ILlamaServerProcess.h"
 #include "config.h"
 #include "configManager.h"
 #include "httpClient.h"
+
 #include <functional>
 #include <memory>
 #include <string>
@@ -26,7 +28,7 @@
  * Or use the singleton for global cleanup:
  *   LlamaServerProcess::instance().terminate();
  */
-class LlamaServerProcess
+class LlamaServerProcess : public ILlamaServerProcess
 {
   public:
 	/**
@@ -59,19 +61,19 @@ class LlamaServerProcess
 	bool launch(const std::string &modelPath,
 				const Config::LoadSettings &load,
 				const Config::InferenceSettings &inference,
-				const Config::ServerSettings &server);
+				const Config::ServerSettings &server) override;
 
 	/**
 	 * @brief Terminate the running llama-server process gracefully.
 	 * @return true if terminated successfully, false on failure
 	 */
-	bool terminate();
+	bool terminate() override;
 
 	/**
 	 * @brief Check if the process is currently running.
 	 * @return true if running, false otherwise
 	 */
-	bool isRunning() const;
+	bool isRunning() const override;
 
 	/**
 	 * @brief Get the platform-specific process handle.
@@ -111,32 +113,32 @@ class LlamaServerProcess
 	 * @brief Check if a model is currently loaded via API.
 	 * @return true if server running and model loaded, false otherwise
 	 */
-	bool isModelLoaded();
+	bool isModelLoaded() override;
 
 	/**
 	 * @brief Get the path of the currently loaded model.
 	 * @return Model path, empty if no model loaded
 	 */
-	std::string getLoadedModelPath();
+	std::string getLoadedModelPath() override;
 
 	/**
 	 * @brief Unload the currently loaded model via API.
 	 * @return true if unload succeeded, false on failure
 	 */
-	bool unloadModel();
+	bool unloadModel() override;
 
 	/**
 	 * @brief Load a model via API (hot-swap without restart).
 	 * @param modelPath Path to the .gguf model file
 	 * @return true if load succeeded, false on failure
 	 */
-	bool loadModel(const std::string &modelPath);
+	bool loadModel(const std::string &modelPath) override;
 
 	/**
 	 * @brief Check if llama-server is responding via HTTP.
 	 * @return true if server is healthy, false otherwise
 	 */
-	bool isServerHealthy();
+	bool isServerHealthy() override;
 
 	/**
 	 * @brief Get the current slot status as JSON.

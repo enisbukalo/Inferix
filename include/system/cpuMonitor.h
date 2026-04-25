@@ -1,5 +1,8 @@
 #pragma once
+
+#include "ICpuMonitor.h"
 #include "processorStats.h"
+
 #include <mutex>
 #include <optional>
 
@@ -21,7 +24,7 @@
  * Update frequency: Determined by the caller; typically 500ms via
  * SystemMonitorRunner
  */
-class CpuMonitor
+class CpuMonitor : public ICpuMonitor
 {
   public:
 	/**
@@ -60,7 +63,7 @@ class CpuMonitor
 	 * @note This method is thread-safe. Multiple concurrent calls will
 	 *       serialize via the internal mutex.
 	 */
-	void update();
+	void update() override;
 
 	/**
 	 * @brief Returns the latest @c ProcessorStats snapshot under lock.
@@ -75,7 +78,7 @@ class CpuMonitor
 	 *       with update() or other get_* methods.
 	 * @see tryUpdate()
 	 */
-	ProcessorStats getStats() const;
+	ProcessorStats getStats() const override;
 
 	/**
 	 * @brief Calls @ref update() and returns the resulting stats.

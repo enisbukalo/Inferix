@@ -7,11 +7,6 @@
  */
 
 #include "systemResourcesPanel.h"
-#include "cpuMonitor.h"
-#include "gpuMonitor.h"
-#include "memoryStats.h"
-#include "processorStats.h"
-#include "ramMonitor.h"
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/dom/linear_gradient.hpp>
@@ -185,12 +180,15 @@ std::vector<Element> SystemResourcesPanel::buildUnitsColumn()
 	};
 }
 
-Element SystemResourcesPanel::render()
+Element SystemResourcesPanel::render(ICpuMonitor &cpu,
+									 IMemoryMonitor &mem,
+									 IGpuMonitor &gpu,
+									 IModelInfoMonitor &modelInfo)
 {
-	auto ramStats = MemoryMonitor::instance().getStats();
-	auto gpuStats = GpuMonitor::instance().getStats();
-	auto processorStats = CpuMonitor::instance().getStats();
-	auto gpuLoadStats = GpuMonitor::instance().getLoadStats();
+	auto ramStats = mem.getStats();
+	auto gpuStats = gpu.getStats();
+	auto processorStats = cpu.getStats();
+	auto gpuLoadStats = gpu.getLoadStats();
 
 	auto ramRows = buildRamRows(ramStats);
 	auto gpuRows = buildGpuRows(gpuStats);
@@ -260,7 +258,7 @@ Element SystemResourcesPanel::render()
 					  vbox({
 						  text("Model Info") | bold | hcenter,
 						  separatorLight(),
-						  ModelInfoPanel::render(),
+						  ModelInfoPanel::render(modelInfo),
 					  }),
 				  }));
 }

@@ -1,6 +1,8 @@
 #pragma once
 
+#include "IModelInfoMonitor.h"
 #include "llamaServerProcess.h"
+
 #include <atomic>
 #include <chrono>
 #include <mutex>
@@ -49,7 +51,7 @@ struct ModelInfo
  *
  * Thread-safe storage uses mutex-protected access.
  */
-class ModelInfoMonitor
+class ModelInfoMonitor : public IModelInfoMonitor
 {
   public:
 	/**
@@ -82,7 +84,7 @@ class ModelInfoMonitor
 	 *
 	 * @return Copy of the latest @c ModelInfo.
 	 */
-	ModelInfo getStats() const;
+	ModelInfo getStats() const override;
 
 	/**
 	 * @brief Signals that the model was intentionally unloaded.
@@ -91,14 +93,14 @@ class ModelInfoMonitor
 	 * the polling loop from querying model-specific endpoints
 	 * (slots, metrics) which would trigger the server to reload.
 	 */
-	void setUnloaded();
+	void setUnloaded() override;
 
 	/**
 	 * @brief Clears the force-unloaded flag so monitoring resumes.
 	 *
 	 * Call when the user explicitly loads a new model.
 	 */
-	void clearForceUnloaded();
+	void clearForceUnloaded() override;
 
 	/**
 	 * @brief Parses Prometheus-style metrics response from llama-server.

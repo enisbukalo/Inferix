@@ -1,11 +1,12 @@
 #pragma once
 
+#include "IModelsIni.h"
 #include "modelSettings.h"
 
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
-#include <map>
 
 /**
  * @brief ModelsIni - Handler for llama-server models.ini preset file.
@@ -22,7 +23,7 @@
  *   [orchestrator]
  *   model = D:/Models/bartowski/nvidia_Orchestrator-8B-GGUF/nvidia_Orchestrator-8B-Q6_K_L.gguf
  */
-class ModelsIni
+class ModelsIni : public IModelsIni
 {
   public:
 	/**
@@ -58,7 +59,7 @@ class ModelsIni
 	 * @param sectionName The section name (e.g., "orchestrator")
 	 * @return The model path, or empty if not found
 	 */
-	std::string getModelPath(const std::string &sectionName) const;
+    std::string getModelPath(const std::string &sectionName) const override;
 
 	/**
 	 * @brief Get all key-value pairs for a section
@@ -89,8 +90,8 @@ class ModelsIni
 	 * @param modelPath The model file path to match
 	 * @return Vector of matching presets
 	 */
-	std::vector<Config::ModelPreset>
-	getPresetsForModel(const std::string &modelPath) const;
+    std::vector<Config::ModelPreset>
+    getPresetsForModel(const std::string &modelPath) const override;
 
 	/**
 	 * @brief A unique model entry: one record per distinct GGUF path.
@@ -108,7 +109,7 @@ class ModelsIni
 	 * only the first section encountered for each path is returned.
 	 * @return Vector of unique model entries
 	 */
-	std::vector<ModelEntry> getUniqueModelEntries() const;
+    std::vector<ModelEntry> getUniqueModelEntries() const override;
 
 	// ----- Preset write methods -----
 
@@ -117,19 +118,19 @@ class ModelsIni
 	 * Writes atomically via temp file + rename.
 	 * @return true on success
 	 */
-	bool savePreset(const Config::ModelPreset &preset);
+	bool savePreset(const Config::ModelPreset &preset) override;
 
 	/**
 	 * @brief Rename a section in-place (preserves all key-value pairs).
 	 * @return true on success
 	 */
-	bool renamePreset(const std::string &oldName, const std::string &newName);
+	bool renamePreset(const std::string &oldName, const std::string &newName) override;
 
 	/**
 	 * @brief Delete a section from the INI file.
 	 * @return true on success
 	 */
-	bool deletePreset(const std::string &sectionName);
+	bool deletePreset(const std::string &sectionName) override;
 
   private:
 	ModelsIni() = default;
