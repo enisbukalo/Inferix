@@ -39,12 +39,8 @@ TabLayout::TabLayout(int *selectedTab,
 	  m_terminalComponent(std::move(terminalComponent)),
 	  m_dynamicTerminalComponents(std::move(dynamicTerminalComponents)),
 	  m_dynamicTabLabels(std::move(dynamicTabLabels)),
-	  m_coordinator(coordinator),
-	  m_cpu(cpu),
-	  m_mem(mem),
-	  m_gpu(gpu),
-	  m_modelInfo(modelInfo),
-	  m_server(server)
+	  m_coordinator(coordinator), m_cpu(cpu), m_mem(mem), m_gpu(gpu),
+	  m_modelInfo(modelInfo), m_server(server)
 {
 }
 
@@ -58,7 +54,10 @@ Component TabLayout::wrapInWindow(Component comp)
 Component TabLayout::build()
 {
 	// Build tab labels: 4 static + dynamic.
-	std::vector<std::string> tabValues{"App Settings", "Model Settings", "Server Log", "Terminal"};
+	std::vector<std::string> tabValues{ "App Settings",
+										"Model Settings",
+										"Server Log",
+										"Terminal" };
 	for (const auto &label : m_dynamicTabLabels) {
 		tabValues.push_back(label);
 	}
@@ -73,23 +72,27 @@ Component TabLayout::build()
 
 	// Server info footer bar.
 	auto serverContent = Renderer([&] {
-		return hbox({text("Some really long status about the server probably "
-						 "here."),
-					 filler(),
-					 ServerInfoPanel::render(m_server)});
+		return hbox({ text("Some really long status about the server probably "
+						   "here."),
+					  filler(),
+					  ServerInfoPanel::render(m_server) });
 	});
 
 	// Collect all tab components: static + dynamic.
-	std::vector<Component> allTabComponents{settingsContent, modelContent, logOutputContent, terminalContent};
+	std::vector<Component> allTabComponents{ settingsContent,
+											 modelContent,
+											 logOutputContent,
+											 terminalContent };
 	for (auto &dynComp : m_dynamicTerminalComponents) {
 		allTabComponents.push_back(wrapInWindow(dynComp));
 	}
 
 	auto tabContainer = Container::Tab(allTabComponents, m_selectedTab);
 
-	auto interactive = Container::Vertical({tabToggle, tabContainer}) | flex;
+	auto interactive = Container::Vertical({ tabToggle, tabContainer }) | flex;
 
-	// Outer renderer: composes system resources + separator + tabs + server footer.
+	// Outer renderer: composes system resources + separator + tabs + server
+	// footer.
 	return Renderer(interactive, [&] {
 		// Auto-capture on tab switch.
 		if (*m_selectedTab != m_prevTab) {
@@ -104,10 +107,13 @@ Component TabLayout::build()
 			panel = panel | color(Color::LightGreen);
 		}
 
-		return vbox({SystemResourcesPanel::render(m_cpu, m_mem, m_gpu, m_modelInfo),
-					 separatorCharacter("*") | bold | color(Color::Orange3),
-					 panel,
-					 serverContent->Render()}) |
+		return vbox({ SystemResourcesPanel::render(m_cpu,
+												   m_mem,
+												   m_gpu,
+												   m_modelInfo),
+					  separatorCharacter("*") | bold | color(Color::Orange3),
+					  panel,
+					  serverContent->Render() }) |
 			   flex;
 	});
 }

@@ -28,13 +28,14 @@ TerminalCoordinator::createDynamicTerminals(
 	// 2: Server Log, 3: Static Terminal).
 	int nextIndex = 4;
 	for (const auto &preset : presets) {
-		auto panel = std::make_unique<TerminalPanel>(m_screen,
-													 preset.initialCommand);
+		auto panel =
+			std::make_unique<TerminalPanel>(m_screen, preset.initialCommand);
 		auto component = panel->component();
 
 		labels.push_back(preset.name);
 		components.push_back(std::move(component));
-		m_dynamicTerminals.push_back({ std::move(panel), nextIndex, preset.name });
+		m_dynamicTerminals.push_back(
+			{ std::move(panel), nextIndex, preset.name });
 		nextIndex++;
 	}
 

@@ -53,7 +53,8 @@ void App::run()
 	auto &config = ConfigManager::instance().getConfig();
 	SystemMonitorRunner::instance().start(&screen, config.ui.refreshRateMs);
 
-	// Build dependency injection struct from singleton instances (Issue #1 pattern).
+	// Build dependency injection struct from singleton instances (Issue #1
+	// pattern).
 	AppDependencies deps{
 		ConfigManager::instance(),		// IConfigManager&
 		LlamaServerProcess::instance(), // ILlamaServerProcess&
@@ -79,7 +80,8 @@ void App::run()
 		coordinator.createDynamicTerminals(config.terminalPresets);
 	spdlog::info("Spawned {} terminal preset(s)", dynamicComponents.size());
 
-	// Build the full UI layout (SystemResourcesPanel + tabs + ServerInfoPanel footer).
+	// Build the full UI layout (SystemResourcesPanel + tabs + ServerInfoPanel
+	// footer).
 	int selectedTab = 0;
 	TabLayout layout(&selectedTab,
 					 settingsPanel.component(),
@@ -89,7 +91,11 @@ void App::run()
 					 std::move(dynamicComponents),
 					 std::move(dynamicTabLabels),
 					 coordinator,
-					 deps.cpu, deps.mem, deps.gpu, deps.modelInfo, deps.server);
+					 deps.cpu,
+					 deps.mem,
+					 deps.gpu,
+					 deps.modelInfo,
+					 deps.server);
 
 	// Spawn all terminals eagerly so they're ready when the user switches tabs.
 	coordinator.spawnAll();
